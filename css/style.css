@@ -3606,49 +3606,118 @@ a:focus-visible {
   top: 0; left: 0;
   width: 3px; height: 100%;
 }
-.zone--shinsaneop::before { background: linear-gradient(180deg, #7BC47F, #4A9C5C); }
-.zone--donong::before     { background: linear-gradient(180deg, #C68FBE, #8E5C99); }
-.zone--culture::before    { background: linear-gradient(180deg, #9BAEDD, #6677AC); }
-.zone--eco::before        { background: linear-gradient(180deg, #7AC2A8, #4A8B7A); }
-.zone--develop::before    { background: linear-gradient(180deg, #B89DD3, #8268A1); }
-.zone--smartfarm::before  { background: linear-gradient(180deg, #91B5C7, #5A7E96); }
+.zone--north-border::before  { background: linear-gradient(180deg, #8FB8C9, #547589); }
+.zone--south-farm::before    { background: linear-gradient(180deg, #E0B86A, #B0863C); }
+.zone--west-coast::before    { background: linear-gradient(180deg, #6FB7C9, #3D8092); }
+.zone--east-mountain::before { background: linear-gradient(180deg, #7DC4A0, #468B6E); }
+.zone--urban-edge::before    { background: linear-gradient(180deg, #B69ACB, #785D8E); }
 
+.zone {
+  padding: 20px 22px 18px;
+  gap: 10px;
+}
 .zone:hover {
   transform: translateY(-3px);
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(212, 165, 116, 0.32);
 }
-.zone-icon { font-size: 24px; line-height: 1; }
-.zone-meta { display: flex; align-items: baseline; gap: 10px; }
+.zone-head {
+  display: flex; align-items: center;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+.zone-icon {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.zone-meta {
+  display: flex; flex-direction: column;
+  gap: 2px;
+  flex: 1; min-width: 0;
+}
 .zone-name {
   font-family: 'Noto Serif KR', serif;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   color: #fff;
   margin: 0;
   letter-spacing: -0.01em;
+  line-height: 1.2;
 }
 .zone-count {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.45);
+  color: rgba(255, 255, 255, 0.4);
   font-weight: 500;
+  letter-spacing: 0.04em;
 }
 .zone-cities {
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.62);
+  font-weight: 600;
+  color: #E5C19A;
   margin: 0;
   line-height: 1.5;
+  letter-spacing: 0.01em;
+  padding: 6px 10px;
+  background: rgba(212, 165, 116, 0.08);
+  border-radius: 6px;
+  border-left: 2px solid rgba(212, 165, 116, 0.4);
+}
+.zone-desc {
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 0;
+  line-height: 1.65;
+  letter-spacing: -0.005em;
+}
+.zone-desc strong {
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 600;
+}
+
+/* 5개 권역 그리드: 3+2 비대칭 (3개 위, 2개 아래 가운데) */
+.landing-zones-grid--5 {
+  grid-template-columns: repeat(6, 1fr);
+}
+.landing-zones-grid--5 .zone:nth-child(1) { grid-column: 1 / 3; }
+.landing-zones-grid--5 .zone:nth-child(2) { grid-column: 3 / 5; }
+.landing-zones-grid--5 .zone:nth-child(3) { grid-column: 5 / 7; }
+.landing-zones-grid--5 .zone:nth-child(4) { grid-column: 2 / 4; }
+.landing-zones-grid--5 .zone:nth-child(5) { grid-column: 4 / 6; }
+
+/* 인용 문구 (출처 표기) */
+.landing-section-cite {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  font-style: italic;
+  letter-spacing: 0.02em;
 }
 
 /* ---- 반응형 (WHY/Zones) ---- */
 @media (max-width: 1024px) {
   .landing-pillars { grid-template-columns: 1fr; gap: 14px; }
-  .landing-zones-grid { grid-template-columns: repeat(2, 1fr); }
+  .landing-zones-grid,
+  .landing-zones-grid--5 { grid-template-columns: repeat(2, 1fr); }
+  .landing-zones-grid--5 .zone:nth-child(1),
+  .landing-zones-grid--5 .zone:nth-child(2),
+  .landing-zones-grid--5 .zone:nth-child(3),
+  .landing-zones-grid--5 .zone:nth-child(4),
+  .landing-zones-grid--5 .zone:nth-child(5) { grid-column: auto; }
+  .landing-zones-grid--5 .zone:nth-child(5) { grid-column: 1 / 3; }
   .landing-why .landing-section-title,
   .landing-zones .landing-section-title { font-size: 26px; }
 }
 @media (max-width: 640px) {
-  .landing-zones-grid { grid-template-columns: 1fr; }
+  .landing-zones-grid,
+  .landing-zones-grid--5 { grid-template-columns: 1fr; }
+  .landing-zones-grid--5 .zone:nth-child(5) { grid-column: 1 / 2; }
   .pillar { padding: 22px; }
   .landing-legal { flex-direction: column; gap: 8px; padding: 16px; }
   .landing-why .landing-section-title,
