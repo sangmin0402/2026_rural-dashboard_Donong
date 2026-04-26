@@ -1916,7 +1916,9 @@ function initLandingMinimap() {
       svg.innerHTML = '';
 
       geo.features.forEach(f => {
-        const cityName = f.properties.name || f.properties.id || '';
+        // GeoJSON properties.name이 이중 이스케이프 되어 있어 CITIES 매핑 사용
+        const cityId = f.properties.id;
+        const cityName = (CITIES[cityId] && CITIES[cityId].name) || cityId || '';
         let d = '';
         const g = f.geometry;
         if (g.type === 'Polygon') {

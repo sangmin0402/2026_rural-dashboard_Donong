@@ -3373,5 +3373,284 @@ a:focus-visible {
 }
 
 /* ============================================================================
-   End of stylesheet
+   23-b. Landing — WHY 섹션 + 6대 권역 섹션
    ============================================================================ */
+
+/* ---- 공통: 섹션 헤드 (eyebrow + title) ---- */
+.landing-eyebrow {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: #E5C19A;
+  background: rgba(212, 165, 116, 0.1);
+  border: 1px solid rgba(212, 165, 116, 0.28);
+  padding: 4px 12px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+.landing-why .landing-section-head,
+.landing-zones .landing-section-head {
+  display: block;
+  text-align: center;
+  margin-bottom: 28px;
+}
+.landing-why .landing-section-title,
+.landing-zones .landing-section-title {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+.landing-why .landing-section-sub,
+.landing-zones .landing-section-sub {
+  font-size: 15px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 680px;
+  margin: 0 auto;
+}
+.landing-why .landing-section-sub strong,
+.landing-zones .landing-section-sub strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ---- WHY: 3대 기둥 카드 ---- */
+.landing-why { display: flex; flex-direction: column; gap: 28px; }
+.landing-pillars {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+.pillar {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 26px 26px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  transition: transform 220ms ease, border-color 220ms ease, background 220ms ease;
+}
+.pillar::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 4px;
+}
+.pillar--samlter::before { background: linear-gradient(90deg, #5BAFDC, #3F8FBF); }
+.pillar--ilter::before   { background: linear-gradient(90deg, #E8A84C, #C8843A); }
+.pillar--shimter::before { background: linear-gradient(90deg, #5BCB8E, #3D9F6B); }
+
+.pillar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0.55;
+  transition: opacity 220ms ease;
+}
+.pillar--samlter::after { background: radial-gradient(circle at 0% 100%, rgba(91, 175, 220, 0.18), transparent 55%); }
+.pillar--ilter::after   { background: radial-gradient(circle at 0% 100%, rgba(232, 168, 76, 0.18), transparent 55%); }
+.pillar--shimter::after { background: radial-gradient(circle at 0% 100%, rgba(91, 203, 142, 0.20), transparent 55%); }
+
+.pillar:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.pillar:hover::after { opacity: 1; }
+
+.pillar-head { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+.pillar-icon {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 26px;
+  flex-shrink: 0;
+}
+.pillar-tag-row { display: flex; flex-direction: column; gap: 3px; }
+.pillar-tag {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1;
+}
+.pillar--samlter .pillar-tag { color: #8AC9E8; }
+.pillar--ilter   .pillar-tag { color: #F0BE6E; }
+.pillar--shimter .pillar-tag { color: #7DDCA8; }
+.pillar-tag-sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.pillar-title {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: #fff;
+  margin: 4px 0 0;
+  letter-spacing: -0.02em;
+}
+.pillar-summary {
+  font-size: 13px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+}
+.pillar-section {
+  display: flex; flex-direction: column;
+  gap: 8px;
+  padding: 14px 0 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  margin-top: 4px;
+}
+.pillar-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+.pillar-list {
+  list-style: none;
+  padding: 0; margin: 0;
+  display: flex; flex-direction: column;
+  gap: 6px;
+}
+.pillar-list li {
+  position: relative;
+  padding-left: 16px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.5;
+}
+.pillar-list li::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 9px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+}
+.pillar--samlter .pillar-list li::before { background: #5BAFDC; }
+.pillar--ilter   .pillar-list li::before { background: #E8A84C; }
+.pillar--shimter .pillar-list li::before { background: #5BCB8E; }
+
+.pillar-effect {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  margin-top: 6px;
+}
+.pillar-effect-arrow {
+  color: #E5C19A;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ---- 법적 근거 노트 ---- */
+.landing-legal {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 22px;
+  background: rgba(212, 165, 116, 0.06);
+  border: 1px solid rgba(212, 165, 116, 0.22);
+  border-radius: 14px;
+}
+.landing-legal-icon { font-size: 22px; flex-shrink: 0; }
+.landing-legal-text {
+  font-size: 13px;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0;
+}
+.landing-legal-text strong { color: #E5C19A; font-weight: 600; }
+
+/* ---- 6대 권역 섹션 ---- */
+.landing-zones { display: flex; flex-direction: column; gap: 24px; }
+.landing-zones-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.zone {
+  position: relative;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex; flex-direction: column;
+  gap: 8px;
+  backdrop-filter: blur(10px);
+  transition: transform 200ms ease, border-color 200ms ease, background 200ms ease;
+  overflow: hidden;
+}
+.zone::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 3px; height: 100%;
+}
+.zone--shinsaneop::before { background: linear-gradient(180deg, #7BC47F, #4A9C5C); }
+.zone--donong::before     { background: linear-gradient(180deg, #C68FBE, #8E5C99); }
+.zone--culture::before    { background: linear-gradient(180deg, #9BAEDD, #6677AC); }
+.zone--eco::before        { background: linear-gradient(180deg, #7AC2A8, #4A8B7A); }
+.zone--develop::before    { background: linear-gradient(180deg, #B89DD3, #8268A1); }
+.zone--smartfarm::before  { background: linear-gradient(180deg, #91B5C7, #5A7E96); }
+
+.zone:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(212, 165, 116, 0.32);
+}
+.zone-icon { font-size: 24px; line-height: 1; }
+.zone-meta { display: flex; align-items: baseline; gap: 10px; }
+.zone-name {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.zone-count {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.45);
+  font-weight: 500;
+}
+.zone-cities {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.62);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ---- 반응형 (WHY/Zones) ---- */
+@media (max-width: 1024px) {
+  .landing-pillars { grid-template-columns: 1fr; gap: 14px; }
+  .landing-zones-grid { grid-template-columns: repeat(2, 1fr); }
+  .landing-why .landing-section-title,
+  .landing-zones .landing-section-title { font-size: 26px; }
+}
+@media (max-width: 640px) {
+  .landing-zones-grid { grid-template-columns: 1fr; }
+  .pillar { padding: 22px; }
+  .landing-legal { flex-direction: column; gap: 8px; padding: 16px; }
+  .landing-why .landing-section-title,
+  .landing-zones .landing-section-title { font-size: 22px; }
+}
