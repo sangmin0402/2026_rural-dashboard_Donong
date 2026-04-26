@@ -55,6 +55,13 @@ const NAMYANGJU_INDICATORS = {
   R6: { name: '수변·생태쉼터 면적',     unit: '㎡/천명', category: 'shimter', higherBetter: true, spatial: '읍면',  year: 2024 },
 };
 
+// 카테고리 종합 가상 지표 키 매핑
+const CATEGORY_TOTALS = {
+  samlter_total: { category: 'samlter', label: '삶터 종합' },
+  ilter_total:   { category: 'ilter',   label: '일터 종합' },
+  shimter_total:  { category: 'shimter',  label: '쉼터 종합' },
+};
+
 // ===================================================================
 // === 시나리오 레버 정의 ===
 // ===================================================================
@@ -682,6 +689,14 @@ function getCityColor(cityId) {
     return getColorForValue(score, breaks, 'composite', true);
   }
 
+  if (CATEGORY_TOTALS[indicatorKey]) {
+    const cat = CATEGORY_TOTALS[indicatorKey].category;
+    const allScores = Object.keys(CITIES).map(id => calcCategoryScore(id, cat));
+    const breaks = getClassBreaks(allScores);
+    const score = calcCategoryScore(cityId, cat);
+    return getColorForValue(score, breaks, cat, true);
+  }
+
   const indicator = INDICATORS[indicatorKey];
   if (!indicator) return '#999';
 
@@ -708,6 +723,12 @@ function buildTooltipContent(cityId) {
   let indicatorLine;
   if (indicatorKey === 'total') {
     indicatorLine = `<div style="font-size: 12px; color: #1B4332; font-weight: 600;">종합점수: ${score}점</div>`;
+  } else if (CATEGORY_TOTALS[indicatorKey]) {
+    const { category, label } = CATEGORY_TOTALS[indicatorKey];
+    const catScore = calcCategoryScore(cityId, category).toFixed(1);
+    indicatorLine = `
+      <div style="font-size: 12px; color: #1B4332; font-weight: 600;">${label}: ${catScore}점</div>
+      <div style="font-size: 11px; color: #777;">종합점수: ${score}점</div>`;
   } else {
     const indicator = INDICATORS[indicatorKey];
     const value = city.indicators[indicatorKey];
@@ -814,17 +835,25 @@ function initIndicatorSelector() {
 
   // 카테고리별 optgroup
   const groups = {
-    samlter: { label: '삶터 지표', keys: [] },
-    ilter:   { label: '일터 지표', keys: [] },
-    shimter:  { label: '쉼터 지표', keys: [] },
+    samlter: { label: '삶터 지표', catTotalKey: 'samlter_total', keys: [] },
+    ilter:   { label: '일터 지표', catTotalKey: 'ilter_total',   keys: [] },
+    shimter:  { label: '쉼터 지표', catTotalKey: 'shimter_total',  keys: [] },
   };
   Object.entries(INDICATORS).forEach(([key, ind]) => {
     if (groups[ind.category]) groups[ind.category].keys.push(key);
   });
 
-  Object.values(groups).forEach(group => {
+  Object.entries(groups).forEach(([catKey, group]) => {
     const optgroup = document.createElement('optgroup');
     optgroup.label = group.label;
+
+    // 카테고리 종합 옵션 (맨 앞)
+    const totalOpt = document.createElement('option');
+    totalOpt.value = group.catTotalKey;
+    totalOpt.textContent = `◆ ${CATEGORY_TOTALS[group.catTotalKey].label}`;
+    if (group.catTotalKey === state.activeIndicator) totalOpt.selected = true;
+    optgroup.appendChild(totalOpt);
+
     group.keys.forEach(key => {
       const opt = document.createElement('option');
       opt.value = key;
@@ -1719,6 +1748,15 @@ function buildLegendHTML() {
     return `
       <div class="legend-title">★ 종합점수</div>
       ${buildClassLegendItems(CLASS_COLORS.composite, breaks, '점', true)}`;
+  }
+
+  if (CATEGORY_TOTALS[key]) {
+    const { category, label } = CATEGORY_TOTALS[key];
+    const allScores = Object.keys(CITIES).map(id => calcCategoryScore(id, category));
+    const breaks = getClassBreaks(allScores);
+    return `
+      <div class="legend-title">◆ ${label}</div>
+      ${buildClassLegendItems(CLASS_COLORS[category], breaks, '점', true)}`;
   }
 
   const ind = INDICATORS[key];
