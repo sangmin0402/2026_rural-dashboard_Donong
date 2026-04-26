@@ -1761,16 +1761,9 @@ function initLegend() {
  * - CTA 클릭 → 0.6s 페이드아웃 → 대시보드 노출
  */
 function initLandingScreen() {
-  const SESSION_KEY = 'ruraldash_landing_seen';
   const screen = document.getElementById('landing-screen');
   const ctaBtn = document.getElementById('landing-cta-btn');
   if (!screen || !ctaBtn) return;
-
-  if (sessionStorage.getItem(SESSION_KEY) === '1') {
-    screen.classList.add('is-hidden');
-    return;
-  }
-  sessionStorage.setItem(SESSION_KEY, '1');
 
   ctaBtn.addEventListener('click', () => {
     ctaBtn.disabled = true;
