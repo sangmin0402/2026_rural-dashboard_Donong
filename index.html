@@ -19,6 +19,94 @@
 </head>
 <body>
 
+  <!-- ===== 랜딩 화면 ===== -->
+  <div id="landing-screen" role="dialog" aria-modal="true" aria-label="플랫폼 소개">
+    <div class="landing-bg-glow landing-bg-glow--1" aria-hidden="true"></div>
+    <div class="landing-bg-glow landing-bg-glow--2" aria-hidden="true"></div>
+    <div class="landing-scroll-wrap">
+      <div class="landing-content">
+
+        <div class="landing-hero landing-anim" style="--anim-order:0">
+          <div class="landing-logo-wrap">
+            <span class="landing-logo" aria-hidden="true">🌿</span>
+          </div>
+          <h1 class="landing-title">경기도 농촌다움 지표 플랫폼</h1>
+          <p class="landing-subtitle">경기도 15개 농촌 시군의 삶터·일터·쉼터 지표를<br>비교·분석합니다</p>
+        </div>
+
+        <div class="landing-context landing-anim" style="--anim-order:1">
+          <p class="landing-context-text">
+            <span class="landing-context-tag">법적 근거</span>
+            농촌공간 재구조화 및 재생지원에 관한 법률 (2023) 시행에 따른
+            경기도 15개 농촌 시군 기본계획 수립 지원을 위한 지표 플랫폼입니다.
+          </p>
+        </div>
+
+        <div class="landing-cards landing-anim" style="--anim-order:2">
+
+          <div class="landing-card landing-card--samlter">
+            <div class="landing-card-stripe"></div>
+            <div class="landing-card-body">
+              <div class="landing-card-header">
+                <span class="landing-card-icon" aria-hidden="true">🏘️</span>
+                <span class="landing-card-name">삶터</span>
+              </div>
+              <p class="landing-card-desc">생활·인구·정주 여건을 측정합니다</p>
+              <ul class="landing-card-indicators">
+                <li>인구증가율</li><li>노령화지수</li>
+                <li>생활SOC 충족지수</li><li>인구순이동률 외</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="landing-card landing-card--ilter">
+            <div class="landing-card-stripe"></div>
+            <div class="landing-card-body">
+              <div class="landing-card-header">
+                <span class="landing-card-icon" aria-hidden="true">🌾</span>
+                <span class="landing-card-name">일터</span>
+              </div>
+              <p class="landing-card-desc">농업·경제·산업 활동을 측정합니다</p>
+              <ul class="landing-card-indicators">
+                <li>고용률</li><li>재정자립도</li>
+                <li>GRDP</li><li>사업체수 외</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="landing-card landing-card--shimter">
+            <div class="landing-card-stripe"></div>
+            <div class="landing-card-body">
+              <div class="landing-card-header">
+                <span class="landing-card-icon" aria-hidden="true">🌲</span>
+                <span class="landing-card-name">쉼터</span>
+              </div>
+              <p class="landing-card-desc">자연·경관·휴양 환경을 측정합니다</p>
+              <ul class="landing-card-indicators">
+                <li>농촌환경 보전율</li><li>녹지율</li>
+                <li>토지이용 다양성</li><li>체험 프로그램 외</li>
+              </ul>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="landing-cta-wrap landing-anim" style="--anim-order:3">
+          <button id="landing-cta-btn" class="landing-cta-btn" type="button">
+            지도로 탐색하기
+            <span class="landing-cta-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+
+        <div class="landing-footer landing-anim" style="--anim-order:4">
+          <p class="landing-footer-text">경기도 15개 시군 &nbsp;·&nbsp; 공통지표 11개 &nbsp;·&nbsp; 남양주시 자율지표 8개</p>
+          <p class="landing-footer-team">담당: 주영 · 선혁 · 유하 (남양주시)</p>
+        </div>
+
+      </div>
+    </div>
+  </div><!-- /#landing-screen -->
+
   <!-- 로딩 오버레이 -->
   <div id="loading-overlay">
     <div class="loading-spinner"></div>

@@ -1752,10 +1752,42 @@ function initLegend() {
 }
 
 // ===================================================================
+// === 랜딩 화면 ===
+// ===================================================================
+
+/**
+ * 랜딩 화면 초기화
+ * - 같은 세션 재방문 시 즉시 숨김 (sessionStorage)
+ * - CTA 클릭 → 0.6s 페이드아웃 → 대시보드 노출
+ */
+function initLandingScreen() {
+  const SESSION_KEY = 'ruraldash_landing_seen';
+  const screen = document.getElementById('landing-screen');
+  const ctaBtn = document.getElementById('landing-cta-btn');
+  if (!screen || !ctaBtn) return;
+
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    screen.classList.add('is-hidden');
+    return;
+  }
+  sessionStorage.setItem(SESSION_KEY, '1');
+
+  ctaBtn.addEventListener('click', () => {
+    ctaBtn.disabled = true;
+    screen.classList.add('is-exiting');
+    const hide = () => screen.classList.add('is-hidden');
+    screen.addEventListener('animationend', hide, { once: true });
+    setTimeout(hide, 700); // 안전망
+  });
+}
+
+// ===================================================================
 // === 앱 초기화 진입점 ===
 // ===================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
+  initLandingScreen(); // 랜딩 화면 — 가장 먼저 실행
+
   showLoading();
 
   try {
