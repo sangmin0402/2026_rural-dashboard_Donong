@@ -522,16 +522,11 @@ async function initGeoJSONLayer() {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const allData = await resp.json();
 
-    // 시군명 → cityId 매핑
-    const nameToId = {};
-    Object.values(CITIES).forEach(c => { nameToId[c.name] = c.id; });
-    const targetNames = new Set(Object.keys(nameToId));
+    // id 프로퍼티로 직접 매칭 (GeoJSON properties.id = cityId)
+    const validIds = new Set(Object.keys(CITIES));
 
-    // 경기도 15개 시군만 필터
-    const features = allData.features.filter(f => {
-      const name = f.properties.name || f.properties.NAME || '';
-      return targetNames.has(name);
-    });
+    // 알려진 cityId가 있는 피처만 사용
+    const features = allData.features.filter(f => validIds.has(f.properties.id));
 
     if (features.length === 0) throw new Error('매칭 피처 없음');
 
@@ -540,7 +535,7 @@ async function initGeoJSONLayer() {
 
     geoJsonLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
       style: (feature) => {
-        const cityId = nameToId[feature.properties.name || feature.properties.NAME || ''];
+        const cityId = feature.properties.id;
         return {
           fillColor: cityId ? getCityColor(cityId) : '#ccc',
           color: '#fff',
@@ -550,8 +545,7 @@ async function initGeoJSONLayer() {
         };
       },
       onEachFeature: (feature, layer) => {
-        const name = feature.properties.name || feature.properties.NAME || '';
-        const cityId = nameToId[name];
+        const cityId = feature.properties.id;
         if (!cityId) return;
 
         geoJsonFeatures[cityId] = layer;
