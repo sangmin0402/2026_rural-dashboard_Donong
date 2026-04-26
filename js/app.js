@@ -301,24 +301,56 @@ function lerpColor(hex1, hex2, t) {
   return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 }
 
+// 5단계 분류색 팔레트 (낮음 → 높음)
+const CLASS_COLORS = {
+  samlter:   ['#DDEEFF', '#89B9E0', '#3F88C5', '#1A5FA1', '#0A2E6E'],
+  ilter:     ['#FFF3E0', '#FFCC80', '#FFA040', '#E65100', '#8B2E00'],
+  shimter:   ['#E8F5E9', '#81C784', '#2E9E4F', '#1B6E2E', '#0A3D12'],
+  composite: ['#EEF2F0', '#A8C5BB', '#5C9485', '#2A6B55', '#1B4332'],
+};
+
 /**
- * 지표값 기반 색상 계산
- * @param {number} value    - 현재 값
- * @param {number} min      - 전체 최솟값
- * @param {number} max      - 전체 최댓값
- * @param {string} category - 카테고리 (samlter/ilter/shimter/composite)
+ * 분위 기반 5-class 구간 계산
+ * @param {number[]} values
+ * @returns {number[]} 6개 경계값 (breaks[0]~breaks[5])
+ */
+function getClassBreaks(values) {
+  const sorted = [...values].filter(v => v != null).sort((a, b) => a - b);
+  if (sorted.length < 2) return [0, 20, 40, 60, 80, 100];
+  const n = sorted.length;
+  return [
+    sorted[0],
+    sorted[Math.max(0, Math.floor(n * 0.2))],
+    sorted[Math.max(0, Math.floor(n * 0.4))],
+    sorted[Math.max(0, Math.floor(n * 0.6))],
+    sorted[Math.max(0, Math.floor(n * 0.8))],
+    sorted[n - 1],
+  ];
+}
+
+/**
+ * 값을 0~4 클래스 인덱스로 변환
+ */
+function getClassIndex(value, breaks) {
+  for (let i = 0; i < 5; i++) {
+    if (value <= breaks[i + 1]) return i;
+  }
+  return 4;
+}
+
+/**
+ * 지표값 기반 5단계 분류색 반환
+ * @param {number} value
+ * @param {number[]} breaks - getClassBreaks() 결과
+ * @param {string} category
+ * @param {boolean} higherBetter
  * @returns {string} hex 색상
  */
-function getColorForValue(value, min, max, category) {
-  const clampedT = Math.max(0, Math.min(1, (value - min) / (max - min + 1e-9)));
-  const palettes = {
-    samlter:   { light: '#EBF5FF', dark: '#1565C0' },
-    ilter:     { light: '#FFF3E0', dark: '#E65100' },
-    shimter:   { light: '#E8F5E9', dark: '#1B5E20' },
-    composite: { light: '#F5F5F5', dark: '#1B4332' },
-  };
-  const palette = palettes[category] || palettes.composite;
-  return lerpColor(palette.light, palette.dark, clampedT);
+function getColorForValue(value, breaks, category, higherBetter = true) {
+  let idx = getClassIndex(value, breaks);
+  if (!higherBetter) idx = 4 - idx;
+  const colors = CLASS_COLORS[category] || CLASS_COLORS.composite;
+  return colors[idx];
 }
 
 /**
@@ -449,6 +481,8 @@ let map = null;
 const markers = {};
 let geoJsonLayer = null;
 const geoJsonFeatures = {}; // cityId → GeoJSON layer reference
+let dongLayer = null;       // 행정동 경계 레이어 (줌 11+ 표시)
+const DONG_ZOOM_THRESHOLD = 11;
 
 /**
  * Leaflet 지도 초기화 및 시군 마커 생성
@@ -508,6 +542,59 @@ function initMap() {
 
   // GeoJSON 폴리곤 레이어 비동기 로드 (성공 시 CircleMarker 대체)
   initGeoJSONLayer();
+
+  // 행정동 경계 레이어 비동기 로드
+  initDongLayer();
+
+  // 줌 변경 시 행정동 가시성 업데이트
+  map.on('zoomend', updateDongVisibility);
+}
+
+/**
+ * 행정동 경계 레이어 초기화 (줌 11+ 에서만 표시)
+ */
+async function initDongLayer() {
+  try {
+    const resp = await fetch('./dat/gyeonggi-dong.geojson');
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const data = await resp.json();
+
+    dongLayer = L.geoJSON(data, {
+      style: {
+        fillColor: 'transparent',
+        color: 'rgba(40,40,40,0.4)',
+        weight: 0.7,
+        fillOpacity: 0,
+        dashArray: '3,2',
+      },
+      onEachFeature: (feature, layer) => {
+        const name = feature.properties.adm_nm || '';
+        layer.bindTooltip(name, {
+          permanent: false, direction: 'center', className: 'dong-tooltip',
+        });
+      },
+    });
+    // 초기 줌에 따라 표시 여부 결정
+    updateDongVisibility();
+  } catch (err) {
+    console.warn('[GeoJSON] 행정동 로드 실패:', err.message);
+  }
+}
+
+/**
+ * 현재 줌 레벨에 따라 행정동 레이어 표시/숨김
+ */
+function updateDongVisibility() {
+  if (!map || !dongLayer) return;
+  const zoom = map.getZoom();
+  if (zoom >= DONG_ZOOM_THRESHOLD) {
+    if (!map.hasLayer(dongLayer)) {
+      dongLayer.addTo(map);
+      dongLayer.bringToFront(); // 시군구 위에 표시
+    }
+  } else {
+    if (map.hasLayer(dongLayer)) map.removeLayer(dongLayer);
+  }
 }
 
 /**
@@ -589,8 +676,10 @@ function getCityColor(cityId) {
   const indicatorKey = state.activeIndicator;
 
   if (indicatorKey === 'total') {
+    const allScores = Object.keys(CITIES).map(id => calcOverallScore(id));
+    const breaks = getClassBreaks(allScores);
     const score = calcOverallScore(cityId);
-    return getColorForValue(score, 0, 100, 'composite');
+    return getColorForValue(score, breaks, 'composite', true);
   }
 
   const indicator = INDICATORS[indicatorKey];
@@ -599,8 +688,9 @@ function getCityColor(cityId) {
   const value = city.indicators[indicatorKey];
   if (value === undefined || value === null) return '#ccc';
 
-  const { min, max } = getIndicatorRange(indicatorKey);
-  return getColorForValue(value, min, max, indicator.category);
+  const allValues = getAllValuesForIndicator(indicatorKey);
+  const breaks = getClassBreaks(allValues);
+  return getColorForValue(value, breaks, indicator.category, indicator.higherBetter);
 }
 
 /**
@@ -1601,28 +1691,47 @@ function renderSearchDropdown(query, input, dropdown) {
  */
 let legendControl = null;
 
+function buildClassLegendItems(colors, breaks, unit, higherBetter) {
+  // 높을수록 좋은 지표는 높은 클래스가 진한 색 → 그대로
+  // 낮을수록 좋은 지표는 역순으로 라벨 표시
+  const labels = higherBetter
+    ? ['최하위', '하위', '중위', '상위', '최상위']
+    : ['최상위', '상위', '중위', '하위', '최하위'];
+
+  return colors.map((color, i) => {
+    const lo = breaks[i] % 1 === 0 ? breaks[i] : breaks[i].toFixed(1);
+    const hi = breaks[i + 1] % 1 === 0 ? breaks[i + 1] : breaks[i + 1].toFixed(1);
+    return `
+      <div class="legend-class-item">
+        <span class="legend-class-swatch" style="background:${color}"></span>
+        <span class="legend-class-range">${lo}–${hi}${unit ? ' ' + unit : ''}</span>
+        <span class="legend-class-label">${labels[i]}</span>
+      </div>`;
+  }).join('');
+}
+
 function buildLegendHTML() {
   const key = state.activeIndicator;
+
   if (key === 'total') {
+    const allScores = Object.keys(CITIES).map(id => calcOverallScore(id));
+    const breaks = getClassBreaks(allScores);
     return `
-      <div class="legend-title">범례 — 종합점수</div>
-      <div class="legend-gradient">
-        <div class="legend-bar composite-bar"></div>
-        <div class="legend-labels"><span>낮음</span><span>높음</span></div>
-        <div class="legend-cat">농촌다움 종합점수</div>
-      </div>`;
+      <div class="legend-title">★ 종합점수</div>
+      ${buildClassLegendItems(CLASS_COLORS.composite, breaks, '점', true)}`;
   }
+
   const ind = INDICATORS[key];
   if (!ind) return '';
-  const catLabel = { samlter: '삶터 (파랑)', ilter: '일터 (주황)', shimter: '쉼터 (초록)' };
-  const barClass = { samlter: 'samlter-bar', ilter: 'ilter-bar', shimter: 'shimter-bar' };
+  const allValues = getAllValuesForIndicator(key);
+  const breaks = getClassBreaks(allValues);
+  const colors = ind.higherBetter
+    ? CLASS_COLORS[ind.category]
+    : [...CLASS_COLORS[ind.category]].reverse();
+  const catLabel = { samlter: '삶터', ilter: '일터', shimter: '쉼터' };
   return `
-    <div class="legend-title">범례 — ${ind.name}</div>
-    <div class="legend-gradient">
-      <div class="legend-bar ${barClass[ind.category]}"></div>
-      <div class="legend-labels"><span>낮음</span><span>높음</span></div>
-      <div class="legend-cat">${catLabel[ind.category]}</div>
-    </div>`;
+    <div class="legend-title">${catLabel[ind.category]} — ${ind.name}</div>
+    ${buildClassLegendItems(colors, breaks, ind.unit, ind.higherBetter)}`;
 }
 
 function updateLegend() {
