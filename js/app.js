@@ -1794,22 +1794,208 @@ function initLegend() {
 // ===================================================================
 
 /**
- * 랜딩 화면 초기화
- * - 같은 세션 재방문 시 즉시 숨김 (sessionStorage)
- * - CTA 클릭 → 0.6s 페이드아웃 → 대시보드 노출
+ * 랜딩 화면 초기화 (포털 v2)
+ * - 매 진입마다 표시
+ * - KPI 카운트업, 미니맵 SVG 렌더링, Bento 카드 라우팅
  */
 function initLandingScreen() {
   const screen = document.getElementById('landing-screen');
-  const ctaBtn = document.getElementById('landing-cta-btn');
-  if (!screen || !ctaBtn) return;
+  if (!screen) return;
 
-  ctaBtn.addEventListener('click', () => {
-    ctaBtn.disabled = true;
+  // 1) KPI 카운트업
+  initLandingKpiCounters();
+
+  // 2) 미니맵 SVG 렌더 (비동기 — GeoJSON fetch)
+  initLandingMinimap();
+
+  // 3) 메인 CTA + Bento 카드 클릭 라우팅
+  const closeAndAct = (action) => {
     screen.classList.add('is-exiting');
-    const hide = () => screen.classList.add('is-hidden');
+    const hide = () => {
+      screen.classList.add('is-hidden');
+      if (typeof handleLandingAction === 'function') handleLandingAction(action);
+    };
     screen.addEventListener('animationend', hide, { once: true });
-    setTimeout(hide, 700); // 안전망
+    setTimeout(hide, 650);
+  };
+
+  const mainCta = document.getElementById('landing-cta-main');
+  if (mainCta) {
+    mainCta.addEventListener('click', () => closeAndAct('map'));
+  }
+
+  // 액션이 있는 모든 버튼 (네비, Bento, 보조 CTA)
+  screen.querySelectorAll('[data-action]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const action = btn.dataset.action;
+      // 스크롤은 닫지 않음
+      if (action === 'scroll-bento') {
+        const target = document.getElementById('landing-bento');
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return;
+      }
+      // 준비중 항목은 토스트만
+      if (action === 'guide' || action === 'sources') {
+        showLandingToast('🛠️ 지표 가이드는 준비 중입니다');
+        return;
+      }
+      if (action === 'ranking') {
+        showLandingToast('🛠️ 시군 랭킹 페이지는 준비 중입니다');
+        return;
+      }
+      closeAndAct(action);
+    });
   });
+}
+
+/**
+ * KPI 카운트업 애니메이션
+ */
+function initLandingKpiCounters() {
+  const nums = document.querySelectorAll('.landing-kpi-num[data-target]');
+  nums.forEach(el => {
+    const target = parseInt(el.dataset.target, 10);
+    if (!Number.isFinite(target)) return;
+    const duration = 1100;
+    const start = performance.now();
+    el.textContent = '0';
+
+    const tick = (now) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      el.textContent = String(Math.round(target * eased));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    // 살짝 지연 (히어로 페이드업과 맞춤)
+    setTimeout(() => requestAnimationFrame(tick), 380);
+  });
+}
+
+/**
+ * 히어로 우측 미니맵 SVG 렌더 (GeoJSON 단순 outline)
+ */
+function initLandingMinimap() {
+  const svg = document.getElementById('landing-minimap');
+  const tooltip = document.getElementById('landing-minimap-tooltip');
+  if (!svg) return;
+
+  fetch('./dat/gyeonggi-sigun.geojson')
+    .then(r => r.json())
+    .then(geo => {
+      // 모든 좌표의 bbox 계산
+      let minLng = Infinity, minLat = Infinity, maxLng = -Infinity, maxLat = -Infinity;
+      const eachCoord = (coords) => {
+        coords.forEach(c => {
+          if (typeof c[0] === 'number' && typeof c[1] === 'number') {
+            minLng = Math.min(minLng, c[0]); maxLng = Math.max(maxLng, c[0]);
+            minLat = Math.min(minLat, c[1]); maxLat = Math.max(maxLat, c[1]);
+          } else {
+            eachCoord(c);
+          }
+        });
+      };
+      geo.features.forEach(f => eachCoord(f.geometry.coordinates));
+
+      const W = 400, H = 300, PAD = 12;
+      const sx = (W - PAD * 2) / (maxLng - minLng);
+      const sy = (H - PAD * 2) / (maxLat - minLat);
+      const s = Math.min(sx, sy);
+      const ox = PAD + ((W - PAD * 2) - s * (maxLng - minLng)) / 2;
+      const oy = PAD + ((H - PAD * 2) - s * (maxLat - minLat)) / 2;
+      const project = (lng, lat) => [ox + (lng - minLng) * s, oy + (maxLat - lat) * s];
+
+      const ringToPath = (ring) => {
+        return ring.map((pt, i) => {
+          const [x, y] = project(pt[0], pt[1]);
+          return (i === 0 ? 'M' : 'L') + x.toFixed(1) + ' ' + y.toFixed(1);
+        }).join(' ') + ' Z';
+      };
+
+      const NS = 'http://www.w3.org/2000/svg';
+      svg.innerHTML = '';
+
+      geo.features.forEach(f => {
+        const cityName = f.properties.name || f.properties.id || '';
+        let d = '';
+        const g = f.geometry;
+        if (g.type === 'Polygon') {
+          d = g.coordinates.map(ringToPath).join(' ');
+        } else if (g.type === 'MultiPolygon') {
+          d = g.coordinates.map(poly => poly.map(ringToPath).join(' ')).join(' ');
+        }
+        if (!d) return;
+        const path = document.createElementNS(NS, 'path');
+        path.setAttribute('d', d);
+        path.setAttribute('class', 'minimap-region');
+        path.setAttribute('data-name', cityName);
+        path.addEventListener('mousemove', (e) => {
+          if (!tooltip) return;
+          tooltip.textContent = cityName;
+          tooltip.classList.add('is-visible');
+          const rect = svg.getBoundingClientRect();
+          const wrapRect = svg.parentElement.getBoundingClientRect();
+          tooltip.style.left = (e.clientX - wrapRect.left + 10) + 'px';
+          tooltip.style.top  = (e.clientY - wrapRect.top  - 24) + 'px';
+        });
+        path.addEventListener('mouseleave', () => {
+          if (tooltip) tooltip.classList.remove('is-visible');
+        });
+        svg.appendChild(path);
+      });
+    })
+    .catch(err => console.warn('[landing minimap] GeoJSON load failed', err));
+}
+
+/**
+ * 랜딩 토스트 (준비중 안내 등)
+ */
+let _landingToastTimer = null;
+function showLandingToast(message) {
+  const toast = document.getElementById('landing-toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('is-visible');
+  clearTimeout(_landingToastTimer);
+  _landingToastTimer = setTimeout(() => {
+    toast.classList.remove('is-visible');
+  }, 2400);
+}
+
+/**
+ * 랜딩 카드 액션 라우팅 — 닫힌 후 실행
+ */
+function handleLandingAction(action) {
+  switch (action) {
+    case 'map':
+      // 그냥 대시보드 노출 (기본)
+      break;
+
+    case 'compare': {
+      // 비교 모드 활성화 시도
+      const cmpBtn = document.getElementById('add-comparison-btn');
+      if (cmpBtn) cmpBtn.click();
+      break;
+    }
+
+    case 'scenario': {
+      // 가운데 안내 + 시나리오 탭으로 이동 시도
+      // 시나리오는 시군 선택 후에만 의미가 있어 안내 표시
+      if (typeof switchTab === 'function') switchTab('scenario');
+      break;
+    }
+
+    case 'namyangju': {
+      // 남양주 자동 선택
+      if (typeof selectCity === 'function') {
+        try { selectCity('namyangju'); } catch (_) {}
+      }
+      break;
+    }
+
+    default:
+      break;
+  }
 }
 
 // ===================================================================
