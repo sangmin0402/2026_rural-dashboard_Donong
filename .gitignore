@@ -1,0 +1,11 @@
+# 수업 참고자료 (웹 배포 불필요)
+*.xlsx
+*.xls
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 에디터
+.vscode/
+*.swp

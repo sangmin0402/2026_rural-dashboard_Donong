@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>경기도 농촌다움 지표 플랫폼</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌿</text></svg>">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <!-- App CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- 로딩 오버레이 -->
+  <div id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p>데이터를 불러오는 중...</p>
+  </div>
+
+  <!-- 앱 전체 래퍼 -->
+  <div id="app">
+
+    <!-- ===== 헤더 ===== -->
+    <header id="app-header">
+      <div class="header-left">
+        <span class="header-logo">🌿</span>
+        <div class="header-title-group">
+          <span class="header-title">경기도 농촌다움 지표 플랫폼</span>
+          <span class="header-subtitle">농촌다움 종합지표 시각화 시스템</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="search-wrapper">
+          <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            id="search-input"
+            placeholder="시군 검색 (예: 여주시)"
+            autocomplete="off"
+          >
+          <div id="search-dropdown" class="search-dropdown hidden"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== 탭 네비게이션 ===== -->
+    <nav id="tab-nav">
+      <button class="tab-btn active" data-tab="overview">
+        <span class="tab-icon">📊</span>
+        <span class="tab-label">종합</span>
+      </button>
+      <button class="tab-btn" data-tab="samlter">
+        <span class="tab-icon">🏘️</span>
+        <span class="tab-label">삶터</span>
+      </button>
+      <button class="tab-btn" data-tab="ilter">
+        <span class="tab-icon">🌾</span>
+        <span class="tab-label">일터</span>
+      </button>
+      <button class="tab-btn" data-tab="shimter">
+        <span class="tab-icon">🌲</span>
+        <span class="tab-label">쉼터</span>
+      </button>
+      <button class="tab-btn" data-tab="scenario">
+        <span class="tab-icon">🔮</span>
+        <span class="tab-label">시나리오 분석</span>
+      </button>
+    </nav>
+
+    <!-- ===== 메인 레이아웃 ===== -->
+    <main id="main-layout">
+
+      <!-- 좌측: 지도 영역 -->
+      <section id="map-container">
+        <!-- 지표 선택 드롭다운 -->
+        <div id="indicator-selector-wrapper">
+          <label for="indicator-selector" class="selector-label">지도 지표</label>
+          <select id="indicator-selector">
+            <option value="total">농촌다움 종합점수</option>
+            <optgroup label="삶터 지표">
+              <option value="L1">L1 인구증가율</option>
+              <option value="L2">L2 고령화 비율</option>
+              <option value="L3">L3 생활SOC 충족지수</option>
+              <option value="L4">L4 의료접근성</option>
+              <option value="L5">L5 빈집 비율</option>
+            </optgroup>
+            <optgroup label="일터 지표">
+              <option value="W1">W1 농가소득</option>
+              <option value="W2">W2 농업 종사 비율</option>
+              <option value="W3">W3 농지 보전율</option>
+              <option value="W4">W4 귀농·귀촌 인구</option>
+            </optgroup>
+            <optgroup label="쉼터 지표">
+              <option value="R1">R1 녹지율</option>
+              <option value="R2">R2 농촌관광 방문자</option>
+              <option value="R3">R3 경관보전 면적</option>
+              <option value="R4">R4 체험농장 수</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- Leaflet 지도 -->
+        <div id="map"></div>
+
+        <!-- 지도 범례 -->
+        <div id="legend-container">
+          <div class="legend-title">농촌다움 점수</div>
+          <div class="legend-scale">
+            <div class="legend-bar"></div>
+            <div class="legend-labels">
+              <span>낮음</span>
+              <span>높음</span>
+            </div>
+          </div>
+          <div class="legend-items" id="legend-items"></div>
+        </div>
+      </section>
+
+      <!-- 우측: 상세 패널 -->
+      <aside id="detail-panel">
+
+        <!-- 시군 선택 전 안내 메시지 -->
+        <div id="no-selection-msg">
+          <div class="no-selection-inner">
+            <div class="no-selection-icon">🗺️</div>
+            <h2>시군을 선택하세요</h2>
+            <p>지도에서 시군을 클릭하거나<br>상단 검색창에서 시군명을 입력하면<br>농촌다움 지표 상세 정보를 확인할 수 있습니다.</p>
+            <div class="hint-cards">
+              <div class="hint-card">
+                <span class="hint-icon">🏘️</span>
+                <span>삶터</span>
+                <small>생활·인구·정주 여건</small>
+              </div>
+              <div class="hint-card">
+                <span class="hint-icon">🌾</span>
+                <span>일터</span>
+                <small>농업·경제 활동</small>
+              </div>
+              <div class="hint-card">
+                <span class="hint-icon">🌲</span>
+                <span>쉼터</span>
+                <small>자연·경관·휴양</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 시군 선택 후 상세 정보 (기본 hidden) -->
+        <div id="city-detail" class="hidden">
+
+          <!-- 시군 제목 -->
+          <div id="city-header">
+            <div class="city-name-row">
+              <h1 id="city-title">-</h1>
+              <span id="city-type-badge" class="city-badge">-</span>
+            </div>
+            <div class="city-meta-row">
+              <span id="city-score-label" class="city-score-label">종합점수</span>
+              <span id="city-total-score" class="city-total-score">-</span>
+              <span class="city-score-unit">점</span>
+              <span id="city-rank-badge" class="city-rank-badge">경기도 -위</span>
+            </div>
+          </div>
+
+          <!-- 레이더 차트 -->
+          <div id="radar-chart-container">
+            <div class="section-title">
+              <span class="section-icon">📡</span>
+              농촌다움 종합 분석
+            </div>
+            <canvas id="radar-canvas"></canvas>
+          </div>
+
+          <!-- 점수 카드 (삶터/일터/쉼터) -->
+          <div id="score-cards">
+            <div class="score-card score-card--samlter">
+              <div class="score-card-header">
+                <span class="score-card-icon">🏘️</span>
+                <span class="score-card-label">삶터</span>
+              </div>
+              <div class="score-card-value" id="score-samlter">-</div>
+              <div class="score-card-rank" id="rank-samlter">경기도 -위</div>
+            </div>
+            <div class="score-card score-card--ilter">
+              <div class="score-card-header">
+                <span class="score-card-icon">🌾</span>
+                <span class="score-card-label">일터</span>
+              </div>
+              <div class="score-card-value" id="score-ilter">-</div>
+              <div class="score-card-rank" id="rank-ilter">경기도 -위</div>
+            </div>
+            <div class="score-card score-card--shimter">
+              <div class="score-card-header">
+                <span class="score-card-icon">🌲</span>
+                <span class="score-card-label">쉼터</span>
+              </div>
+              <div class="score-card-value" id="score-shimter">-</div>
+              <div class="score-card-rank" id="rank-shimter">경기도 -위</div>
+            </div>
+          </div>
+
+          <!-- 지표 카드 목록 -->
+          <div id="indicator-list-section">
+            <div class="section-title">
+              <span class="section-icon">📋</span>
+              세부 지표
+              <div class="indicator-filter-tabs">
+                <button class="indicator-filter-btn active" data-filter="all">전체</button>
+                <button class="indicator-filter-btn" data-filter="samlter">삶터</button>
+                <button class="indicator-filter-btn" data-filter="ilter">일터</button>
+                <button class="indicator-filter-btn" data-filter="shimter">쉼터</button>
+              </div>
+            </div>
+            <div id="indicator-list">
+              <!-- 지표 카드들이 JS에 의해 동적으로 삽입됨 -->
+              <!-- 예시 구조 (JS에서 생성) -->
+              <div class="indicator-card" data-id="L1" data-category="samlter">
+                <div class="indicator-header">
+                  <span class="indicator-id samlter">L1</span>
+                  <span class="indicator-name">인구증가율</span>
+                  <span class="indicator-rank rank-high">경기도 3위</span>
+                </div>
+                <div class="indicator-value">1.2%</div>
+                <div class="indicator-bar">
+                  <div class="indicator-fill samlter-fill" style="width: 65%"></div>
+                </div>
+                <div class="indicator-meta">읍면 단위 | 2024년</div>
+              </div>
+
+              <div class="indicator-card" data-id="L2" data-category="samlter">
+                <div class="indicator-header">
+                  <span class="indicator-id samlter">L2</span>
+                  <span class="indicator-name">고령화 비율</span>
+                  <span class="indicator-rank rank-mid">경기도 12위</span>
+                </div>
+                <div class="indicator-value">23.4%</div>
+                <div class="indicator-bar">
+                  <div class="indicator-fill samlter-fill" style="width: 42%"></div>
+                </div>
+                <div class="indicator-meta">읍면 단위 | 2024년</div>
+              </div>
+
+              <div class="indicator-card" data-id="W1" data-category="ilter">
+                <div class="indicator-header">
+                  <span class="indicator-id ilter">W1</span>
+                  <span class="indicator-name">농가소득</span>
+                  <span class="indicator-rank rank-high">경기도 5위</span>
+                </div>
+                <div class="indicator-value">4,820만원</div>
+                <div class="indicator-bar">
+                  <div class="indicator-fill ilter-fill" style="width: 72%"></div>
+                </div>
+                <div class="indicator-meta">농가 단위 | 2023년</div>
+              </div>
+
+              <div class="indicator-card" data-id="R1" data-category="shimter">
+                <div class="indicator-header">
+                  <span class="indicator-id shimter">R1</span>
+                  <span class="indicator-name">녹지율</span>
+                  <span class="indicator-rank rank-low">경기도 18위</span>
+                </div>
+                <div class="indicator-value">38.2%</div>
+                <div class="indicator-bar">
+                  <div class="indicator-fill shimter-fill" style="width: 38%"></div>
+                </div>
+                <div class="indicator-meta">행정구역 단위 | 2023년</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 비교에 추가 버튼 -->
+          <div id="add-comparison-wrapper">
+            <button id="add-comparison-btn" class="btn-primary">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              비교에 추가
+            </button>
+          </div>
+
+        </div><!-- /#city-detail -->
+
+        <!-- 시나리오 패널 (탭 전환 시 표시) -->
+        <div id="scenario-panel" class="hidden">
+          <div class="scenario-header">
+            <h2>🔮 시나리오 분석</h2>
+            <p class="scenario-desc">정책 변수를 조정하여 농촌다움 지표 변화를 예측합니다.</p>
+          </div>
+
+          <div id="scenario-city-info">
+            <span class="scenario-city-label">분석 대상:</span>
+            <span id="scenario-city-name" class="scenario-city-name">시군을 먼저 선택하세요</span>
+          </div>
+
+          <!-- 슬라이더 그룹 -->
+          <div id="scenario-sliders">
+            <div class="slider-section-title">삶터 정책 변수</div>
+
+            <div class="scenario-slider-group">
+              <div class="slider-header">
+                <label for="slider-soc">생활SOC 시설 추가</label>
+                <span class="slider-value" id="val-soc">+0개</span>
+              </div>
+              <input type="range" id="slider-soc" class="scenario-range" min="0" max="10" value="0" step="1">
+              <div class="slider-track-labels">
+                <span>0개</span>
+                <span>+10개</span>
+              </div>
+              <p class="slider-desc">읍면당 사회기반시설 추가 시 생활SOC 충족지수 변화</p>
+            </div>
+
+            <div class="scenario-slider-group">
+              <div class="slider-header">
+                <label for="slider-medical">의료시설 접근성 개선</label>
+                <span class="slider-value" id="val-medical">0분</span>
+              </div>
+              <input type="range" id="slider-medical" class="scenario-range" min="-30" max="0" value="0" step="5">
+              <div class="slider-track-labels">
+                <span>현재</span>
+                <span>-30분</span>
+              </div>
+              <p class="slider-desc">의료기관까지 평균 이동시간 단축 효과</p>
+            </div>
+
+            <div class="slider-section-title">일터 정책 변수</div>
+
+            <div class="scenario-slider-group">
+              <div class="slider-header">
+                <label for="slider-income">농가소득 지원</label>
+                <span class="slider-value" id="val-income">+0%</span>
+              </div>
+              <input type="range" id="slider-income" class="scenario-range" min="0" max="30" value="0" step="5">
+              <div class="slider-track-labels">
+                <span>0%</span>
+                <span>+30%</span>
+              </div>
+              <p class="slider-desc">농가 직불금 및 경영 지원을 통한 소득 증가율</p>
+            </div>
+
+            <div class="scenario-slider-group">
+              <div class="slider-header">
+                <label for="slider-귀농">귀농·귀촌 유치</label>
+                <span class="slider-value" id="val-귀농">+0명</span>
+              </div>
+              <input type="range" id="slider-귀농" class="scenario-range" min="0" max="500" value="0" step="50">
+              <div class="slider-track-labels">
+                <span>0명</span>
+                <span>+500명</span>
+              </div>
+              <p class="slider-desc">귀농·귀촌 정책 강화를 통한 연간 유입 인구 증가</p>
+            </div>
+
+            <div class="slider-section-title">쉼터 정책 변수</div>
+
+            <div class="scenario-slider-group">
+              <div class="slider-header">
+                <label for="slider-tourism">농촌관광 인프라 투자</label>
+                <span class="slider-value" id="val-tourism">+0억원</span>
+              </div>
+              <input type="range" id="slider-tourism" class="scenario-range" min="0" max="100" value="0" step="10">
+              <div class="slider-track-labels">
+                <span>0억원</span>
+                <span>+100억원</span>
+              </div>
+              <p class="slider-desc">관광 인프라 투자 시 방문자 수 및 관광 소득 변화</p>
+            </div>
+          </div>
+
+          <!-- Before / After 레이더 차트 -->
+          <div class="scenario-charts">
+            <div class="scenario-chart-box">
+              <div class="scenario-chart-label before-label">현재</div>
+              <canvas id="scenario-before"></canvas>
+            </div>
+            <div class="scenario-arrow">→</div>
+            <div class="scenario-chart-box">
+              <div class="scenario-chart-label after-label">시나리오 적용 후</div>
+              <canvas id="scenario-after"></canvas>
+            </div>
+          </div>
+
+          <!-- 시나리오 변화 요약 -->
+          <div id="scenario-summary">
+            <div class="scenario-summary-title">예측 변화 요약</div>
+            <div class="scenario-delta-cards">
+              <div class="delta-card delta-samlter">
+                <span class="delta-label">삶터</span>
+                <span class="delta-value" id="delta-samlter">+0.0점</span>
+              </div>
+              <div class="delta-card delta-ilter">
+                <span class="delta-label">일터</span>
+                <span class="delta-value" id="delta-ilter">+0.0점</span>
+              </div>
+              <div class="delta-card delta-shimter">
+                <span class="delta-label">쉼터</span>
+                <span class="delta-value" id="delta-shimter">+0.0점</span>
+              </div>
+              <div class="delta-card delta-total">
+                <span class="delta-label">종합</span>
+                <span class="delta-value" id="delta-total">+0.0점</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="scenario-actions">
+            <button id="scenario-reset-btn" class="btn-secondary">초기화</button>
+            <button id="scenario-apply-btn" class="btn-primary">시나리오 적용</button>
+          </div>
+        </div><!-- /#scenario-panel -->
+
+      </aside><!-- /#detail-panel -->
+
+    </main><!-- /#main-layout -->
+
+    <!-- ===== 비교 섹션 (하단 collapsible) ===== -->
+    <section id="comparison-section">
+      <div id="comparison-header" class="comparison-header">
+        <div class="comparison-header-left">
+          <span class="comparison-icon">⚖️</span>
+          <span class="comparison-title">시군 비교</span>
+          <div id="comparison-cities">
+            <!-- 비교 시군 태그들이 JS에 의해 동적으로 추가됨 -->
+            <span class="comparison-empty-msg">시군을 선택하여 비교에 추가하세요 (최대 5개)</span>
+          </div>
+          <button id="add-city-btn" class="btn-add-city" title="비교 시군 추가">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            추가
+          </button>
+        </div>
+        <button id="comparison-toggle-btn" class="comparison-toggle-btn" aria-expanded="false" aria-label="비교 패널 열기/닫기">
+          <svg class="toggle-arrow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="18 15 12 9 6 15"/>
+          </svg>
+        </button>
+      </div>
+
+      <div id="comparison-body" class="comparison-body hidden">
+        <div class="comparison-controls">
+          <label for="comparison-indicator">비교 지표:</label>
+          <select id="comparison-indicator">
+            <option value="total">농촌다움 종합점수</option>
+            <optgroup label="삶터 지표">
+              <option value="L1">L1 인구증가율</option>
+              <option value="L2">L2 고령화 비율</option>
+              <option value="L3">L3 생활SOC 충족지수</option>
+              <option value="L4">L4 의료접근성</option>
+              <option value="L5">L5 빈집 비율</option>
+            </optgroup>
+            <optgroup label="일터 지표">
+              <option value="W1">W1 농가소득</option>
+              <option value="W2">W2 농업 종사 비율</option>
+              <option value="W3">W3 농지 보전율</option>
+              <option value="W4">W4 귀농·귀촌 인구</option>
+            </optgroup>
+            <optgroup label="쉼터 지표">
+              <option value="R1">R1 녹지율</option>
+              <option value="R2">R2 농촌관광 방문자</option>
+              <option value="R3">R3 경관보전 면적</option>
+              <option value="R4">R4 체험농장 수</option>
+            </optgroup>
+          </select>
+        </div>
+        <div id="comparison-chart-container">
+          <canvas id="comparison-canvas"></canvas>
+          <div id="comparison-empty" class="comparison-empty hidden">
+            <p>비교할 시군을 2개 이상 선택하세요.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /#app -->
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- App JS -->
+  <script src="js/app.js" defer></script>
+
+</body>
+</html>
