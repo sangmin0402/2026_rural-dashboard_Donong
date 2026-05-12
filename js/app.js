@@ -687,36 +687,32 @@ async function initGeoJSONLayer() {
  * — 대형 외부 사각형 + 시군 폴리곤을 홀(hole)로 넣어 evenodd fill 로 외부만 어둡게
  */
 function createTargetMask(features) {
-  // 세계를 덮는 외부 링 [lng, lat]
-  const worldRing = [
-    [-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]
+  // L.polygon 직접 사용 — Leaflet [lat, lng] 형식으로 hole 네이티브 지원
+  // GeoJSON은 [lng, lat] 순서이므로 변환 필요
+  const toLatLng = ring => ring.map(([lng, lat]) => [lat, lng]);
+
+  // 한국 전역을 넉넉히 덮는 외부 사각형 [lat, lng]
+  const worldLatLng = [
+    [38.5, 125.5], [38.5, 130.0], [33.0, 130.0], [33.0, 125.5]
   ];
 
-  // 각 시군 폴리곤의 외부 링을 홀로 추가
-  const rings = [worldRing];
+  // 각 시군 폴리곤의 외부 링을 hole로 변환
+  const holes = [];
   features.forEach(f => {
     const g = f.geometry;
     if (g.type === 'Polygon') {
-      rings.push(g.coordinates[0]);
+      holes.push(toLatLng(g.coordinates[0]));
     } else if (g.type === 'MultiPolygon') {
-      g.coordinates.forEach(poly => rings.push(poly[0]));
+      g.coordinates.forEach(poly => holes.push(toLatLng(poly[0])));
     }
   });
 
-  const maskFeature = {
-    type: 'Feature',
-    properties: {},
-    geometry: { type: 'Polygon', coordinates: rings },
-  };
-
-  return L.geoJSON(maskFeature, {
-    style: {
-      fillColor: '#0D1E10',   // 진한 다크그린
-      fillOpacity: 0.32,
-      color: '#2D5F3F',       // 대상지 외곽선 (테마 그린)
-      weight: 2.5,
-      opacity: 0.85,
-    },
+  return L.polygon([worldLatLng, ...holes], {
+    fillColor: '#0D1E10',   // 진한 다크그린
+    fillOpacity: 0.30,
+    color: '#2D5F3F',       // 대상지 외곽선 (테마 그린)
+    weight: 2.5,
+    opacity: 0.85,
     interactive: false,
   });
 }

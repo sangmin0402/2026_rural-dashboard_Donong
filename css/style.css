@@ -4050,11 +4050,6 @@ a:focus-visible {
 /* 미니맵 폴리곤 — 클릭 가능 커서 */
 .minimap-region { cursor: pointer; }
 
-/* 대상지 마스크 — evenodd fill 명시 (외부만 음영, 내부 투명) */
-.leaflet-overlay-pane svg path[fill="#0D1E10"],
-.leaflet-overlay-pane svg path[fill="#0d1e10"] {
-  fill-rule: evenodd !important;
-}
 
 /* ============================================================================
    26. 지도 위 시군명 라벨 (DivIcon, 줌 연동)
