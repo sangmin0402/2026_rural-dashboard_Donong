@@ -4101,3 +4101,39 @@ a:focus-visible {
   .city-panel-name { font-size: 19px; }
   .city-panel-score-val { font-size: 19px; }
 }
+
+/* ============================================================================
+   [임시] 베이스맵 비교 스위처 UI (basemap-compare 브랜치 전용)
+   ============================================================================ */
+.basemap-switcher {
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+  font-family: 'Noto Sans KR', sans-serif;
+  min-width: 220px;
+}
+.basemap-switcher-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2D5F3F;
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+.basemap-switcher select {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 13px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: #fff;
+  color: #222;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+}
+.basemap-switcher select:focus {
+  outline: none;
+  border-color: #2D5F3F;
+}

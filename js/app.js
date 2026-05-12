@@ -493,6 +493,100 @@ let labelGroup = null;      // 시군명 라벨 레이어
 let outlineLayer = null;    // 대상지(15개 시군) 합쳐진 외곽선 효과 레이어
 const DONG_ZOOM_THRESHOLD = 11;
 
+// ===================================================================
+// === 베이스맵 비교 (basemap-compare 브랜치 전용) ===
+// ===================================================================
+const BASEMAPS = {
+  voyager: {
+    name: 'A. Voyager (현재)',
+    layers: [{ url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', sub: 'abcd' }],
+    attr: '© OSM, © CARTO',
+  },
+  positron: {
+    name: 'B. Positron (미니멀 회색조)',
+    layers: [{ url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', sub: 'abcd' }],
+    attr: '© OSM, © CARTO',
+  },
+  positronLabeled: {
+    name: 'C. Positron + 라벨 위쪽',
+    layers: [
+      { url: 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', sub: 'abcd' },
+      { url: 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png', sub: 'abcd', isOverlay: true },
+    ],
+    attr: '© OSM, © CARTO',
+  },
+  dark: {
+    name: 'D. Dark Matter (다크)',
+    layers: [{ url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', sub: 'abcd' }],
+    attr: '© OSM, © CARTO',
+  },
+  stadia: {
+    name: 'E. Stadia Alidade Smooth',
+    layers: [{ url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png', sub: '' }],
+    attr: '© Stadia Maps, © OSM',
+  },
+  toner: {
+    name: 'F. Stamen Toner Lite (흑백)',
+    layers: [{ url: 'https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png', sub: '' }],
+    attr: '© Stamen, © OSM',
+  },
+  esri: {
+    name: 'G. Esri Light Gray Canvas',
+    layers: [{ url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', sub: '' }],
+    attr: 'Tiles © Esri',
+  },
+};
+
+let currentBasemapLayers = [];
+
+function setBasemap(key) {
+  const cfg = BASEMAPS[key];
+  if (!cfg) return;
+  // 기존 베이스맵 제거
+  currentBasemapLayers.forEach(l => map.removeLayer(l));
+  currentBasemapLayers = [];
+  // 새 베이스맵 추가
+  cfg.layers.forEach(layer => {
+    const opts = { attribution: cfg.attr, maxZoom: 19 };
+    if (layer.sub) opts.subdomains = layer.sub;
+    const tile = L.tileLayer(layer.url, opts);
+    tile.addTo(map);
+    if (!layer.isOverlay) tile.bringToBack();
+    currentBasemapLayers.push(tile);
+  });
+  try { localStorage.setItem('basemap_choice', key); } catch (e) {}
+}
+
+function initBasemapSwitcher() {
+  const saved = (() => { try { return localStorage.getItem('basemap_choice'); } catch (e) { return null; } })();
+  const initialKey = saved && BASEMAPS[saved] ? saved : 'voyager';
+  setBasemap(initialKey);
+
+  // 우상단 토글 UI 생성
+  const ctrl = L.control({ position: 'topright' });
+  ctrl.onAdd = function () {
+    const div = L.DomUtil.create('div', 'basemap-switcher');
+    div.innerHTML = `
+      <div class="basemap-switcher-label">🗺️ 베이스맵 비교</div>
+      <select id="basemap-select"></select>
+    `;
+    L.DomEvent.disableClickPropagation(div);
+    L.DomEvent.disableScrollPropagation(div);
+    return div;
+  };
+  ctrl.addTo(map);
+
+  const sel = document.getElementById('basemap-select');
+  Object.entries(BASEMAPS).forEach(([key, cfg]) => {
+    const opt = document.createElement('option');
+    opt.value = key;
+    opt.textContent = cfg.name;
+    if (key === initialKey) opt.selected = true;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', (e) => setBasemap(e.target.value));
+}
+
 /**
  * Leaflet 지도 초기화 및 시군 마커 생성
  */
@@ -512,12 +606,9 @@ function initMap() {
     maxBoundsViscosity: 0.85,         // 경계 저항감 (0=없음, 1=완전 고정)
   }).setView([37.55, 127.2], 9);
 
-  // CartoDB Voyager — 한글 라벨 + 밝고 깔끔한 지도 (대시보드에 적합)
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, © <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19,
-  }).addTo(map);
+  // ── 베이스맵 비교 모드 ──
+  // 7개 옵션 + 토글 UI. 우상단 드롭다운에서 실시간 전환.
+  initBasemapSwitcher();
 
   // 레이아웃 완료 후 타일 크기 재계산 (숨겨진 컨테이너에서 초기화된 경우 대비)
   setTimeout(() => {
