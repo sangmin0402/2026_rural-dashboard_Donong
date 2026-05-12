@@ -16,7 +16,7 @@
 정책 실무자, 교수, 수업 팀원 (지역활성화시스템론 수업 프로젝트)
 
 **GitHub Pages URL**  
-`https://sangmin0402.github.io/2026_rural-dashboard_Donong/Web/`
+`https://sangmin0402.github.io/2026_rural-dashboard_Donong/`
 
 ---
 

@@ -2,7 +2,7 @@
 
 > 경기도 15개 농촌 시군의 삶터·일터·쉼터 지표를 비교·분석하는 인터랙티브 웹 대시보드
 
-🔗 **배포 URL**: https://sangmin0402.github.io/2026_rural-dashboard_Donong/Web/
+🔗 **배포 URL**: https://sangmin0402.github.io/2026_rural-dashboard_Donong/
 
 ---
 
