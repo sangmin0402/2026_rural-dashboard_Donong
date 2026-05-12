@@ -520,22 +520,30 @@ const BASEMAPS = {
     layers: [{ url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', sub: 'abcd' }],
     attr: '© OSM, © CARTO',
   },
-  stadia: {
-    name: 'E. Stadia Alidade Smooth',
-    layers: [{ url: 'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png', sub: '' }],
-    attr: '© Stadia Maps, © OSM',
+  osm: {
+    name: 'E. OpenStreetMap 기본',
+    layers: [{ url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', sub: 'abc' }],
+    attr: '© OpenStreetMap contributors',
   },
-  toner: {
-    name: 'F. Stamen Toner Lite (흑백)',
-    layers: [{ url: 'https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png', sub: '' }],
-    attr: '© Stamen, © OSM',
+  esriTopo: {
+    name: 'F. Esri World Topographic',
+    layers: [{ url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', sub: '' }],
+    attr: 'Tiles © Esri',
   },
   esri: {
     name: 'G. Esri Light Gray Canvas',
     layers: [{ url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', sub: '' }],
     attr: 'Tiles © Esri',
   },
+  esriSat: {
+    name: 'H. Esri 위성 (Imagery)',
+    layers: [{ url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', sub: '' }],
+    attr: 'Tiles © Esri',
+  },
 };
+
+// 다크 테마 베이스맵 키 — 선택 시 #map 배경도 어둡게
+const DARK_BASEMAPS = new Set(['dark', 'esriSat']);
 
 let currentBasemapLayers = [];
 
@@ -554,6 +562,15 @@ function setBasemap(key) {
     if (!layer.isOverlay) tile.bringToBack();
     currentBasemapLayers.push(tile);
   });
+  // 다크 베이스맵일 때 #map 배경도 어둡게 (타일 간격으로 흰 줄 비치는 현상 방지)
+  const mapEl = document.getElementById('map');
+  if (mapEl) {
+    if (DARK_BASEMAPS.has(key)) {
+      mapEl.style.background = '#0d0d0d';
+    } else {
+      mapEl.style.background = '';   // CSS 기본값 (#EEF2EA) 복귀
+    }
+  }
   try { localStorage.setItem('basemap_choice', key); } catch (e) {}
 }
 
