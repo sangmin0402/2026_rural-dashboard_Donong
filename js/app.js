@@ -1802,13 +1802,23 @@ function initLandingScreen() {
   const screen = document.getElementById('landing-screen');
   if (!screen) return;
 
-  // ── History API: 랜딩 = 첫 번째 히스토리 엔트리 ──
-  // replaceState로 현재 항목에 'landing' 태그 부착
-  history.replaceState({ page: 'landing' }, '');
+  // ── URL 해시 기반 내비게이션 ──
+  // 랜딩 = #  (해시 없음)
+  // 대시보드 = #dashboard
+  // → 브라우저 뒤로가기/앞으로가기 자동 활성화
 
-  // 브라우저 뒤로가기 → 랜딩 화면 복귀
-  window.addEventListener('popstate', (e) => {
-    if (e.state && e.state.page === 'landing') {
+  // 이미 #dashboard 해시로 접근한 경우 랜딩 스킵
+  if (location.hash === '#dashboard') {
+    screen.classList.add('is-hidden');
+    return;
+  }
+
+  // 현재 해시를 빈 값으로 정규화 (북마크 등 대비)
+  history.replaceState(null, '', location.pathname + location.search);
+
+  // 해시 변경 감지 → #이 비면 랜딩 복귀
+  window.addEventListener('hashchange', () => {
+    if (!location.hash || location.hash === '#') {
       returnToLanding();
     }
   });
@@ -1821,8 +1831,8 @@ function initLandingScreen() {
 
   // 3) 메인 CTA + Bento 카드 클릭 라우팅
   const closeAndAct = (action) => {
-    // 대시보드 진입 시 히스토리에 새 항목 추가 → 뒤로가기 활성화
-    history.pushState({ page: 'dashboard' }, '');
+    // #dashboard 해시 추가 → 뒤로가기 버튼 즉시 활성화
+    location.hash = '#dashboard';
     screen.classList.add('is-exiting');
     const hide = () => {
       screen.classList.add('is-hidden');
@@ -2073,7 +2083,7 @@ function showCityPanel(cityId) {
   if (gotoBtn) {
     gotoBtn.onclick = () => {
       hideCityPanel();
-      history.pushState({ page: 'dashboard' }, '');
+      location.hash = '#dashboard';
       const screen = document.getElementById('landing-screen');
       if (screen) {
         screen.classList.add('is-exiting');
@@ -2161,7 +2171,7 @@ function handleLandingAction(action) {
 document.addEventListener('DOMContentLoaded', () => {
   initLandingScreen(); // 랜딩 화면 — 가장 먼저 실행
 
-  // 헤더 로고 클릭 → 뒤로가기 (History API 통해 랜딩 복귀)
+  // 헤더 로고 클릭 → 랜딩 복귀 (해시 제거 = 뒤로가기와 동일 효과)
   const headerBrand = document.getElementById('header-brand');
   if (headerBrand) {
     headerBrand.addEventListener('click', () => history.back());
