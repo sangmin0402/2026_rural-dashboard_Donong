@@ -4050,6 +4050,50 @@ a:focus-visible {
 /* 미니맵 폴리곤 — 클릭 가능 커서 */
 .minimap-region { cursor: pointer; }
 
+/* ============================================================================
+   26. 지도 위 시군명 라벨 (DivIcon, 줌 연동)
+   ============================================================================ */
+
+/* Leaflet 마커 컨테이너 초기화 */
+.city-label-marker {
+  background: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 라벨 텍스트 */
+.city-label-text {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #fff;
+  pointer-events: none;
+  user-select: none;
+  /* 가독성을 위한 다층 텍스트 쉐도우 */
+  text-shadow:
+    0 0 6px rgba(0, 0, 0, 0.95),
+    0 0 3px rgba(0, 0, 0, 0.9),
+    0 1px 3px rgba(0, 0, 0, 0.85),
+    -1px  0   0 rgba(0, 0, 0, 0.6),
+     1px  0   0 rgba(0, 0, 0, 0.6),
+     0   -1px 0 rgba(0, 0, 0, 0.6),
+     0    1px 0 rgba(0, 0, 0, 0.6);
+  transition: font-size 0.18s ease, opacity 0.18s ease;
+}
+
+/* 줌별 크기 (map 컨테이너에 map-zoom-N 클래스 부착) */
+#map .city-label-text             { font-size: 10px; opacity: 0.88; }
+#map.map-zoom-7 .city-label-text  { font-size:  7px; opacity: 0.55; }
+#map.map-zoom-8 .city-label-text  { font-size:  9px; opacity: 0.72; }
+#map.map-zoom-9 .city-label-text  { font-size: 11px; opacity: 0.88; }
+#map.map-zoom-10 .city-label-text { font-size: 12px; opacity: 0.92; }
+#map.map-zoom-11 .city-label-text { font-size: 13px; opacity: 1;    }
+#map.map-zoom-12 .city-label-text { font-size: 14px; opacity: 1;    }
+#map.map-zoom-13 .city-label-text { font-size: 15px; opacity: 1;    }
+
 /* ---- 모바일 ---- */
 @media (max-width: 600px) {
   .city-panel-card { padding: 22px 18px 20px; max-height: 88vh; }

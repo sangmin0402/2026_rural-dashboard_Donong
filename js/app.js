@@ -489,6 +489,7 @@ const markers = {};
 let geoJsonLayer = null;
 const geoJsonFeatures = {}; // cityId → GeoJSON layer reference
 let dongLayer = null;       // 행정동 경계 레이어 (줌 11+ 표시)
+let labelGroup = null;      // 시군명 라벨 레이어
 const DONG_ZOOM_THRESHOLD = 11;
 
 /**
@@ -553,8 +554,11 @@ function initMap() {
   // 행정동 경계 레이어 비동기 로드
   initDongLayer();
 
-  // 줌 변경 시 행정동 가시성 업데이트
-  map.on('zoomend', updateDongVisibility);
+  // 줌 변경 시 행정동 가시성 + 라벨 크기 업데이트
+  map.on('zoomend', () => {
+    updateDongVisibility();
+    updateCityLabelSize();
+  });
 }
 
 /**
@@ -665,10 +669,53 @@ async function initGeoJSONLayer() {
 
     map.fitBounds(geoJsonLayer.getBounds(), { padding: [20, 20] });
     updateMapColors();
+    initCityLabels(); // 폴리곤 로드 완료 후 라벨 생성
 
   } catch (err) {
     console.warn('[GeoJSON] 폴리곤 로드 실패 — CircleMarker 유지:', err.message);
   }
+}
+
+/**
+ * 시군명 라벨 레이어 생성 (DivIcon, 폴리곤과 독립적으로 동작)
+ */
+function initCityLabels() {
+  if (!map) return;
+  if (labelGroup) { map.removeLayer(labelGroup); }
+
+  labelGroup = L.layerGroup().addTo(map);
+
+  Object.entries(geoJsonFeatures).forEach(([cityId, layer]) => {
+    const cityName = CITIES[cityId] ? CITIES[cityId].name : cityId;
+    const center = layer.getBounds().getCenter();
+
+    const marker = L.marker(center, {
+      icon: L.divIcon({
+        className: 'city-label-marker',
+        html: `<span class="city-label-text">${cityName}</span>`,
+        iconSize:   [0, 0],
+        iconAnchor: [0, 0],
+      }),
+      interactive: false,
+      zIndexOffset: -500,
+    });
+
+    labelGroup.addLayer(marker);
+  });
+
+  updateCityLabelSize();
+}
+
+/**
+ * 줌 레벨에 따라 지도 컨테이너 클래스 변경 → CSS로 라벨 크기 제어
+ */
+function updateCityLabelSize() {
+  const container = document.getElementById('map');
+  if (!container || !map) return;
+  const z = Math.round(map.getZoom());
+  container.className = container.className
+    .replace(/\bmap-zoom-\d+\b/g, '').trim();
+  container.classList.add('map-zoom-' + Math.min(13, Math.max(7, z)));
 }
 
 /**
@@ -1802,26 +1849,29 @@ function initLandingScreen() {
   const screen = document.getElementById('landing-screen');
   if (!screen) return;
 
-  // ── URL 해시 기반 내비게이션 ──
-  // 랜딩 = #  (해시 없음)
-  // 대시보드 = #dashboard
-  // → 브라우저 뒤로가기/앞으로가기 자동 활성화
+  // ── 브라우저 뒤로가기 지원 (History API) ──
+  // 전략: 대시보드 진입 시 history.pushState(#dashboard) → 뒤로가기 활성화
+  //       popstate / hashchange 둘 다 감지 → 최대 호환성
 
-  // 이미 #dashboard 해시로 접근한 경우 랜딩 스킵
+  // #dashboard 해시로 직접 접근 시 랜딩 스킵
   if (location.hash === '#dashboard') {
     screen.classList.add('is-hidden');
     return;
   }
 
-  // 현재 해시를 빈 값으로 정규화 (북마크 등 대비)
-  history.replaceState(null, '', location.pathname + location.search);
+  // 잔여 해시 정리 (새로고침 등)
+  if (location.hash && location.hash !== '#') {
+    history.replaceState(null, '', location.href.split('#')[0]);
+  }
 
-  // 해시 변경 감지 → #이 비면 랜딩 복귀
-  window.addEventListener('hashchange', () => {
+  // 뒤로가기 감지 (popstate + hashchange 병행)
+  const onNavBack = () => {
     if (!location.hash || location.hash === '#') {
       returnToLanding();
     }
-  });
+  };
+  window.addEventListener('popstate',   onNavBack);
+  window.addEventListener('hashchange', onNavBack);
 
   // 1) KPI 카운트업
   initLandingKpiCounters();
@@ -1831,8 +1881,9 @@ function initLandingScreen() {
 
   // 3) 메인 CTA + Bento 카드 클릭 라우팅
   const closeAndAct = (action) => {
-    // #dashboard 해시 추가 → 뒤로가기 버튼 즉시 활성화
-    location.hash = '#dashboard';
+    // #dashboard pushState → 뒤로가기 버튼 즉시 활성화 (새 탭 포함)
+    const base = location.href.split('#')[0];
+    history.pushState({ page: 'dashboard' }, '', base + '#dashboard');
     screen.classList.add('is-exiting');
     const hide = () => {
       screen.classList.add('is-hidden');
@@ -2083,7 +2134,8 @@ function showCityPanel(cityId) {
   if (gotoBtn) {
     gotoBtn.onclick = () => {
       hideCityPanel();
-      location.hash = '#dashboard';
+      const base = location.href.split('#')[0];
+      history.pushState({ page: 'dashboard' }, '', base + '#dashboard');
       const screen = document.getElementById('landing-screen');
       if (screen) {
         screen.classList.add('is-exiting');
