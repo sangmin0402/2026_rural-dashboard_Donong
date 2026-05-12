@@ -641,20 +641,18 @@ async function initGeoJSONLayer() {
     // CircleMarker 제거
     Object.values(markers).forEach(m => map.removeLayer(m));
 
-    // ── 대상지 외부 음영 마스크 (먼저 추가 → geoJsonLayer 아래 렌더) ──
-    if (maskLayer) map.removeLayer(maskLayer);
-    maskLayer = createTargetMask(features);
-    maskLayer.addTo(map);
+    // 음영 마스크 제거 — 시군 폴리곤 자체 강조로 대체
+    if (maskLayer) { map.removeLayer(maskLayer); maskLayer = null; }
 
     geoJsonLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
       style: (feature) => {
         const cityId = feature.properties.id;
         return {
           fillColor: cityId ? getCityColor(cityId) : '#ccc',
-          color: '#fff',
-          weight: 2,          // 경계선 강화
+          color: '#ffffff',   // 흰색 경계선
+          weight: 2.5,        // 두께 강화
           opacity: 1,
-          fillOpacity: 0.82,
+          fillOpacity: 0.92,  // 채도/대비 강화 → 배경 위에서 자연스럽게 도드라짐
         };
       },
       onEachFeature: (feature, layer) => {
@@ -675,7 +673,7 @@ async function initGeoJSONLayer() {
         layer.on('mouseout', function () {
           if (state.selectedCity !== cityId) {
             const color = getCityColor(cityId);
-            this.setStyle({ fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.82 });
+            this.setStyle({ fillColor: color, color: '#ffffff', weight: 2.5, fillOpacity: 0.92 });
           }
           this.closeTooltip();
         });
