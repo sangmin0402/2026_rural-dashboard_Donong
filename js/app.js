@@ -664,7 +664,7 @@ async function initGeoJSONLayer() {
         return {
           fillColor: cityId ? getCityColor(cityId) : '#ccc',
           color: '#ffffff',   // 흰색 경계선
-          weight: 2.5,        // 두께 강화
+          weight: 1.2,        // 시군 간 경계는 얇게 (외곽선이 강조됨)
           opacity: 1,
           fillOpacity: 0.92,  // 채도/대비 강화 → 배경 위에서 자연스럽게 도드라짐
         };
@@ -687,7 +687,7 @@ async function initGeoJSONLayer() {
         layer.on('mouseout', function () {
           if (state.selectedCity !== cityId) {
             const color = getCityColor(cityId);
-            this.setStyle({ fillColor: color, color: '#ffffff', weight: 2.5, fillOpacity: 0.92 });
+            this.setStyle({ fillColor: color, color: '#ffffff', weight: 1.2, fillOpacity: 0.92 });
           }
           this.closeTooltip();
         });
