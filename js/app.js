@@ -497,10 +497,19 @@ const DONG_ZOOM_THRESHOLD = 11;
  * Leaflet 지도 초기화 및 시군 마커 생성
  */
 function initMap() {
+  // 경기도 주변 영역으로 줌/패닝 제한
+  const GYEONGGI_BOUNDS = L.latLngBounds(
+    L.latLng(36.8, 125.8),   // 남서 (충남 경계 부근)
+    L.latLng(38.5, 128.5)    // 북동 (강원 경계 부근)
+  );
+
   map = L.map('map', {
     zoomControl: true,
     attributionControl: true,
     preferCanvas: false,
+    minZoom: 8,                       // 경기도 전체가 보이는 최소 줌
+    maxBounds: GYEONGGI_BOUNDS,       // 패닝 영역 제한
+    maxBoundsViscosity: 0.85,         // 경계 저항감 (0=없음, 1=완전 고정)
   }).setView([37.55, 127.2], 9);
 
   // CartoDB Voyager — 한글 라벨 + 밝고 깔끔한 지도 (대시보드에 적합)
