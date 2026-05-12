@@ -490,7 +490,6 @@ let geoJsonLayer = null;
 const geoJsonFeatures = {}; // cityId → GeoJSON layer reference
 let dongLayer = null;       // 행정동 경계 레이어 (줌 11+ 표시)
 let labelGroup = null;      // 시군명 라벨 레이어
-let maskLayer  = null;      // 대상지 외부 음영 마스크
 const DONG_ZOOM_THRESHOLD = 11;
 
 /**
@@ -641,9 +640,6 @@ async function initGeoJSONLayer() {
     // CircleMarker 제거
     Object.values(markers).forEach(m => map.removeLayer(m));
 
-    // 음영 마스크 제거 — 시군 폴리곤 자체 강조로 대체
-    if (maskLayer) { map.removeLayer(maskLayer); maskLayer = null; }
-
     geoJsonLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
       style: (feature) => {
         const cityId = feature.properties.id;
@@ -687,39 +683,6 @@ async function initGeoJSONLayer() {
   } catch (err) {
     console.warn('[GeoJSON] 폴리곤 로드 실패 — CircleMarker 유지:', err.message);
   }
-}
-
-/**
- * 대상지(15개 시군) 외부 음영 마스크 생성
- * — 지구 전체를 덮는 외부 링 + 시군 폴리곤을 홀(hole)로 넣어 대상지 밖만 어둡게
- * — 외부 링을 지구 크기로 잡아 경계선이 화면에 절대 보이지 않도록 함
- */
-function createTargetMask(features) {
-  // L.polygon [lat, lng] 형식. GeoJSON [lng, lat] → 변환
-  const toLatLng = ring => ring.map(([lng, lat]) => [lat, lng]);
-
-  // 지구 전체를 덮는 외부 링 — 어떤 줌 수준에서도 경계선이 화면 밖에 있음
-  const worldLatLng = [
-    [85, -179], [-85, -179], [-85, 179], [85, 179]
-  ];
-
-  // 각 시군 폴리곤의 외부 링을 hole로 변환
-  const holes = [];
-  features.forEach(f => {
-    const g = f.geometry;
-    if (g.type === 'Polygon') {
-      holes.push(toLatLng(g.coordinates[0]));
-    } else if (g.type === 'MultiPolygon') {
-      g.coordinates.forEach(poly => holes.push(toLatLng(poly[0])));
-    }
-  });
-
-  return L.polygon([worldLatLng, ...holes], {
-    fillColor: '#1a2e1a',   // 중립적인 어두운 색
-    fillOpacity: 0.18,      // 은은한 vignette — 너무 강하지 않게
-    stroke: false,          // 외부 사각형 경계선 완전히 숨김
-    interactive: false,
-  });
 }
 
 /**
