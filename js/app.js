@@ -490,6 +490,7 @@ let geoJsonLayer = null;
 const geoJsonFeatures = {}; // cityId → GeoJSON layer reference
 let dongLayer = null;       // 행정동 경계 레이어 (줌 11+ 표시)
 let labelGroup = null;      // 시군명 라벨 레이어
+let maskLayer  = null;      // 대상지 외부 음영 마스크
 const DONG_ZOOM_THRESHOLD = 11;
 
 /**
@@ -631,15 +632,20 @@ async function initGeoJSONLayer() {
     // CircleMarker 제거
     Object.values(markers).forEach(m => map.removeLayer(m));
 
+    // ── 대상지 외부 음영 마스크 (먼저 추가 → geoJsonLayer 아래 렌더) ──
+    if (maskLayer) map.removeLayer(maskLayer);
+    maskLayer = createTargetMask(features);
+    maskLayer.addTo(map);
+
     geoJsonLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
       style: (feature) => {
         const cityId = feature.properties.id;
         return {
           fillColor: cityId ? getCityColor(cityId) : '#ccc',
           color: '#fff',
-          weight: 1.5,
-          opacity: 0.9,
-          fillOpacity: 0.78,
+          weight: 2,          // 경계선 강화
+          opacity: 1,
+          fillOpacity: 0.82,
         };
       },
       onEachFeature: (feature, layer) => {
@@ -660,7 +666,7 @@ async function initGeoJSONLayer() {
         layer.on('mouseout', function () {
           if (state.selectedCity !== cityId) {
             const color = getCityColor(cityId);
-            this.setStyle({ fillColor: color, color: '#fff', weight: 1.5, fillOpacity: 0.78 });
+            this.setStyle({ fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.82 });
           }
           this.closeTooltip();
         });
@@ -677,6 +683,92 @@ async function initGeoJSONLayer() {
 }
 
 /**
+ * 대상지(15개 시군) 외부 음영 마스크 생성
+ * — 대형 외부 사각형 + 시군 폴리곤을 홀(hole)로 넣어 evenodd fill 로 외부만 어둡게
+ */
+function createTargetMask(features) {
+  // 세계를 덮는 외부 링 [lng, lat]
+  const worldRing = [
+    [-180, -85], [180, -85], [180, 85], [-180, 85], [-180, -85]
+  ];
+
+  // 각 시군 폴리곤의 외부 링을 홀로 추가
+  const rings = [worldRing];
+  features.forEach(f => {
+    const g = f.geometry;
+    if (g.type === 'Polygon') {
+      rings.push(g.coordinates[0]);
+    } else if (g.type === 'MultiPolygon') {
+      g.coordinates.forEach(poly => rings.push(poly[0]));
+    }
+  });
+
+  const maskFeature = {
+    type: 'Feature',
+    properties: {},
+    geometry: { type: 'Polygon', coordinates: rings },
+  };
+
+  return L.geoJSON(maskFeature, {
+    style: {
+      fillColor: '#0D1E10',   // 진한 다크그린
+      fillOpacity: 0.32,
+      color: '#2D5F3F',       // 대상지 외곽선 (테마 그린)
+      weight: 2.5,
+      opacity: 0.85,
+    },
+    interactive: false,
+  });
+}
+
+/**
+ * 폴리곤 시각적 무게중심 계산 (Shoelace 공식)
+ * getBounds().getCenter() 보다 정확한 폴리곤 내부 중심점 반환
+ */
+function computePolygonCentroid(layer) {
+  try {
+    const geom = layer.feature && layer.feature.geometry;
+    if (!geom) return layer.getBounds().getCenter();
+
+    let ring = null;
+
+    if (geom.type === 'Polygon') {
+      ring = geom.coordinates[0];
+    } else if (geom.type === 'MultiPolygon') {
+      // 면적이 가장 큰 폴리곤 선택
+      let maxArea = 0;
+      geom.coordinates.forEach(poly => {
+        const r = poly[0];
+        const lngs = r.map(c => c[0]);
+        const lats  = r.map(c => c[1]);
+        const bbox  = (Math.max(...lngs) - Math.min(...lngs)) *
+                      (Math.max(...lats) - Math.min(...lats));
+        if (bbox > maxArea) { maxArea = bbox; ring = r; }
+      });
+    }
+
+    if (!ring || ring.length < 3) return layer.getBounds().getCenter();
+
+    // Shoelace 무게중심 (GeoJSON 좌표: [lng, lat])
+    let A = 0, cx = 0, cy = 0;
+    const n = ring.length;
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+      const [xi, yi] = ring[i];
+      const [xj, yj] = ring[j];
+      const f = xi * yj - xj * yi;
+      A  += f;
+      cx += (xi + xj) * f;
+      cy += (yi + yj) * f;
+    }
+    A /= 2;
+    if (Math.abs(A) < 1e-12) return layer.getBounds().getCenter();
+    return L.latLng(cy / (6 * A), cx / (6 * A)); // (lat, lng)
+  } catch (_) {
+    return layer.getBounds().getCenter();
+  }
+}
+
+/**
  * 시군명 라벨 레이어 생성 (DivIcon, 폴리곤과 독립적으로 동작)
  */
 function initCityLabels() {
@@ -687,7 +779,7 @@ function initCityLabels() {
 
   Object.entries(geoJsonFeatures).forEach(([cityId, layer]) => {
     const cityName = CITIES[cityId] ? CITIES[cityId].name : cityId;
-    const center = layer.getBounds().getCenter();
+    const center = computePolygonCentroid(layer); // ← 정확한 무게중심
 
     const marker = L.marker(center, {
       icon: L.divIcon({
@@ -846,7 +938,7 @@ function highlightMarker(cityId) {
         layer.setStyle({ fillColor: color, color: '#FF6B35', weight: 3, fillOpacity: 0.92 });
         layer.bringToFront();
       } else {
-        layer.setStyle({ fillColor: color, color: '#fff', weight: 1.5, fillOpacity: 0.78 });
+        layer.setStyle({ fillColor: color, color: '#fff', weight: 2, fillOpacity: 0.82 });
       }
     });
   } else {
