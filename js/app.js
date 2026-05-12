@@ -1802,6 +1802,17 @@ function initLandingScreen() {
   const screen = document.getElementById('landing-screen');
   if (!screen) return;
 
+  // ── History API: 랜딩 = 첫 번째 히스토리 엔트리 ──
+  // replaceState로 현재 항목에 'landing' 태그 부착
+  history.replaceState({ page: 'landing' }, '');
+
+  // 브라우저 뒤로가기 → 랜딩 화면 복귀
+  window.addEventListener('popstate', (e) => {
+    if (e.state && e.state.page === 'landing') {
+      returnToLanding();
+    }
+  });
+
   // 1) KPI 카운트업
   initLandingKpiCounters();
 
@@ -1810,6 +1821,8 @@ function initLandingScreen() {
 
   // 3) 메인 CTA + Bento 카드 클릭 라우팅
   const closeAndAct = (action) => {
+    // 대시보드 진입 시 히스토리에 새 항목 추가 → 뒤로가기 활성화
+    history.pushState({ page: 'dashboard' }, '');
     screen.classList.add('is-exiting');
     const hide = () => {
       screen.classList.add('is-hidden');
@@ -2060,6 +2073,7 @@ function showCityPanel(cityId) {
   if (gotoBtn) {
     gotoBtn.onclick = () => {
       hideCityPanel();
+      history.pushState({ page: 'dashboard' }, '');
       const screen = document.getElementById('landing-screen');
       if (screen) {
         screen.classList.add('is-exiting');
@@ -2147,16 +2161,10 @@ function handleLandingAction(action) {
 document.addEventListener('DOMContentLoaded', () => {
   initLandingScreen(); // 랜딩 화면 — 가장 먼저 실행
 
-  // 헤더 로고 클릭 → 랜딩 복귀
+  // 헤더 로고 클릭 → 뒤로가기 (History API 통해 랜딩 복귀)
   const headerBrand = document.getElementById('header-brand');
   if (headerBrand) {
-    headerBrand.addEventListener('click', () => returnToLanding());
-  }
-
-  // 헤더 "첫 화면" 버튼 → 랜딩 복귀
-  const backToLandingBtn = document.getElementById('back-to-landing-btn');
-  if (backToLandingBtn) {
-    backToLandingBtn.addEventListener('click', () => returnToLanding());
+    headerBrand.addEventListener('click', () => history.back());
   }
 
   // 시군 패널 닫기 (닫기 버튼 + 배경 클릭)
