@@ -490,6 +490,7 @@ let geoJsonLayer = null;
 const geoJsonFeatures = {}; // cityId → GeoJSON layer reference
 let dongLayer = null;       // 행정동 경계 레이어 (줌 11+ 표시)
 let labelGroup = null;      // 시군명 라벨 레이어
+let outlineLayer = null;    // 대상지(15개 시군) 합쳐진 외곽선 효과 레이어
 const DONG_ZOOM_THRESHOLD = 11;
 
 /**
@@ -639,6 +640,23 @@ async function initGeoJSONLayer() {
 
     // CircleMarker 제거
     Object.values(markers).forEach(m => map.removeLayer(m));
+
+    // ── 합쳐진 외곽선 효과 (먼저 추가 → 컬러 폴리곤 아래에 렌더) ──
+    // 같은 폴리곤을 두꺼운 어두운 테두리로 그리면, 위 컬러 레이어가 내부를 덮어
+    // 외곽으로 삐져나온 부분만 남아 자연스러운 합쳐진 외곽선이 됨
+    if (outlineLayer) map.removeLayer(outlineLayer);
+    outlineLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
+      style: {
+        fillColor: '#1a2e1a',
+        fillOpacity: 1,
+        color: '#1a2e1a',
+        weight: 6,
+        opacity: 0.95,
+        lineJoin: 'round',
+        lineCap: 'round',
+        interactive: false,
+      },
+    }).addTo(map);
 
     geoJsonLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
       style: (feature) => {
