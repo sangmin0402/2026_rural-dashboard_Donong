@@ -2032,9 +2032,40 @@ function initLandingScreen() {
   // 전략: 대시보드 진입 시 history.pushState(#dashboard) → 뒤로가기 활성화
   //       popstate / hashchange 둘 다 감지 → 최대 호환성
 
-  // #dashboard 해시로 직접 접근 시 랜딩 스킵
-  if (location.hash === '#dashboard') {
+  const initialHash = location.hash;
+
+  // 뒤로가기 / 해시 변경 감지 — 오버레이/랜딩 라우팅 통합 (항상 등록)
+  const onNavBack = () => {
+    const h = location.hash;
+    if (h === '#ranking') {
+      showRankingPage();
+    } else if (h === '#guide') {
+      showGuidePage();
+    } else if (h === '#dashboard') {
+      hideAllOverlayScreens();
+      screen.classList.add('is-hidden');
+    } else {
+      // 해시 없음 → 랜딩으로 복귀
+      hideAllOverlayScreens();
+      returnToLanding();
+    }
+  };
+  window.addEventListener('popstate',   onNavBack);
+  window.addEventListener('hashchange', onNavBack);
+
+  // 해시별 직접 진입 처리 — 리스너 등록 후 분기
+  if (initialHash === '#dashboard') {
     screen.classList.add('is-hidden');
+    return;
+  }
+  if (initialHash === '#ranking') {
+    screen.classList.add('is-hidden');
+    setTimeout(() => showRankingPage(), 0);
+    return;
+  }
+  if (initialHash === '#guide') {
+    screen.classList.add('is-hidden');
+    setTimeout(() => showGuidePage(), 0);
     return;
   }
 
@@ -2042,15 +2073,6 @@ function initLandingScreen() {
   if (location.hash && location.hash !== '#') {
     history.replaceState(null, '', location.href.split('#')[0]);
   }
-
-  // 뒤로가기 감지 (popstate + hashchange 병행)
-  const onNavBack = () => {
-    if (!location.hash || location.hash === '#') {
-      returnToLanding();
-    }
-  };
-  window.addEventListener('popstate',   onNavBack);
-  window.addEventListener('hashchange', onNavBack);
 
   // 1) KPI 카운트업
   initLandingKpiCounters();
@@ -2088,13 +2110,18 @@ function initLandingScreen() {
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
-      // 준비중 항목은 토스트만
-      if (action === 'guide' || action === 'sources') {
-        showLandingToast('🛠️ 지표 가이드는 준비 중입니다');
+      // 오버레이 페이지 라우팅 (랜딩을 닫지 않고 그 위에 띄움)
+      if (action === 'guide') {
+        showGuidePage();
         return;
       }
       if (action === 'ranking') {
-        showLandingToast('🛠️ 시군 랭킹 페이지는 준비 중입니다');
+        showRankingPage();
+        return;
+      }
+      // 데이터 출처는 아직 준비 중
+      if (action === 'sources') {
+        showLandingToast('🛠️ 데이터 출처 페이지는 준비 중입니다');
         return;
       }
       closeAndAct(action);
@@ -2396,11 +2423,239 @@ function handleLandingAction(action) {
 }
 
 // ===================================================================
+// === 오버레이 페이지: 시군 랭킹 / 지표 가이드 ===
+// ===================================================================
+
+const CATEGORY_META = {
+  samlter: { label: '삶터', icon: '🏘️', tagline: '생활·인구·정주', color: 'var(--samlter)' },
+  ilter:   { label: '일터', icon: '🌾', tagline: '농업·경제·산업', color: 'var(--ilter)' },
+  shimter: { label: '쉼터', icon: '🌲', tagline: '자연·경관·휴양', color: 'var(--shimter)' },
+};
+
+// 시군별 자율지표 정의 매핑 — 향후 다른 시군 추가 시 여기에 등록
+const AUTONOMY_INDICATORS_BY_CITY = {
+  namyangju: { city: '남양주시', indicators: NAMYANGJU_INDICATORS },
+};
+
+/**
+ * 시군 랭킹 — 카테고리별 점수 정렬 후 포디움 + 리스트 렌더
+ */
+function renderRankingPage(category) {
+  const podiumEl = document.getElementById('ranking-podium');
+  const listEl   = document.getElementById('ranking-list');
+  const screenEl = document.getElementById('ranking-screen');
+  if (!podiumEl || !listEl || !screenEl) return;
+
+  // 점수 계산
+  const scored = Object.keys(CITIES).map(cityId => ({
+    cityId,
+    name: CITIES[cityId].name,
+    type: CITIES[cityId].type || '',
+    score: category === 'overall'
+      ? calcOverallScore(cityId)
+      : calcCategoryScore(cityId, category),
+  })).sort((a, b) => b.score - a.score);
+
+  const maxScore = Math.max(...scored.map(s => s.score), 1);
+
+  // 카테고리 액센트 클래스 토글
+  screenEl.classList.remove('ranking-screen-cat-samlter', 'ranking-screen-cat-ilter', 'ranking-screen-cat-shimter');
+  if (category !== 'overall') screenEl.classList.add(`ranking-screen-cat-${category}`);
+
+  // 포디움 (1·2·3) — DOM 순서: 2위·1위·3위 (가운데 1위)
+  const medals = ['🥇', '🥈', '🥉'];
+  const podiumOrder = [scored[1], scored[0], scored[2]];
+  const podiumClassOrder = [2, 1, 3];
+  podiumEl.innerHTML = podiumOrder.map((s, i) => {
+    if (!s) return '';
+    const rank = podiumClassOrder[i];
+    return `
+      <div class="podium-card podium-card--${rank}">
+        <div class="podium-medal">${medals[rank - 1]}</div>
+        <div class="podium-name">${s.name}</div>
+        <div class="podium-type">${s.type}</div>
+        <div class="podium-score">${s.score.toFixed(1)}<span class="podium-score-unit"> 점</span></div>
+      </div>
+    `;
+  }).join('');
+
+  // 4~15위
+  listEl.innerHTML = scored.slice(3).map((s, i) => {
+    const rank = i + 4;
+    const fillPct = Math.max(0, Math.min(100, (s.score / maxScore) * 100));
+    return `
+      <li class="ranking-row" data-city-id="${s.cityId}">
+        <div class="ranking-row-rank">${rank}</div>
+        <div class="ranking-row-body">
+          <div class="ranking-row-name">${s.name}<span class="ranking-row-type">${s.type}</span></div>
+          <div class="ranking-row-bar"><span class="ranking-row-bar-fill" style="width:${fillPct}%"></span></div>
+        </div>
+        <div class="ranking-row-score">${s.score.toFixed(1)}</div>
+      </li>
+    `;
+  }).join('');
+}
+
+/**
+ * 지표 가이드 — 카테고리별 공통/자율 카드 렌더
+ */
+function renderGuidePage() {
+  const wrap = document.getElementById('guide-categories');
+  if (!wrap) return;
+
+  const buildCard = (key, def, autonomy) => {
+    const dirClass = def.higherBetter ? 'guide-card-direction--up' : 'guide-card-direction--down';
+    const dirSymbol = def.higherBetter ? '↑' : '↓';
+    const formula = def.formula
+      ? `<div class="guide-card-formula">${def.formula}</div>`
+      : `<div class="guide-card-formula guide-card-formula--missing">산식 정보 추가 예정</div>`;
+    const autoBadge = autonomy
+      ? `<span class="guide-card-autobadge">자율 · ${autonomy.city}</span>`
+      : '';
+    return `
+      <div class="guide-card" ${autonomy ? 'data-autonomy="true"' : ''}>
+        <div class="guide-card-head">
+          <span class="guide-card-keyname">
+            <span class="guide-card-key">${key}</span>
+            <span class="guide-card-name">${def.name}</span>
+          </span>
+          <span class="guide-card-direction ${dirClass}">${dirSymbol}</span>
+        </div>
+        <div class="guide-card-meta">
+          ${def.unit ? `<span class="guide-meta-chip">단위: ${def.unit}</span>` : ''}
+          ${def.spatial ? `<span class="guide-meta-chip">공간: ${def.spatial}</span>` : ''}
+          ${def.year ? `<span class="guide-meta-chip">기준: ${def.year}</span>` : ''}
+          ${autoBadge}
+        </div>
+        ${formula}
+      </div>
+    `;
+  };
+
+  const sections = Object.entries(CATEGORY_META).map(([catKey, meta]) => {
+    const commonEntries = Object.entries(INDICATORS).filter(([, v]) => v.category === catKey);
+    // 자율지표 — 시군별로 수집 (현재 남양주만)
+    const autoEntries = [];
+    Object.values(AUTONOMY_INDICATORS_BY_CITY).forEach(({ city, indicators }) => {
+      Object.entries(indicators).forEach(([key, def]) => {
+        if (def.category === catKey) autoEntries.push({ key, def, autonomy: { city } });
+      });
+    });
+
+    const commonHTML = commonEntries.map(([k, v]) => buildCard(k, v, null)).join('');
+    const autoHTML = autoEntries.map(({ key, def, autonomy }) => buildCard(key, def, autonomy)).join('');
+
+    return `
+      <div class="guide-category-section" style="--cat-color: ${meta.color}">
+        <div class="guide-category-head">
+          <span class="guide-category-icon">${meta.icon}</span>
+          <h3 class="guide-category-name">${meta.label}</h3>
+          <span class="guide-category-tagline">${meta.tagline}</span>
+        </div>
+        ${commonEntries.length ? `<div class="guide-subhead">공통지표 (${commonEntries.length})</div><div class="guide-cards">${commonHTML}</div>` : ''}
+        ${autoEntries.length ? `<div class="guide-subhead guide-subhead-auto">자율지표 (${autoEntries.length})</div><div class="guide-cards">${autoHTML}</div>` : ''}
+      </div>
+    `;
+  });
+
+  wrap.innerHTML = sections.join('');
+}
+
+/**
+ * 오버레이 페이지 표시 (랜딩/대시보드 위 풀스크린)
+ */
+function showOverlayScreen(elId, hash) {
+  // 다른 오버레이는 모두 닫기
+  document.querySelectorAll('.overlay-screen').forEach(el => {
+    if (el.id !== elId) el.classList.add('is-hidden');
+  });
+  // 랜딩도 숨김
+  const landing = document.getElementById('landing-screen');
+  if (landing) landing.classList.add('is-hidden');
+  // 대상 오버레이 표시
+  const target = document.getElementById(elId);
+  if (!target) return;
+  target.classList.remove('is-hidden');
+  // URL hash 업데이트
+  if (location.hash !== hash) {
+    history.pushState({ page: elId }, '', hash);
+  }
+  // 스크롤 맨 위로
+  const main = target.querySelector('.overlay-main');
+  if (main) main.scrollTop = 0;
+}
+
+function hideAllOverlayScreens() {
+  document.querySelectorAll('.overlay-screen').forEach(el => el.classList.add('is-hidden'));
+}
+
+function showRankingPage() {
+  renderRankingPage('overall');
+  showOverlayScreen('ranking-screen', '#ranking');
+  // 탭 활성화 초기화
+  const screen = document.getElementById('ranking-screen');
+  if (screen) {
+    screen.querySelectorAll('.ranking-tab').forEach(t => {
+      t.classList.toggle('is-active', t.dataset.cat === 'overall');
+    });
+  }
+}
+
+function showGuidePage() {
+  renderGuidePage();
+  showOverlayScreen('guide-screen', '#guide');
+}
+
+/**
+ * 오버레이 페이지 내부 인터랙션 초기화 — 한 번만 호출
+ */
+function initOverlayScreens() {
+  // 닫기 버튼 / 로고 클릭 → 뒤로가기
+  document.querySelectorAll('.overlay-screen').forEach(screen => {
+    screen.querySelectorAll('[data-overlay-close], .overlay-brand').forEach(btn => {
+      btn.addEventListener('click', () => {
+        // hash가 있으면 history.back으로 자연스럽게, 없으면 직접 복귀
+        if (location.hash && location.hash !== '#') {
+          history.back();
+        } else {
+          hideAllOverlayScreens();
+          returnToLanding();
+        }
+      });
+    });
+  });
+
+  // 랭킹 탭 클릭
+  const rankingScreen = document.getElementById('ranking-screen');
+  if (rankingScreen) {
+    rankingScreen.querySelectorAll('.ranking-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        rankingScreen.querySelectorAll('.ranking-tab').forEach(t => t.classList.remove('is-active'));
+        tab.classList.add('is-active');
+        renderRankingPage(tab.dataset.cat);
+      });
+    });
+  }
+
+  // ESC로 닫기
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const anyOpen = Array.from(document.querySelectorAll('.overlay-screen'))
+      .some(el => !el.classList.contains('is-hidden'));
+    if (anyOpen) {
+      if (location.hash && location.hash !== '#') history.back();
+      else { hideAllOverlayScreens(); returnToLanding(); }
+    }
+  });
+}
+
+// ===================================================================
 // === 앱 초기화 진입점 ===
 // ===================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
   initLandingScreen(); // 랜딩 화면 — 가장 먼저 실행
+  initOverlayScreens(); // 랭킹/가이드 오버레이 인터랙션 (닫기·탭·ESC)
 
   // 헤더 로고 클릭 → 랜딩 복귀 (해시 제거 = 뒤로가기와 동일 효과)
   const headerBrand = document.getElementById('header-brand');

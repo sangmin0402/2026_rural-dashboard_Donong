@@ -427,6 +427,61 @@
     <p>데이터를 불러오는 중...</p>
   </div>
 
+  <!-- ===== 시군 랭킹 오버레이 ===== -->
+  <div id="ranking-screen" class="overlay-screen is-hidden" role="dialog" aria-modal="true" aria-label="시군 랭킹">
+    <header class="overlay-header">
+      <button class="overlay-brand" type="button" aria-label="첫 화면으로">
+        <span class="overlay-brand-logo" aria-hidden="true">🌿</span>
+        <span class="overlay-brand-text">경기도 농촌다움 지표 플랫폼</span>
+      </button>
+      <button class="overlay-close" type="button" aria-label="닫기" data-overlay-close>✕</button>
+    </header>
+    <main class="overlay-main">
+      <section class="ranking-hero">
+        <div class="ranking-hero-eyebrow">🥇 시군 랭킹</div>
+        <h2 class="ranking-hero-title">경기도 15개 시군, 한눈에 비교</h2>
+        <p class="ranking-hero-sub">종합 점수와 카테고리(삶터·일터·쉼터)별 점수로 순위를 확인하세요</p>
+        <div class="ranking-tabs" role="tablist" aria-label="카테고리 선택">
+          <button class="ranking-tab is-active" data-cat="overall" role="tab" type="button">⭐ 종합</button>
+          <button class="ranking-tab" data-cat="samlter" role="tab" type="button">🏘️ 삶터</button>
+          <button class="ranking-tab" data-cat="ilter" role="tab" type="button">🌾 일터</button>
+          <button class="ranking-tab" data-cat="shimter" role="tab" type="button">🌲 쉼터</button>
+        </div>
+      </section>
+      <section class="ranking-podium" id="ranking-podium" aria-label="TOP 3"></section>
+      <section class="ranking-list-wrap">
+        <h3 class="ranking-list-title">4~15위</h3>
+        <ol class="ranking-list" id="ranking-list"></ol>
+      </section>
+      <p class="ranking-footnote">* 점수는 각 지표를 0–100 정규화한 후 평균. 현재 표시 값은 가상 데이터 기준.</p>
+    </main>
+  </div>
+
+  <!-- ===== 지표 가이드 오버레이 ===== -->
+  <div id="guide-screen" class="overlay-screen is-hidden" role="dialog" aria-modal="true" aria-label="지표 가이드">
+    <header class="overlay-header">
+      <button class="overlay-brand" type="button" aria-label="첫 화면으로">
+        <span class="overlay-brand-logo" aria-hidden="true">🌿</span>
+        <span class="overlay-brand-text">경기도 농촌다움 지표 플랫폼</span>
+      </button>
+      <button class="overlay-close" type="button" aria-label="닫기" data-overlay-close>✕</button>
+    </header>
+    <main class="overlay-main">
+      <section class="guide-hero">
+        <div class="guide-hero-eyebrow">📚 지표 가이드</div>
+        <h2 class="guide-hero-title">플랫폼이 사용하는 지표의 정의·산식</h2>
+        <p class="guide-hero-sub">공통지표 11개 + 시군 자율지표 (현재는 남양주 8개)</p>
+        <div class="guide-legend">
+          <span class="guide-legend-item"><span class="guide-legend-dot guide-legend-dot--common"></span>공통지표</span>
+          <span class="guide-legend-item"><span class="guide-legend-dot guide-legend-dot--auto"></span>자율지표 (시군별)</span>
+          <span class="guide-legend-item"><span class="guide-legend-arrow guide-legend-arrow--up">↑</span>높을수록 좋음</span>
+          <span class="guide-legend-item"><span class="guide-legend-arrow guide-legend-arrow--down">↓</span>낮을수록 좋음</span>
+        </div>
+      </section>
+      <section class="guide-category-wrap" id="guide-categories"></section>
+    </main>
+  </div>
+
   <!-- 앱 전체 래퍼 -->
   <div id="app">
 

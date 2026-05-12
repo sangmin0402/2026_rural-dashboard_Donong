@@ -4145,3 +4145,526 @@ a:focus-visible {
 #map.basemap-is-dark .leaflet-pane {
   background-color: #0d0d0d !important;
 }
+
+/* ============================================================================
+   27. 오버레이 풀스크린 페이지 공통 (#ranking-screen, #guide-screen)
+   ============================================================================ */
+
+.overlay-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  background: linear-gradient(160deg, #0D2818 0%, #1B3E2A 45%, #0F2415 100%);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: overlay-fade-in 0.32s cubic-bezier(.4, 0, .2, 1);
+}
+.overlay-screen.is-hidden { display: none !important; }
+
+@keyframes overlay-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── 상단 헤더 ── */
+.overlay-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(13, 40, 24, 0.85);
+  backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+.overlay-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: none;
+  border: none;
+  color: #fff;
+  font-family: 'Noto Sans KR', sans-serif;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-md);
+  transition: opacity 160ms;
+}
+.overlay-brand:hover { opacity: 0.8; }
+.overlay-brand-logo { font-size: 22px; }
+.overlay-brand-text { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+.overlay-close {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 17px;
+  cursor: pointer;
+  transition: background 160ms, transform 160ms;
+}
+.overlay-close:hover { background: rgba(255, 255, 255, 0.16); transform: scale(1.05); }
+
+/* ── 메인 콘텐츠 ── */
+.overlay-main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 36px 28px 80px;
+}
+.overlay-main > section {
+  max-width: 1100px;
+  margin: 0 auto 36px;
+}
+
+/* ============================================================================
+   27-a. 시군 랭킹 페이지
+   ============================================================================ */
+
+.ranking-hero {
+  text-align: center;
+  padding-top: 12px;
+}
+.ranking-hero-eyebrow {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.ranking-hero-title {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+.ranking-hero-sub {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0 0 26px;
+}
+
+/* 탭 (pill) */
+.ranking-tabs {
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  margin: 0 auto;
+}
+.ranking-tab {
+  padding: 9px 20px;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 180ms, color 180ms, transform 120ms;
+}
+.ranking-tab:hover { color: #fff; background: rgba(255, 255, 255, 0.06); }
+.ranking-tab.is-active {
+  background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(45, 95, 63, 0.5);
+}
+
+/* 포디움 (1·2·3위) */
+.ranking-podium {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  gap: 18px;
+  align-items: end;
+  margin-top: 32px;
+}
+.podium-card {
+  position: relative;
+  padding: 22px 18px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
+  backdrop-filter: blur(10px);
+  transition: transform 200ms;
+}
+.podium-card:hover { transform: translateY(-4px); }
+.podium-card--1 {
+  background: linear-gradient(165deg, rgba(212, 165, 116, 0.22), rgba(212, 165, 116, 0.06));
+  border-color: rgba(212, 165, 116, 0.45);
+  box-shadow: 0 10px 30px rgba(212, 165, 116, 0.2);
+  padding: 28px 18px;
+}
+.podium-card--2 {
+  background: linear-gradient(165deg, rgba(190, 195, 200, 0.18), rgba(190, 195, 200, 0.04));
+  border-color: rgba(190, 195, 200, 0.4);
+}
+.podium-card--3 {
+  background: linear-gradient(165deg, rgba(196, 138, 95, 0.18), rgba(196, 138, 95, 0.04));
+  border-color: rgba(196, 138, 95, 0.4);
+}
+.podium-medal {
+  font-size: 34px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.podium-card--1 .podium-medal { font-size: 44px; }
+.podium-name {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: #fff;
+  margin: 4px 0 2px;
+  letter-spacing: -0.01em;
+}
+.podium-card--1 .podium-name { font-size: 22px; }
+.podium-type {
+  display: inline-block;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-bottom: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.podium-score {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+}
+.podium-score-unit {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: 2px;
+}
+
+/* 4~15위 리스트 */
+.ranking-list-wrap { margin-top: 40px; }
+.ranking-list-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.55);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 12px;
+}
+.ranking-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ranking-row {
+  display: grid;
+  grid-template-columns: 56px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  transition: background 160ms, transform 160ms;
+}
+.ranking-row:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(2px);
+}
+.ranking-row-rank {
+  font-size: 22px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+  letter-spacing: -0.02em;
+}
+.ranking-row-body { min-width: 0; }
+.ranking-row-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin: 0 0 6px;
+}
+.ranking-row-type {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.ranking-row-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  max-width: 360px;
+}
+.ranking-row-bar-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary-light), var(--accent));
+  border-radius: 999px;
+  transition: width 320ms cubic-bezier(.2, .8, .2, 1);
+}
+.ranking-row-score {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.02em;
+  text-align: right;
+  min-width: 60px;
+}
+
+/* 카테고리별 액센트 (탭에 따라 진행 바 색 변경) */
+.ranking-screen-cat-samlter .ranking-row-bar-fill,
+.ranking-screen-cat-samlter .podium-score { background: linear-gradient(90deg, var(--samlter), #6FB6F0); color: #6FB6F0; }
+.ranking-screen-cat-samlter .podium-score { background: none; color: #6FB6F0; }
+.ranking-screen-cat-ilter .ranking-row-bar-fill { background: linear-gradient(90deg, var(--ilter), #F0C26E); }
+.ranking-screen-cat-ilter .podium-score { color: #F0C26E; }
+.ranking-screen-cat-shimter .ranking-row-bar-fill { background: linear-gradient(90deg, var(--shimter), #80D195); }
+.ranking-screen-cat-shimter .podium-score { color: #80D195; }
+
+.ranking-footnote {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  margin-top: 28px;
+}
+
+/* ============================================================================
+   27-b. 지표 가이드 페이지
+   ============================================================================ */
+
+.guide-hero { text-align: center; padding-top: 12px; }
+.guide-hero-eyebrow {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.guide-hero-title {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+}
+.guide-hero-sub {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0 0 22px;
+}
+.guide-legend {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: center;
+  padding: 10px 18px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+.guide-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+.guide-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.guide-legend-dot--common { background: var(--accent); }
+.guide-legend-dot--auto { background: #6FB6F0; }
+.guide-legend-arrow { font-weight: 700; font-size: 14px; }
+.guide-legend-arrow--up { color: #6FE08A; }
+.guide-legend-arrow--down { color: #E08A8A; }
+
+/* 카테고리 섹션 */
+.guide-category-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
+}
+.guide-category-section { }
+.guide-category-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid var(--cat-color, rgba(255, 255, 255, 0.15));
+}
+.guide-category-icon { font-size: 24px; }
+.guide-category-name {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+.guide-category-tagline {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  margin-left: 4px;
+}
+
+.guide-subhead {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 18px 0 10px;
+}
+.guide-subhead-auto { color: #8FCBE8; }
+
+.guide-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.guide-card {
+  position: relative;
+  padding: 16px 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  transition: background 160ms, transform 160ms, border-color 160ms;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.guide-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.guide-card[data-autonomy="true"] {
+  border-color: rgba(143, 203, 232, 0.3);
+  background: linear-gradient(165deg, rgba(143, 203, 232, 0.08), rgba(255, 255, 255, 0.03));
+}
+.guide-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.guide-card-keyname {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.guide-card-key {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgba(212, 165, 116, 0.18);
+  border: 1px solid rgba(212, 165, 116, 0.35);
+  color: var(--accent);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+}
+.guide-card[data-autonomy="true"] .guide-card-key {
+  background: rgba(143, 203, 232, 0.15);
+  border-color: rgba(143, 203, 232, 0.4);
+  color: #8FCBE8;
+}
+.guide-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+}
+.guide-card-direction {
+  font-size: 16px;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+.guide-card-direction--up { color: #6FE08A; }
+.guide-card-direction--down { color: #E08A8A; }
+
+.guide-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 2px;
+}
+.guide-meta-chip {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  padding: 2px 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+.guide-card-formula {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(0, 0, 0, 0.22);
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 2px solid var(--accent);
+  margin-top: 4px;
+  word-break: keep-all;
+  line-height: 1.5;
+}
+.guide-card-formula--missing {
+  color: rgba(255, 255, 255, 0.4);
+  font-style: italic;
+  border-left-color: rgba(255, 255, 255, 0.18);
+}
+.guide-card-autobadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #8FCBE8;
+  background: rgba(143, 203, 232, 0.1);
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .overlay-header { padding: 12px 16px; }
+  .overlay-brand-text { font-size: 13px; }
+  .overlay-main { padding: 24px 16px 60px; }
+  .ranking-hero-title { font-size: 24px; }
+  .ranking-tabs { flex-wrap: wrap; }
+  .ranking-podium { grid-template-columns: 1fr; gap: 12px; }
+  .podium-card--1 { padding: 22px 18px; }
+  .ranking-row { grid-template-columns: 44px 1fr auto; gap: 10px; padding: 12px 14px; }
+  .ranking-row-bar { max-width: 100%; }
+  .guide-hero-title { font-size: 22px; }
+  .guide-cards { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .overlay-brand-text { display: none; }
+  .ranking-tab { padding: 7px 14px; font-size: 13px; }
+}

@@ -112,6 +112,10 @@ CITIES[cityId] = {
 | `initLandingMinimap()` | GeoJSON → SVG 미니맵 (400×300, 수동 프로젝션) |
 | `showLandingToast()` | "준비 중" 자동 소멸 토스트 |
 | `handleLandingAction(action)` | 랜딩 → 대시보드 라우팅 |
+| `showRankingPage()` / `renderRankingPage(cat)` | 랭킹 오버레이 표시·렌더 |
+| `showGuidePage()` / `renderGuidePage()` | 지표 가이드 오버레이 표시·렌더 |
+| `showOverlayScreen(elId, hash)` / `hideAllOverlayScreens()` | 풀스크린 오버레이 공통 |
+| `initOverlayScreens()` | 닫기·탭·ESC 인터랙션 초기화 |
 | `calcCategoryScore(cityId, cat)` | 카테고리 종합 점수 계산 |
 | `getCityColor(cityId, indicatorKey)` | 지도 코로플레스 색상 (CATEGORY_TOTALS 포함) |
 | `getClassBreaks(values)` | 5분위 quantile 계산 |
@@ -217,10 +221,12 @@ const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
 - 시나리오 레버 UI
 - 랜딩 포털 v2 (히어로·KPI·미니맵·WHY·5권역·Bento)
 - 5대 권역 분류 (보고서 표 2-36 기준)
+- 베이스맵 선택 (7종) — Positron 기본
+- **시군 랭킹 페이지** (`#ranking-screen`, hash `#ranking`) — 4 탭 + 포디움 + 리스트
+- **지표 가이드 페이지** (`#guide-screen`, hash `#guide`) — 카테고리별 공통/자율 카드
 
-### 🚧 준비 중 (toast로 안내)
-- **시군 랭킹 페이지** (`bento-card` action="ranking") — UI 없음
-- **지표 가이드 페이지** (`bento-card` action="indicators") — UI 없음
+### 🚧 준비 중
+- **데이터 출처 페이지** (`data-action="sources"`) — toast 안내 중
 
 ---
 
