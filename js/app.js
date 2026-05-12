@@ -693,16 +693,16 @@ async function initGeoJSONLayer() {
 
 /**
  * 대상지(15개 시군) 외부 음영 마스크 생성
- * — 대형 외부 사각형 + 시군 폴리곤을 홀(hole)로 넣어 evenodd fill 로 외부만 어둡게
+ * — 지구 전체를 덮는 외부 링 + 시군 폴리곤을 홀(hole)로 넣어 대상지 밖만 어둡게
+ * — 외부 링을 지구 크기로 잡아 경계선이 화면에 절대 보이지 않도록 함
  */
 function createTargetMask(features) {
-  // L.polygon 직접 사용 — Leaflet [lat, lng] 형식으로 hole 네이티브 지원
-  // GeoJSON은 [lng, lat] 순서이므로 변환 필요
+  // L.polygon [lat, lng] 형식. GeoJSON [lng, lat] → 변환
   const toLatLng = ring => ring.map(([lng, lat]) => [lat, lng]);
 
-  // 한국 전역을 넉넉히 덮는 외부 사각형 [lat, lng]
+  // 지구 전체를 덮는 외부 링 — 어떤 줌 수준에서도 경계선이 화면 밖에 있음
   const worldLatLng = [
-    [38.5, 125.5], [38.5, 130.0], [33.0, 130.0], [33.0, 125.5]
+    [85, -179], [-85, -179], [-85, 179], [85, 179]
   ];
 
   // 각 시군 폴리곤의 외부 링을 hole로 변환
@@ -717,11 +717,9 @@ function createTargetMask(features) {
   });
 
   return L.polygon([worldLatLng, ...holes], {
-    fillColor: '#0D1E10',   // 진한 다크그린
-    fillOpacity: 0.30,
-    color: '#2D5F3F',       // 대상지 외곽선 (테마 그린)
-    weight: 2.5,
-    opacity: 0.85,
+    fillColor: '#1a2e1a',   // 중립적인 어두운 색
+    fillOpacity: 0.18,      // 은은한 vignette — 너무 강하지 않게
+    stroke: false,          // 외부 사각형 경계선 완전히 숨김
     interactive: false,
   });
 }
