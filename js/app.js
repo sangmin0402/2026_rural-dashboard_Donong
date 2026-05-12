@@ -1935,7 +1935,6 @@ function initLandingMinimap() {
           if (!tooltip) return;
           tooltip.textContent = cityName;
           tooltip.classList.add('is-visible');
-          const rect = svg.getBoundingClientRect();
           const wrapRect = svg.parentElement.getBoundingClientRect();
           tooltip.style.left = (e.clientX - wrapRect.left + 10) + 'px';
           tooltip.style.top  = (e.clientY - wrapRect.top  - 24) + 'px';
@@ -1943,10 +1942,151 @@ function initLandingMinimap() {
         path.addEventListener('mouseleave', () => {
           if (tooltip) tooltip.classList.remove('is-visible');
         });
+        // 클릭 → 시군 상세 패널
+        path.addEventListener('click', () => {
+          if (tooltip) tooltip.classList.remove('is-visible');
+          if (cityId) showCityPanel(cityId);
+        });
         svg.appendChild(path);
       });
     })
     .catch(err => console.warn('[landing minimap] GeoJSON load failed', err));
+}
+
+/**
+ * 랜딩 화면 복귀 (대시보드 헤더 로고 클릭 시)
+ */
+function returnToLanding() {
+  const screen = document.getElementById('landing-screen');
+  if (!screen) return;
+
+  // 이전 상태 클래스 초기화
+  screen.classList.remove('is-exiting', 'landing-screen--return', 'is-hidden');
+
+  // 강제 reflow → 애니메이션 재트리거
+  void screen.offsetWidth;
+
+  screen.classList.add('landing-screen--return');
+
+  // 스크롤 맨 위로
+  const scrollWrap = screen.querySelector('.landing-scroll-wrap');
+  if (scrollWrap) scrollWrap.scrollTop = 0;
+}
+
+/**
+ * 시군 상세 패널 표시 (미니맵 클릭)
+ * @param {string} cityId
+ */
+function showCityPanel(cityId) {
+  const panel = document.getElementById('landing-city-panel');
+  if (!panel) return;
+  const city = CITIES[cityId];
+  if (!city) return;
+
+  // ── 헤더 ──
+  const typeEl = document.getElementById('city-panel-type');
+  const nameEl = document.getElementById('city-panel-name');
+  const descEl = document.getElementById('city-panel-desc');
+  if (typeEl) typeEl.textContent = city.type || '시군';
+  if (nameEl) nameEl.textContent = city.name;
+  if (descEl) descEl.textContent = city.description || '';
+
+  // ── 종합점수 ──
+  const overall = calcOverallScore(cityId);
+  const rank    = calcOverallRank(cityId);
+  const scoreVal = document.getElementById('city-panel-score-val');
+  const scoreBar = document.getElementById('city-panel-score-bar');
+  const rankEl   = document.getElementById('city-panel-rank');
+  if (scoreVal) scoreVal.textContent = overall.toFixed(1) + '점';
+  if (scoreBar) { scoreBar.style.width = '0%'; setTimeout(() => { scoreBar.style.width = overall.toFixed(1) + '%'; }, 60); }
+  if (rankEl)   rankEl.textContent = `15개 시군 중 ${rank}위`;
+
+  // ── 카테고리 지표 ──
+  const cats = [
+    { key: 'samlter', label: '삶터', icon: '🏘️', cls: 'cat--samlter' },
+    { key: 'ilter',   label: '일터', icon: '🌾', cls: 'cat--ilter'   },
+    { key: 'shimter', label: '쉼터', icon: '🌲', cls: 'cat--shimter' },
+  ];
+  const container = document.getElementById('city-panel-categories');
+  if (container) {
+    container.innerHTML = '';
+    cats.forEach(cat => {
+      const catScore = calcCategoryScore(cityId, cat.key);
+      const indicators = Object.entries(INDICATORS).filter(([, v]) => v.category === cat.key);
+
+      const catEl = document.createElement('div');
+      catEl.className = `city-panel-cat ${cat.cls}`;
+
+      // 지표 리스트 HTML
+      let indHTML = '<ul class="city-panel-ind-list">';
+      indicators.forEach(([key, ind]) => {
+        const val = city.indicators[key];
+        if (val === undefined || val === null) return;
+        const { min, max } = getIndicatorRange(key);
+        let pct = (max - min > 0) ? ((val - min) / (max - min)) * 100 : 50;
+        if (!ind.higherBetter) pct = 100 - pct;
+        pct = Math.max(2, Math.min(100, pct));
+        indHTML += `
+          <li class="city-panel-ind-item">
+            <div class="ind-top">
+              <span class="ind-name">${ind.name}</span>
+              <span class="ind-value">${formatValue(val, ind.unit)}</span>
+            </div>
+            <div class="ind-bar"><div class="ind-bar-fill" style="width:0%" data-pct="${pct.toFixed(1)}"></div></div>
+          </li>`;
+      });
+      indHTML += '</ul>';
+
+      catEl.innerHTML = `
+        <div class="city-panel-cat-head">
+          <span class="cat-icon">${cat.icon}</span>
+          <span class="cat-name">${cat.label}</span>
+          <span class="cat-score">${catScore.toFixed(1)}점</span>
+        </div>
+        ${indHTML}`;
+      container.appendChild(catEl);
+    });
+
+    // 약간 딜레이 후 바 너비 적용 (CSS transition 작동)
+    setTimeout(() => {
+      container.querySelectorAll('.ind-bar-fill[data-pct]').forEach(el => {
+        el.style.width = el.dataset.pct + '%';
+      });
+    }, 80);
+  }
+
+  // ── "지도에서 자세히 보기" 버튼 ──
+  const gotoBtn = document.getElementById('city-panel-goto-btn');
+  if (gotoBtn) {
+    gotoBtn.onclick = () => {
+      hideCityPanel();
+      const screen = document.getElementById('landing-screen');
+      if (screen) {
+        screen.classList.add('is-exiting');
+        const hide = () => {
+          screen.classList.add('is-hidden');
+          if (typeof selectCity === 'function') {
+            try { selectCity(cityId); } catch (_) {}
+          }
+        };
+        screen.addEventListener('animationend', hide, { once: true });
+        setTimeout(hide, 650);
+      }
+    };
+  }
+
+  panel.classList.add('is-open');
+  panel.setAttribute('aria-hidden', 'false');
+}
+
+/**
+ * 시군 상세 패널 닫기
+ */
+function hideCityPanel() {
+  const panel = document.getElementById('landing-city-panel');
+  if (!panel) return;
+  panel.classList.remove('is-open');
+  panel.setAttribute('aria-hidden', 'true');
 }
 
 /**
@@ -2006,6 +2146,29 @@ function handleLandingAction(action) {
 
 document.addEventListener('DOMContentLoaded', () => {
   initLandingScreen(); // 랜딩 화면 — 가장 먼저 실행
+
+  // 헤더 로고 클릭 → 랜딩 복귀
+  const headerBrand = document.getElementById('header-brand');
+  if (headerBrand) {
+    headerBrand.addEventListener('click', () => returnToLanding());
+  }
+
+  // 헤더 "첫 화면" 버튼 → 랜딩 복귀
+  const backToLandingBtn = document.getElementById('back-to-landing-btn');
+  if (backToLandingBtn) {
+    backToLandingBtn.addEventListener('click', () => returnToLanding());
+  }
+
+  // 시군 패널 닫기 (닫기 버튼 + 배경 클릭)
+  const panelCloseBtn = document.getElementById('landing-city-panel-close');
+  const panelBackdrop = document.getElementById('city-panel-backdrop');
+  if (panelCloseBtn) panelCloseBtn.addEventListener('click', hideCityPanel);
+  if (panelBackdrop) panelBackdrop.addEventListener('click', hideCityPanel);
+
+  // ESC 키로 패널 닫기
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') hideCityPanel();
+  });
 
   showLoading();
 

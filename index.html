@@ -363,7 +363,7 @@
             </div>
             <div class="landing-footer-cell">
               <span class="landing-footer-label">최종 갱신</span>
-              <span class="landing-footer-val">2024.12</span>
+              <span class="landing-footer-val">2026.05</span>
             </div>
             <div class="landing-footer-cell">
               <span class="landing-footer-label">대상</span>
@@ -374,6 +374,48 @@
 
       </div>
     </div>
+
+    <!-- ===== 시군 상세 패널 (미니맵 클릭) ===== -->
+    <div id="landing-city-panel" class="landing-city-panel" aria-hidden="true" role="dialog" aria-label="시군 상세 정보">
+      <div class="city-panel-backdrop" id="city-panel-backdrop"></div>
+      <div class="city-panel-card">
+        <button class="city-panel-close" id="landing-city-panel-close" type="button" aria-label="닫기">✕</button>
+
+        <!-- 헤더 -->
+        <div class="city-panel-header">
+          <div class="city-panel-title-row">
+            <span id="city-panel-type" class="city-panel-type-badge"></span>
+            <h3 id="city-panel-name" class="city-panel-name"></h3>
+          </div>
+          <p id="city-panel-desc" class="city-panel-desc"></p>
+        </div>
+
+        <!-- 종합점수 -->
+        <div class="city-panel-score-row">
+          <div class="city-panel-score-info">
+            <span class="city-panel-score-label">농촌다움 종합점수</span>
+            <span id="city-panel-score-val" class="city-panel-score-val"></span>
+          </div>
+          <div class="city-panel-score-bar-wrap">
+            <div id="city-panel-score-bar" class="city-panel-score-bar-fill"></div>
+          </div>
+          <div class="city-panel-rank-row">
+            <span id="city-panel-rank" class="city-panel-rank"></span>
+          </div>
+        </div>
+
+        <!-- 카테고리별 지표 -->
+        <div id="city-panel-categories" class="city-panel-categories"></div>
+
+        <!-- CTA -->
+        <div class="city-panel-cta">
+          <button id="city-panel-goto-btn" class="city-panel-goto-btn" type="button">
+            지도에서 자세히 보기 →
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /#landing-screen -->
 
   <!-- 랜딩 토스트 (준비중 등) -->
@@ -390,14 +432,22 @@
 
     <!-- ===== 헤더 ===== -->
     <header id="app-header">
-      <div class="header-left">
+      <button id="header-brand" class="header-left header-brand-btn" type="button" title="첫 페이지로 돌아가기" aria-label="경기도 농촌다움 지표 플랫폼 — 첫 페이지로 돌아가기">
         <span class="header-logo">🌿</span>
         <div class="header-title-group">
           <span class="header-title">경기도 농촌다움 지표 플랫폼</span>
           <span class="header-subtitle">농촌다움 종합지표 시각화 시스템</span>
         </div>
-      </div>
+      </button>
       <div class="header-right">
+        <!-- 첫 화면 복귀 버튼 -->
+        <button id="back-to-landing-btn" class="back-to-landing-btn" type="button" title="첫 화면으로 돌아가기">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/>
+            <polyline points="9 21 9 12 15 12 15 21"/>
+          </svg>
+          <span>첫 화면</span>
+        </button>
         <div class="search-wrapper">
           <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
