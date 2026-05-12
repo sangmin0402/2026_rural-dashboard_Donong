@@ -4137,3 +4137,11 @@ a:focus-visible {
   outline: none;
   border-color: #2D5F3F;
 }
+
+/* 다크 베이스맵 활성화 시 — 타일 간격 사이 흰 줄 비침 방지 */
+#map.basemap-is-dark,
+#map.basemap-is-dark .leaflet-container,
+#map.basemap-is-dark .leaflet-tile-pane,
+#map.basemap-is-dark .leaflet-pane {
+  background-color: #0d0d0d !important;
+}

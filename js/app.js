@@ -522,7 +522,8 @@ const BASEMAPS = {
   },
   osm: {
     name: 'E. OpenStreetMap 기본',
-    layers: [{ url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', sub: 'abc' }],
+    // OSM 공식: 서브도메인 없는 단일 도메인이 현재 권장 방식
+    layers: [{ url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', sub: '' }],
     attr: '© OpenStreetMap contributors',
   },
   esriTopo: {
@@ -562,21 +563,17 @@ function setBasemap(key) {
     if (!layer.isOverlay) tile.bringToBack();
     currentBasemapLayers.push(tile);
   });
-  // 다크 베이스맵일 때 #map 배경도 어둡게 (타일 간격으로 흰 줄 비치는 현상 방지)
+  // 다크 베이스맵일 때 클래스 토글 — #map 및 leaflet 내부 컨테이너까지 어둡게
   const mapEl = document.getElementById('map');
   if (mapEl) {
-    if (DARK_BASEMAPS.has(key)) {
-      mapEl.style.background = '#0d0d0d';
-    } else {
-      mapEl.style.background = '';   // CSS 기본값 (#EEF2EA) 복귀
-    }
+    mapEl.classList.toggle('basemap-is-dark', DARK_BASEMAPS.has(key));
   }
   try { localStorage.setItem('basemap_choice', key); } catch (e) {}
 }
 
 function initBasemapSwitcher() {
   const saved = (() => { try { return localStorage.getItem('basemap_choice'); } catch (e) { return null; } })();
-  const initialKey = saved && BASEMAPS[saved] ? saved : 'voyager';
+  const initialKey = saved && BASEMAPS[saved] ? saved : 'positron';
   setBasemap(initialKey);
 
   // 우상단 토글 UI 생성
@@ -584,7 +581,7 @@ function initBasemapSwitcher() {
   ctrl.onAdd = function () {
     const div = L.DomUtil.create('div', 'basemap-switcher');
     div.innerHTML = `
-      <div class="basemap-switcher-label">🗺️ 베이스맵 비교</div>
+      <div class="basemap-switcher-label">🗺️ 베이스맵 선택</div>
       <select id="basemap-select"></select>
     `;
     L.DomEvent.disableClickPropagation(div);
