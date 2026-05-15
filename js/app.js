@@ -63,6 +63,42 @@ const CATEGORY_TOTALS = {
 };
 
 // ===================================================================
+// === 기능별 분석 — 분석 목적 → 시각화 유형 매핑 ===
+// ===================================================================
+
+const ANALYSIS_PURPOSES = {
+  'pass-through': {
+    label: '통과형 식별',
+    vizType: 'scatter',
+    title: '통과형 vs 정주형 분포',
+    description:
+      '인구 유입은 활발하지만 재정자립이 낮으면 "통과형" 가능성이 높습니다. ' +
+      '반대로 둘 다 높으면 "정주형"으로 판단할 수 있습니다. ' +
+      '15개 시군이 4개 사분면 중 어디에 위치하는지 확인하세요.',
+    axes: {
+      x: { key: 'L3', label: '인구순이동률 (‰)',  explain: '높을수록 유입 활발' },
+      y: { key: 'W3', label: '재정자립도 (%)',     explain: '높을수록 정주·자립 강함' },
+    },
+    quadrantHints: [
+      '🟢 우상단 — 정주·자립형',
+      '🟠 우하단 — 통과형 (집중 모니터링)',
+      '🔵 좌상단 — 안정 보전형',
+      '⚪ 좌하단 — 쇠퇴 주의',
+    ],
+  },
+  'stay-conversion': {
+    label: '체류 전환',
+    vizType: 'heatmap',
+    title: '시군 × 정주지표 매트릭스',
+    description:
+      '한 시군 행에서 색이 균일하게 진하면 다방면에서 정주 기반이 강해 ' +
+      '"체류 전환" 잠재력이 큰 시군입니다. 특정 칸만 진하면 해당 지표의 단편적 강점.',
+    // 모든 15개 시군이 공통으로 보유한 지표만 사용 (남양주 전용 R6 등 제외)
+    indicators: ['L1', 'L4', 'W1', 'W3', 'R1', 'R3'],
+  },
+};
+
+// ===================================================================
 // === 시나리오 레버 정의 ===
 // ===================================================================
 
@@ -1364,10 +1400,25 @@ function switchTab(tab) {
     scenarioPanel.classList.toggle('hidden', tab !== 'scenario');
   }
 
-  // city-detail도 시나리오 탭일 때 숨김
+  // city-detail도 시나리오/분석 탭일 때 숨김
   const cityDetail = document.getElementById('city-detail');
   if (cityDetail && !cityDetail.classList.contains('hidden')) {
-    cityDetail.style.display = tab === 'scenario' ? 'none' : '';
+    cityDetail.style.display = (tab === 'scenario' || tab === 'analysis') ? 'none' : '';
+  }
+
+  // 분석 탭 전용 — 지도 영역을 분석 컨테이너로 전환
+  const mapEl       = document.getElementById('map-container');
+  const analysisEl  = document.getElementById('analysis-container');
+  const detailEl    = document.getElementById('detail-panel');
+  if (tab === 'analysis') {
+    if (mapEl)      mapEl.classList.add('hidden');
+    if (analysisEl) analysisEl.classList.remove('hidden');
+    if (detailEl)   detailEl.style.display = 'none';
+    initAnalysisView();
+  } else {
+    if (mapEl)      mapEl.classList.remove('hidden');
+    if (analysisEl) analysisEl.classList.add('hidden');
+    if (detailEl && tab !== 'scenario') detailEl.style.display = '';
   }
 
   updateIndicatorList();
@@ -1858,6 +1909,204 @@ function renderScenarioDeltaTable(before, after) {
       <tbody>${rows}</tbody>
     </table>
   `;
+}
+
+// ===================================================================
+// === 기능별 분석 — 산점도 / 히트맵 ===
+// ===================================================================
+
+let analysisChart = null;
+let analysisCurrentPurpose = 'pass-through';
+
+/**
+ * 분석 뷰 초기화 — 탭 진입 시 호출 (이벤트는 한 번만 바인딩)
+ */
+function initAnalysisView() {
+  const root = document.getElementById('analysis-container');
+  if (!root) return;
+  if (!root.dataset.bound) {
+    root.querySelectorAll('.analysis-purpose-tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const purpose = btn.dataset.purpose;
+        if (!purpose || !ANALYSIS_PURPOSES[purpose]) return;
+        root.querySelectorAll('.analysis-purpose-tab').forEach(t => t.classList.remove('is-active'));
+        btn.classList.add('is-active');
+        switchAnalysisPurpose(purpose);
+      });
+    });
+    root.dataset.bound = '1';
+  }
+  switchAnalysisPurpose(analysisCurrentPurpose);
+}
+
+/**
+ * 분석 목적 전환 — 해석 패널 갱신 + 차트 다시 그리기
+ */
+function switchAnalysisPurpose(key) {
+  const cfg = ANALYSIS_PURPOSES[key];
+  if (!cfg) return;
+  analysisCurrentPurpose = key;
+
+  const titleEl = document.getElementById('analysis-interpret-title');
+  const descEl  = document.getElementById('analysis-interpret-desc');
+  const axisUl  = document.getElementById('analysis-axis-info');
+  if (titleEl) titleEl.textContent = cfg.title;
+  if (descEl)  descEl.textContent  = cfg.description;
+
+  if (cfg.vizType === 'scatter') {
+    if (axisUl) {
+      axisUl.innerHTML = [
+        `<li><b>X축</b> · ${cfg.axes.x.label} — ${cfg.axes.x.explain}</li>`,
+        `<li><b>Y축</b> · ${cfg.axes.y.label} — ${cfg.axes.y.explain}</li>`,
+        ...cfg.quadrantHints.map(h => `<li>${h}</li>`),
+      ].join('');
+    }
+    renderAnalysisScatter(cfg);
+  } else if (cfg.vizType === 'heatmap') {
+    if (axisUl) {
+      axisUl.innerHTML = cfg.indicators
+        .map(k => {
+          const def = INDICATORS[k] || NAMYANGJU_INDICATORS[k];
+          return `<li><b>${k}</b> · ${def ? def.name : k}</li>`;
+        }).join('');
+    }
+    renderAnalysisHeatmap(cfg);
+  }
+}
+
+function destroyAnalysisChart() {
+  if (analysisChart) {
+    try { analysisChart.destroy(); } catch (_) {}
+    analysisChart = null;
+  }
+}
+
+/**
+ * 산점도 렌더 — x·y 지표 교차 분포
+ */
+function renderAnalysisScatter(cfg) {
+  destroyAnalysisChart();
+  const canvas = document.getElementById('analysis-canvas');
+  if (!canvas) return;
+
+  const data = Object.values(CITIES).map(city => ({
+    x: city.indicators[cfg.axes.x.key],
+    y: city.indicators[cfg.axes.y.key],
+    cityName: city.name,
+  })).filter(p => p.x != null && p.y != null);
+
+  analysisChart = new Chart(canvas, {
+    type: 'scatter',
+    data: {
+      datasets: [{
+        label: cfg.label,
+        data,
+        backgroundColor: 'rgba(45, 95, 63, 0.68)',
+        borderColor: '#2D5F3F',
+        borderWidth: 1.5,
+        pointRadius: 8,
+        pointHoverRadius: 11,
+      }],
+    },
+    options: {
+      maintainAspectRatio: false,
+      scales: {
+        x: { title: { display: true, text: cfg.axes.x.label, font: { weight: '600' } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        y: { title: { display: true, text: cfg.axes.y.label, font: { weight: '600' } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.raw.cityName} (${ctx.raw.x}, ${ctx.raw.y})`,
+          },
+        },
+      },
+    },
+  });
+}
+
+/**
+ * 히트맵 렌더 — chartjs-chart-matrix 플러그인 사용
+ */
+function renderAnalysisHeatmap(cfg) {
+  destroyAnalysisChart();
+  const canvas = document.getElementById('analysis-canvas');
+  if (!canvas) return;
+  // 플러그인 누락 가드
+  if (typeof Chart === 'undefined' || !Chart.registry.controllers.get('matrix')) {
+    canvas.getContext('2d').fillText('matrix 플러그인이 로드되지 않았습니다', 20, 30);
+    return;
+  }
+
+  const cityIds = Object.keys(CITIES);
+  const cityLabels = cityIds.map(id => CITIES[id].name);
+
+  // 정규화 셀 생성 (0~1, higherBetter 반전 처리)
+  const cells = [];
+  cfg.indicators.forEach(indKey => {
+    const range = getIndicatorRange(indKey);
+    const ind   = INDICATORS[indKey] || NAMYANGJU_INDICATORS[indKey];
+    cityIds.forEach(cityId => {
+      const raw = CITIES[cityId].indicators[indKey];
+      if (raw == null) return;
+      let norm = (raw - range.min) / (range.max - range.min + 1e-9);
+      norm = Math.max(0, Math.min(1, norm));
+      if (ind && !ind.higherBetter) norm = 1 - norm;
+      cells.push({ x: indKey, y: CITIES[cityId].name, v: norm, raw });
+    });
+  });
+
+  analysisChart = new Chart(canvas, {
+    type: 'matrix',
+    data: {
+      datasets: [{
+        label: cfg.label,
+        data: cells,
+        backgroundColor: (c) => {
+          const a = c.raw && typeof c.raw.v === 'number' ? c.raw.v : 0;
+          return `rgba(45, 95, 63, ${0.12 + a * 0.78})`;
+        },
+        borderColor: 'rgba(255,255,255,0.6)',
+        borderWidth: 1,
+        width:  ({ chart }) => {
+          const area = chart.chartArea;
+          return area ? (area.right - area.left) / cfg.indicators.length - 2 : 30;
+        },
+        height: ({ chart }) => {
+          const area = chart.chartArea;
+          return area ? (area.bottom - area.top) / cityIds.length - 2 : 18;
+        },
+      }],
+    },
+    options: {
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          type: 'category', labels: cfg.indicators, position: 'top',
+          grid: { display: false }, ticks: { font: { weight: '600' } },
+        },
+        y: {
+          type: 'category', labels: cityLabels, reverse: true,
+          grid: { display: false }, ticks: { font: { size: 11 } },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: () => '',
+            label: (ctx) => {
+              const r = ctx.raw || {};
+              const def = INDICATORS[r.x] || NAMYANGJU_INDICATORS[r.x];
+              const name = def ? def.name : r.x;
+              return `${r.y} · ${name} · ${(r.v * 100).toFixed(0)}점 (원값 ${r.raw})`;
+            },
+          },
+        },
+      },
+    },
+  });
 }
 
 // ===================================================================

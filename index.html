@@ -533,6 +533,10 @@
         <span class="tab-icon">🔮</span>
         <span class="tab-label">시나리오 분석</span>
       </button>
+      <button class="tab-btn" data-tab="analysis">
+        <span class="tab-icon">🔍</span>
+        <span class="tab-label">기능별 분석</span>
+      </button>
     </nav>
 
     <!-- ===== 메인 레이아웃 ===== -->
@@ -581,6 +585,30 @@
             </div>
           </div>
           <div class="legend-items" id="legend-items"></div>
+        </div>
+      </section>
+
+      <!-- 기능별 분석 컨테이너 (analysis 탭 활성 시 표시) -->
+      <section id="analysis-container" class="hidden">
+        <header class="analysis-head">
+          <div class="analysis-head-text">
+            <h2 class="analysis-title">분석 목적별 시각화</h2>
+            <p class="analysis-sub">분석 목적을 선택하면 해당 목적에 적합한 시각화가 자동으로 표시됩니다</p>
+          </div>
+          <div class="analysis-purpose-tabs" role="tablist" aria-label="분석 목적 선택">
+            <button class="analysis-purpose-tab is-active" data-purpose="pass-through" type="button" role="tab">🚦 통과형 식별</button>
+            <button class="analysis-purpose-tab" data-purpose="stay-conversion" type="button" role="tab">🏡 체류 전환</button>
+          </div>
+        </header>
+        <div class="analysis-body">
+          <div class="analysis-chart-wrap">
+            <canvas id="analysis-canvas"></canvas>
+          </div>
+          <aside class="analysis-interpret">
+            <h3 class="analysis-interpret-title" id="analysis-interpret-title">해석 가이드</h3>
+            <p class="analysis-interpret-desc" id="analysis-interpret-desc"></p>
+            <ul class="analysis-axis-info" id="analysis-axis-info"></ul>
+          </aside>
         </div>
       </section>
 
@@ -945,6 +973,8 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <!-- Chart.js Matrix 플러그인 (히트맵) -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
   <!-- App JS -->
   <script src="js/app.js" defer></script>
 

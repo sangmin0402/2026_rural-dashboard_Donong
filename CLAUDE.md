@@ -116,6 +116,8 @@ CITIES[cityId] = {
 | `showGuidePage()` / `renderGuidePage()` | 지표 가이드 오버레이 표시·렌더 |
 | `showOverlayScreen(elId, hash)` / `hideAllOverlayScreens()` | 풀스크린 오버레이 공통 |
 | `initOverlayScreens()` | 닫기·탭·ESC 인터랙션 초기화 |
+| `initAnalysisView()` / `switchAnalysisPurpose(key)` | 기능별 분석 탭 초기화·목적 전환 |
+| `renderAnalysisScatter(cfg)` / `renderAnalysisHeatmap(cfg)` | 산점도·히트맵 렌더 |
 | `calcCategoryScore(cityId, cat)` | 카테고리 종합 점수 계산 |
 | `getCityColor(cityId, indicatorKey)` | 지도 코로플레스 색상 (CATEGORY_TOTALS 포함) |
 | `getClassBreaks(values)` | 5분위 quantile 계산 |
@@ -224,6 +226,7 @@ const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
 - 베이스맵 선택 (7종) — Positron 기본
 - **시군 랭킹 페이지** (`#ranking-screen`, hash `#ranking`) — 4 탭 + 포디움 + 리스트
 - **지표 가이드 페이지** (`#guide-screen`, hash `#guide`) — 카테고리별 공통/자율 카드
+- **기능별 분석 탭** (6번째 탭 `data-tab="analysis"`) — `ANALYSIS_PURPOSES` 매핑, 통과형 식별(산점도) + 체류 전환(히트맵)
 
 ### 🚧 준비 중
 - **데이터 출처 페이지** (`data-action="sources"`) — toast 안내 중
