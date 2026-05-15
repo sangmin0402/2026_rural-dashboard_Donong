@@ -601,13 +601,24 @@
           </div>
         </header>
         <div class="analysis-body">
-          <div class="analysis-chart-wrap">
-            <canvas id="analysis-canvas"></canvas>
+          <div class="analysis-chart-col">
+            <div class="analysis-chart-wrap">
+              <canvas id="analysis-canvas"></canvas>
+            </div>
+            <div class="analysis-color-legend" id="analysis-color-legend" style="display:none">
+              <span class="analysis-color-legend-label">낮음</span>
+              <div class="analysis-color-legend-bar"></div>
+              <span class="analysis-color-legend-label">높음</span>
+              <div class="analysis-color-legend-ticks">
+                <span>0점</span><span>50점</span><span>100점</span>
+              </div>
+            </div>
           </div>
           <aside class="analysis-interpret">
             <h3 class="analysis-interpret-title" id="analysis-interpret-title">해석 가이드</h3>
             <p class="analysis-interpret-desc" id="analysis-interpret-desc"></p>
             <ul class="analysis-axis-info" id="analysis-axis-info"></ul>
+            <div class="analysis-howto" id="analysis-howto"></div>
           </aside>
         </div>
       </section>

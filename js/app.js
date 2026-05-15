@@ -1950,26 +1950,54 @@ function switchAnalysisPurpose(key) {
   const titleEl = document.getElementById('analysis-interpret-title');
   const descEl  = document.getElementById('analysis-interpret-desc');
   const axisUl  = document.getElementById('analysis-axis-info');
+  const howEl   = document.getElementById('analysis-howto');
+  const legendEl = document.getElementById('analysis-color-legend');
   if (titleEl) titleEl.textContent = cfg.title;
   if (descEl)  descEl.textContent  = cfg.description;
 
   if (cfg.vizType === 'scatter') {
+    // 사분면 라벨 색을 차트와 동기화
     if (axisUl) {
       axisUl.innerHTML = [
-        `<li><b>X축</b> · ${cfg.axes.x.label} — ${cfg.axes.x.explain}</li>`,
-        `<li><b>Y축</b> · ${cfg.axes.y.label} — ${cfg.axes.y.explain}</li>`,
-        ...cfg.quadrantHints.map(h => `<li>${h}</li>`),
+        `<li class="axis-info-axis"><b>X축</b> · ${cfg.axes.x.label}<br><span class="axis-info-explain">${cfg.axes.x.explain}</span></li>`,
+        `<li class="axis-info-axis"><b>Y축</b> · ${cfg.axes.y.label}<br><span class="axis-info-explain">${cfg.axes.y.explain}</span></li>`,
+        `<li class="quad-legend quad-legend--upperRight"><span class="quad-dot"></span>우상단 — 정주·자립형</li>`,
+        `<li class="quad-legend quad-legend--lowerRight"><span class="quad-dot"></span>우하단 — <b>통과형</b> (집중 모니터링)</li>`,
+        `<li class="quad-legend quad-legend--upperLeft"><span class="quad-dot"></span>좌상단 — 안정 보전형</li>`,
+        `<li class="quad-legend quad-legend--lowerLeft"><span class="quad-dot"></span>좌하단 — 쇠퇴 주의</li>`,
       ].join('');
     }
+    if (howEl) {
+      howEl.innerHTML = `
+        <h4>이렇게 읽으세요</h4>
+        <ol>
+          <li>사분면 배경색이 4가지 시군 유형 영역</li>
+          <li>점선은 15개 시군 X·Y 값의 중앙값</li>
+          <li>점 색이 그 시군이 속한 사분면 유형</li>
+          <li>주황색(우하단)이 통과형 후보 시군</li>
+        </ol>`;
+    }
+    if (legendEl) legendEl.style.display = 'none';
     renderAnalysisScatter(cfg);
   } else if (cfg.vizType === 'heatmap') {
     if (axisUl) {
-      axisUl.innerHTML = cfg.indicators
-        .map(k => {
-          const def = INDICATORS[k] || NAMYANGJU_INDICATORS[k];
-          return `<li><b>${k}</b> · ${def ? def.name : k}</li>`;
-        }).join('');
+      axisUl.innerHTML = cfg.indicators.map(k => {
+        const def = INDICATORS[k] || NAMYANGJU_INDICATORS[k];
+        const cat = def?.category || '';
+        return `<li class="axis-info-indicator axis-info-indicator--${cat}"><b>${k}</b> · ${def ? def.name : k}</li>`;
+      }).join('');
     }
+    if (howEl) {
+      howEl.innerHTML = `
+        <h4>이렇게 읽으세요</h4>
+        <ol>
+          <li>시군은 6개 지표 종합 점수 높은 순으로 정렬</li>
+          <li>한 행이 균일하게 진하면 다방면에서 강세 → 체류 전환 잠재력 ↑</li>
+          <li>컬럼 헤더 색이 카테고리 (🔵삶터 🟠일터 🟢쉼터)</li>
+          <li>맨 오른쪽 "종합" 열에서 총점 비교</li>
+        </ol>`;
+    }
+    if (legendEl) legendEl.style.display = '';
     renderAnalysisHeatmap(cfg);
   }
 }
@@ -1981,19 +2009,113 @@ function destroyAnalysisChart() {
   }
 }
 
+// 사분면 색상 팔레트 (산점도)
+const QUADRANT_COLORS = {
+  upperRight: { fill: '#52A866', bg: 'rgba(82, 168, 102, 0.10)',  border: '#3B8A4E', label: '정주·자립형' },
+  lowerRight: { fill: '#E08A4A', bg: 'rgba(224, 138, 74, 0.13)',  border: '#C56F2E', label: '통과형' },
+  upperLeft:  { fill: '#4A90D9', bg: 'rgba(74, 144, 217, 0.10)',  border: '#3673BC', label: '안정 보전형' },
+  lowerLeft:  { fill: '#8C8C8C', bg: 'rgba(140, 140, 140, 0.10)', border: '#666666', label: '쇠퇴 주의' },
+};
+
+function _quadrantOf(x, y, xMed, yMed) {
+  const isRight = x >= xMed;
+  const isUpper = y >= yMed;
+  return isRight ? (isUpper ? 'upperRight' : 'lowerRight') : (isUpper ? 'upperLeft' : 'lowerLeft');
+}
+
+function _median(arr) {
+  if (!arr.length) return 0;
+  const s = [...arr].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
 /**
- * 산점도 렌더 — x·y 지표 교차 분포
+ * 산점도 렌더 — 사분면 배경/기준선/색구분/이름표 모두 포함
  */
 function renderAnalysisScatter(cfg) {
   destroyAnalysisChart();
   const canvas = document.getElementById('analysis-canvas');
   if (!canvas) return;
 
-  const data = Object.values(CITIES).map(city => ({
+  // 데이터 + 사분면 분류
+  const data = Object.entries(CITIES).map(([cityId, city]) => ({
+    cityId,
     x: city.indicators[cfg.axes.x.key],
     y: city.indicators[cfg.axes.y.key],
     cityName: city.name,
   })).filter(p => p.x != null && p.y != null);
+
+  const xMed = _median(data.map(d => d.x));
+  const yMed = _median(data.map(d => d.y));
+  data.forEach(d => { d.quadrant = _quadrantOf(d.x, d.y, xMed, yMed); });
+
+  // 차트 영역 외부 플러그인 — 사분면 배경, 기준선, 이름표
+  const quadrantPlugin = {
+    id: 'analysisScatterQuadrants',
+    beforeDatasetsDraw(chart) {
+      const { ctx, chartArea, scales } = chart;
+      if (!chartArea) return;
+      const xPx = scales.x.getPixelForValue(xMed);
+      const yPx = scales.y.getPixelForValue(yMed);
+      const left = chartArea.left, right = chartArea.right;
+      const top  = chartArea.top,  bot   = chartArea.bottom;
+      ctx.save();
+      // 4 사분면 배경
+      ctx.fillStyle = QUADRANT_COLORS.upperRight.bg;
+      ctx.fillRect(xPx, top, right - xPx, yPx - top);
+      ctx.fillStyle = QUADRANT_COLORS.lowerRight.bg;
+      ctx.fillRect(xPx, yPx, right - xPx, bot - yPx);
+      ctx.fillStyle = QUADRANT_COLORS.upperLeft.bg;
+      ctx.fillRect(left, top, xPx - left, yPx - top);
+      ctx.fillStyle = QUADRANT_COLORS.lowerLeft.bg;
+      ctx.fillRect(left, yPx, xPx - left, bot - yPx);
+      // 중앙값 기준선 (점선)
+      ctx.strokeStyle = 'rgba(0,0,0,0.28)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      ctx.moveTo(xPx, top); ctx.lineTo(xPx, bot);
+      ctx.moveTo(left, yPx); ctx.lineTo(right, yPx);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // 사분면 라벨 (구석)
+      ctx.font = 'bold 11px "Noto Sans KR", sans-serif';
+      ctx.textBaseline = 'top';
+      const pad = 6;
+      ctx.fillStyle = QUADRANT_COLORS.upperRight.border;
+      ctx.textAlign = 'right'; ctx.fillText('정주·자립형', right - pad, top + pad);
+      ctx.fillStyle = QUADRANT_COLORS.lowerRight.border;
+      ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+      ctx.fillText('🚦 통과형', right - pad, bot - pad);
+      ctx.fillStyle = QUADRANT_COLORS.upperLeft.border;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillText('안정 보전형', left + pad, top + pad);
+      ctx.fillStyle = QUADRANT_COLORS.lowerLeft.border;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+      ctx.fillText('쇠퇴 주의', left + pad, bot - pad);
+      ctx.restore();
+    },
+    afterDatasetsDraw(chart) {
+      // 시군명 라벨 — 점 옆에
+      const { ctx } = chart;
+      const meta = chart.getDatasetMeta(0);
+      if (!meta) return;
+      ctx.save();
+      ctx.font = '11px "Noto Sans KR", sans-serif';
+      ctx.textBaseline = 'middle';
+      meta.data.forEach((pt, i) => {
+        const raw = chart.data.datasets[0].data[i];
+        if (!raw) return;
+        const isFocal = raw.cityId === 'namyangju';
+        ctx.fillStyle = isFocal ? '#000' : 'rgba(40, 50, 45, 0.85)';
+        ctx.font = isFocal ? 'bold 12px "Noto Sans KR", sans-serif' : '11px "Noto Sans KR", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(raw.cityName, pt.x + 10, pt.y);
+      });
+      ctx.restore();
+    },
+  };
 
   analysisChart = new Chart(canvas, {
     type: 'scatter',
@@ -2001,61 +2123,128 @@ function renderAnalysisScatter(cfg) {
       datasets: [{
         label: cfg.label,
         data,
-        backgroundColor: 'rgba(45, 95, 63, 0.68)',
-        borderColor: '#2D5F3F',
-        borderWidth: 1.5,
-        pointRadius: 8,
-        pointHoverRadius: 11,
+        backgroundColor: (ctx) => {
+          const r = ctx.raw;
+          if (!r) return '#999';
+          return QUADRANT_COLORS[r.quadrant].fill;
+        },
+        borderColor: (ctx) => {
+          const r = ctx.raw;
+          if (!r) return '#666';
+          if (r.cityId === 'namyangju') return '#000';
+          return QUADRANT_COLORS[r.quadrant].border;
+        },
+        borderWidth: (ctx) => (ctx.raw?.cityId === 'namyangju' ? 2.5 : 1.5),
+        pointRadius: (ctx) => (ctx.raw?.cityId === 'namyangju' ? 10 : 8),
+        pointHoverRadius: 12,
+        pointStyle: (ctx) => (ctx.raw?.cityId === 'namyangju' ? 'rectRot' : 'circle'),
       }],
     },
     options: {
       maintainAspectRatio: false,
+      layout: { padding: { right: 40 } },
       scales: {
-        x: { title: { display: true, text: cfg.axes.x.label, font: { weight: '600' } }, grid: { color: 'rgba(0,0,0,0.06)' } },
-        y: { title: { display: true, text: cfg.axes.y.label, font: { weight: '600' } }, grid: { color: 'rgba(0,0,0,0.06)' } },
+        x: {
+          title: { display: true, text: cfg.axes.x.label, font: { weight: '600', size: 13 } },
+          grid: { color: 'rgba(0,0,0,0.04)' },
+        },
+        y: {
+          title: { display: true, text: cfg.axes.y.label, font: { weight: '600', size: 13 } },
+          grid: { color: 'rgba(0,0,0,0.04)' },
+        },
       },
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => `${ctx.raw.cityName} (${ctx.raw.x}, ${ctx.raw.y})`,
+            title: (items) => items[0]?.raw?.cityName || '',
+            label: (ctx) => {
+              const r = ctx.raw;
+              return [
+                `${cfg.axes.x.label}: ${r.x}`,
+                `${cfg.axes.y.label}: ${r.y}`,
+                `유형: ${QUADRANT_COLORS[r.quadrant].label}`,
+              ];
+            },
           },
         },
       },
     },
+    plugins: [quadrantPlugin],
   });
 }
 
 /**
- * 히트맵 렌더 — chartjs-chart-matrix 플러그인 사용
+ * 히트맵 렌더 — 시군 정렬 + 셀 점수 + 카테고리 색 + 종합 열
  */
 function renderAnalysisHeatmap(cfg) {
   destroyAnalysisChart();
   const canvas = document.getElementById('analysis-canvas');
   if (!canvas) return;
-  // 플러그인 누락 가드
   if (typeof Chart === 'undefined' || !Chart.registry.controllers.get('matrix')) {
     canvas.getContext('2d').fillText('matrix 플러그인이 로드되지 않았습니다', 20, 30);
     return;
   }
 
-  const cityIds = Object.keys(CITIES);
-  const cityLabels = cityIds.map(id => CITIES[id].name);
+  const allCityIds = Object.keys(CITIES);
 
-  // 정규화 셀 생성 (0~1, higherBetter 반전 처리)
-  const cells = [];
-  cfg.indicators.forEach(indKey => {
+  // 정규화 함수 — 0~1, higherBetter 반전
+  const normForCity = (cityId, indKey) => {
     const range = getIndicatorRange(indKey);
     const ind   = INDICATORS[indKey] || NAMYANGJU_INDICATORS[indKey];
-    cityIds.forEach(cityId => {
-      const raw = CITIES[cityId].indicators[indKey];
-      if (raw == null) return;
-      let norm = (raw - range.min) / (range.max - range.min + 1e-9);
-      norm = Math.max(0, Math.min(1, norm));
-      if (ind && !ind.higherBetter) norm = 1 - norm;
-      cells.push({ x: indKey, y: CITIES[cityId].name, v: norm, raw });
+    const raw   = CITIES[cityId].indicators[indKey];
+    if (raw == null) return null;
+    let norm = (raw - range.min) / (range.max - range.min + 1e-9);
+    norm = Math.max(0, Math.min(1, norm));
+    if (ind && !ind.higherBetter) norm = 1 - norm;
+    return { norm, raw };
+  };
+
+  // 시군별 6 지표 평균 → 정렬
+  const cityScored = allCityIds.map(cityId => {
+    const scores = cfg.indicators.map(k => normForCity(cityId, k)).filter(s => s != null);
+    const avg = scores.length ? scores.reduce((a, b) => a + b.norm, 0) / scores.length : 0;
+    return { cityId, name: CITIES[cityId].name, avg };
+  }).sort((a, b) => b.avg - a.avg);
+
+  const sortedNames = cityScored.map(c => c.name);
+
+  // 컬럼 = 지표 + 마지막 "종합" 열
+  const TOTAL_KEY = '__total__';
+  const colKeys = [...cfg.indicators, TOTAL_KEY];
+
+  // 셀 데이터
+  const cells = [];
+  cityScored.forEach(({ cityId, name, avg }) => {
+    cfg.indicators.forEach(indKey => {
+      const s = normForCity(cityId, indKey);
+      if (!s) return;
+      cells.push({ x: indKey, y: name, v: s.norm, raw: s.raw, isTotal: false });
     });
+    cells.push({ x: TOTAL_KEY, y: name, v: avg, raw: avg * 100, isTotal: true });
   });
+
+  // 값 그리기 플러그인
+  const valuePlugin = {
+    id: 'analysisHeatmapValues',
+    afterDatasetsDraw(chart) {
+      const { ctx } = chart;
+      const meta = chart.getDatasetMeta(0);
+      if (!meta) return;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      meta.data.forEach((cell, i) => {
+        const d = chart.data.datasets[0].data[i];
+        if (!d) return;
+        const score = Math.round(d.v * 100);
+        ctx.font = d.isTotal ? 'bold 12px "Noto Sans KR", sans-serif' : '11px "Noto Sans KR", sans-serif';
+        ctx.fillStyle = d.v > 0.55 ? '#fff' : '#2D5F3F';
+        ctx.fillText(String(score), cell.x, cell.y);
+      });
+      ctx.restore();
+    },
+  };
 
   analysisChart = new Chart(canvas, {
     type: 'matrix',
@@ -2064,31 +2253,51 @@ function renderAnalysisHeatmap(cfg) {
         label: cfg.label,
         data: cells,
         backgroundColor: (c) => {
-          const a = c.raw && typeof c.raw.v === 'number' ? c.raw.v : 0;
-          return `rgba(45, 95, 63, ${0.12 + a * 0.78})`;
+          const r = c.raw || {};
+          const v = typeof r.v === 'number' ? r.v : 0;
+          if (r.isTotal) {
+            // 종합 열은 액센트 색조
+            return `rgba(212, 165, 116, ${0.18 + v * 0.7})`;
+          }
+          return `rgba(45, 95, 63, ${0.10 + v * 0.78})`;
         },
-        borderColor: 'rgba(255,255,255,0.6)',
-        borderWidth: 1,
+        borderColor: (c) => (c.raw?.isTotal ? 'rgba(196, 138, 70, 0.6)' : 'rgba(255,255,255,0.7)'),
+        borderWidth: (c) => (c.raw?.isTotal ? 1.5 : 1),
         width:  ({ chart }) => {
-          const area = chart.chartArea;
-          return area ? (area.right - area.left) / cfg.indicators.length - 2 : 30;
+          const a = chart.chartArea;
+          return a ? (a.right - a.left) / colKeys.length - 2 : 30;
         },
         height: ({ chart }) => {
-          const area = chart.chartArea;
-          return area ? (area.bottom - area.top) / cityIds.length - 2 : 18;
+          const a = chart.chartArea;
+          return a ? (a.bottom - a.top) / sortedNames.length - 2 : 18;
         },
       }],
     },
     options: {
       maintainAspectRatio: false,
+      layout: { padding: { left: 4, right: 4, top: 4, bottom: 4 } },
       scales: {
         x: {
-          type: 'category', labels: cfg.indicators, position: 'top',
-          grid: { display: false }, ticks: { font: { weight: '600' } },
+          type: 'category', labels: colKeys, position: 'top',
+          grid: { display: false },
+          ticks: {
+            font: { weight: '700', size: 12 },
+            color: (ctx) => {
+              const key = colKeys[ctx.index];
+              if (key === TOTAL_KEY) return '#C56F2E';
+              const def = INDICATORS[key] || NAMYANGJU_INDICATORS[key];
+              if (def?.category === 'samlter') return '#3673BC';
+              if (def?.category === 'ilter')   return '#C56F2E';
+              if (def?.category === 'shimter') return '#3B8A4E';
+              return '#444';
+            },
+            callback: (val, idx) => (colKeys[idx] === TOTAL_KEY ? '종합' : colKeys[idx]),
+          },
         },
         y: {
-          type: 'category', labels: cityLabels, reverse: true,
-          grid: { display: false }, ticks: { font: { size: 11 } },
+          type: 'category', labels: sortedNames, reverse: true,
+          grid: { display: false },
+          ticks: { font: { size: 11.5, weight: '500' } },
         },
       },
       plugins: {
@@ -2098,14 +2307,16 @@ function renderAnalysisHeatmap(cfg) {
             title: () => '',
             label: (ctx) => {
               const r = ctx.raw || {};
+              if (r.isTotal) return `${r.y} · 종합 ${Math.round(r.v * 100)}점`;
               const def = INDICATORS[r.x] || NAMYANGJU_INDICATORS[r.x];
               const name = def ? def.name : r.x;
-              return `${r.y} · ${name} · ${(r.v * 100).toFixed(0)}점 (원값 ${r.raw})`;
+              return `${r.y} · ${name} · ${Math.round(r.v * 100)}점 (원값 ${r.raw})`;
             },
           },
         },
       },
     },
+    plugins: [valuePlugin],
   });
 }
 
