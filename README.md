@@ -130,7 +130,12 @@
 |------|------|------|------|
 | **총인구 (15개 시군)** | KOSIS — 주민등록인구통계 (행안부) | 2026년 4월 | `region-meta.json` raw |
 | **세대수 (15개 시군)** | KOSIS — 주민등록세대수 (행안부) | 2026년 4월 | `region-meta.json` raw |
-| **L1 인구증가율 (15개 시군)** | 산식 자동 계산 (현재 vs. 전년동월) | 2025-04 → 2026-04 | `region-meta.json` computed |
+| **L1 인구증가율 (15개 시군)** | 산식 자동 계산 (현재 vs. 전년동월) | 2025-04 → 2026-04 | computed |
+| **L2 노령화지수 (15개 시군)** | SGIS — 총조사 주요지표 `aged_child_idx` | 2024 | computed |
+| **W2 사업체수 (15개 시군)** | SGIS — 사업체통계 `corp_cnt` | 2024 | computed |
+| **W8 서비스판매 종사자 (15개 시군)** | SGIS — 도매소매(G) + 숙박음식(I) 종사자 합 | 2024 | computed (산식) |
+| **농가·임가·어가 (15개 시군)** | SGIS — 농림어가 통계 | 2020 | raw |
+| **평균나이·인구밀도·총주택·종사자** | SGIS — 총조사 주요지표 + 사업체통계 | 2024 | raw |
 | GeoJSON 행정경계 | 국토교통부 | 2024~2025 | 시군·읍면·행정리 3단계 |
 | 5대 권역 분류 | 보고서 표 2-36 | — | 경기도형 농촌공간 유형화 |
 | 지표 정의·단위·방향 | 보고서 기반 | — | higherBetter 포함 |
@@ -295,18 +300,21 @@ const name = CITIES[cityId].name;
 
 ## 9. 이슈 트래커 — 데이터 수집 미해결 항목
 
-### 🟡 SGIS API 활성화 대기 (자격증명 발급은 완료, 통계 권한 활성화 대기 중)
+### ✅ SGIS API 연결 완료 (시군구 단위 15/15)
 
-`fetch_sgis.py` 작성 완료, 인증은 통과하나 통계 API가 빈 응답 — 신청 후 1-3일 활성화 예상.  
-활성화 후 코드 변경 없이 `python fetch_sgis.py` 1회 실행으로 아래 모두 해결:
+`fetch_sgis.py` 로 8개 endpoint 정상 수집 (남양주 raw 20개 / computed 4개):
 
-| 지표 | SGIS endpoint | 해결 가능 항목 |
-|------|--------------|---------------|
-| L2 노령화지수 | population.json (aging_idx) | ✅ 자동 |
-| W2 사업체수 / 종사자수 | company.json | ✅ 자동 |
-| **W8 서비스판매 종사자** | company.json + class_code G·I | ✅ 자동 |
-| W5 농업 세대교체 입력 | farmhousehold.json | ✅ 자동 (부분) |
-| 평균나이 / 인구밀도 / 농가수 | population.json | ✅ 자동 |
+| 지표 | SGIS endpoint | 상태 |
+|------|--------------|------|
+| **L2 노령화지수** | population.json `aged_child_idx` | ✅ 자동 계산 |
+| **W2 사업체수** | company.json `corp_cnt` | ✅ 자동 |
+| **W8 서비스판매 종사자** | company.json + class_code G·I (도소매+숙박음식) | ✅ 자동 계산 (합산) |
+| 평균나이 / 인구밀도 / 총주택 | population.json | ✅ |
+| 농가·임가·어가 수 | farm/forestry/fishery household.json | ✅ |
+| 전산업 종사자 | company.json `tot_worker` | ✅ |
+
+⚠️ SGIS는 **KOSIS 내부 코드 체계** 사용 (경기도 = `31`, 행안부 표준 `41` 아님).  
+용인시는 분구 3개 합산 처리. 자세한 매핑: `docs/DATA-SOURCES.md` 6-4 절.
 
 ### 🔴 KOSIS API 차단 항목 (시군구 단위 미제공)
 

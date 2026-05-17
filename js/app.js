@@ -1385,29 +1385,30 @@ function renderKosisSigunStats(cityId) {
   // 카드 정의 — 어떤 키든 readField()로 어느 층이든 표시 가능
   // 데이터 미수집 항목은 readField()가 null 반환 → 카드 자동 숨김
   const STAT_DEFS = [
-    // ── KOSIS raw (현재 활성) ──
+    // ── 기본 (KOSIS) ──
     { key: 'population',           label: '총인구',         emoji: '👥', fmt: v => v.toLocaleString() + ' 명' },
     { key: 'households',           label: '세대 수',        emoji: '🏠', fmt: v => v.toLocaleString() + ' 가구' },
 
-    // ── computed (산식 계산값) ──
-    { key: 'L1_pop_growth_rate',   label: '인구증가율',     emoji: '📈', fmt: v => (v >= 0 ? '+' : '') + v.toFixed(2) + ' %' },
+    // ── computed (산식 계산값 — 핵심 농촌다움 지표) ──
+    { key: 'L1_pop_growth_rate',   label: '인구증가율 (L1)', emoji: '📈', fmt: v => (v >= 0 ? '+' : '') + v.toFixed(2) + ' %' },
     { key: 'L2_aging_index',       label: '노령화지수 (L2)', emoji: '👴', fmt: v => v.toFixed(1) },
-    { key: 'L3_net_migration_rate',label: '인구순이동률',   emoji: '🚚', fmt: v => (v >= 0 ? '+' : '') + v.toFixed(2) + ' ‰' },
+    { key: 'L3_net_migration_rate',label: '인구순이동률 (L3)', emoji: '🚚', fmt: v => (v >= 0 ? '+' : '') + v.toFixed(2) + ' ‰' },
     { key: 'W2_business_count',    label: '사업체 수 (W2)',  emoji: '🏢', fmt: v => v.toLocaleString() + ' 개' },
     { key: 'W8_service_sales_workers', label: '서비스판매 종사자 (W8)', emoji: '🛍️', fmt: v => v.toLocaleString() + ' 명' },
 
-    // ── SGIS raw (자격증명 권한 활성화 후 표시) ──
+    // ── SGIS raw (보조 지표) ──
     { key: 'avg_age',              label: '평균 나이',      emoji: '🎂', fmt: v => v.toFixed(1) + ' 세' },
     { key: 'ppltn_dnsty',          label: '인구밀도',       emoji: '🌆', fmt: v => v.toLocaleString() + ' 명/㎢' },
-    { key: 'all_tot_worker',       label: '종사자 수',      emoji: '👷', fmt: v => v.toLocaleString() + ' 명' },
+    { key: 'all_tot_worker',       label: '전산업 종사자',  emoji: '👷', fmt: v => v.toLocaleString() + ' 명' },
     { key: 'farm_cnt',             label: '농가 수',        emoji: '🌾', fmt: v => v.toLocaleString() + ' 농가' },
-    { key: 'farm_population',      label: '농가 인구',      emoji: '👨‍🌾', fmt: v => v.toLocaleString() + ' 명' },
+    { key: 'forestry_cnt',         label: '임가 수',        emoji: '🌲', fmt: v => v.toLocaleString() + ' 임가' },
+    { key: 'fishery_cnt',          label: '어가 수',        emoji: '🐟', fmt: v => v.toLocaleString() + ' 어가' },
     { key: 'tot_house',            label: '총 주택',        emoji: '🏘️', fmt: v => v.toLocaleString() + ' 호' },
 
     // ── manual (수동 입력 — 있을 때만 표시) ──
-    { key: 'W3_fiscal_independence', label: '재정자립도',   emoji: '💼', fmt: v => v.toFixed(1) + ' %' },
-    { key: 'W4_grdp',                label: 'GRDP',         emoji: '💰', fmt: v => v.toLocaleString() + ' 억원' },
-    { key: 'R8_heritage_count',      label: '국가유산',     emoji: '🏯', fmt: v => v.toLocaleString() + ' 개' },
+    { key: 'W3_fiscal_independence', label: '재정자립도 (W3)', emoji: '💼', fmt: v => v.toFixed(1) + ' %' },
+    { key: 'W4_grdp',                label: 'GRDP (W4)',     emoji: '💰', fmt: v => v.toLocaleString() + ' 억원' },
+    { key: 'R8_heritage_count',      label: '국가유산 (R8)', emoji: '🏯', fmt: v => v.toLocaleString() + ' 개' },
   ];
 
   // 기준 기간 포맷 (202604 → 2026년 4월)

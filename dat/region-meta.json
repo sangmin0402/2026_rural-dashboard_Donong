@@ -1,7 +1,7 @@
 {
   "_meta": {
-    "source": "kosis_api + manual",
-    "fetched_at": "2026-05-17T17:16:33.032210",
+    "source": "kosis_api + sgis_api + manual",
+    "fetched_at": "2026-05-17T17:34:10.498892",
     "schema": "3-layer (raw / computed / manual)",
     "tables": {
       "sigun_pop": {
@@ -18,48 +18,62 @@
       },
       "sgis_main_stats": {
         "endpoint": "population",
-        "year": 2023,
-        "status": "failed"
+        "year": 2024,
+        "count": 15,
+        "status": "ok"
       },
       "sgis_company_all": {
         "endpoint": "company",
-        "year": 2023,
-        "status": "failed"
+        "year": 2024,
+        "count": 15,
+        "status": "ok"
       },
       "sgis_company_wholesale": {
         "endpoint": "company",
-        "year": 2023,
-        "status": "failed"
+        "year": 2024,
+        "count": 15,
+        "status": "ok"
       },
       "sgis_company_hospitality": {
         "endpoint": "company",
-        "year": 2023,
-        "status": "failed"
+        "year": 2024,
+        "count": 15,
+        "status": "ok"
       },
       "sgis_farm": {
         "endpoint": "farmhousehold",
-        "year": 2023,
-        "status": "failed"
+        "year": 2020,
+        "count": 15,
+        "status": "ok"
       },
       "sgis_house": {
         "endpoint": "house",
-        "year": 2023,
-        "status": "failed"
+        "year": 2024,
+        "count": 15,
+        "status": "ok"
       },
       "sgis_forestry": {
         "endpoint": "forestryhousehold",
-        "year": 2023,
-        "status": "failed"
+        "year": 2020,
+        "count": 15,
+        "status": "ok"
       },
       "sgis_fishery": {
         "endpoint": "fisheryhousehold",
-        "year": 2023,
-        "status": "failed"
+        "year": 2020,
+        "count": 10,
+        "status": "ok"
       },
       "sgis_household_member": {
         "endpoint": "householdmember",
         "year": 2023,
         "status": "failed"
+      },
+      "sgis_household_member_farm": {
+        "endpoint": "householdmember",
+        "year": 2020,
+        "count": 0,
+        "status": "ok"
       }
     },
     "coverage": {
@@ -85,6 +99,91 @@
           "value": 297218,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 615755,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 41.3,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 1341.1,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 106.0,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 223750,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 59736,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 260328,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 59736,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 283331,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 13893,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 28863,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 9567,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 24694,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 9054,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 223750,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 238,
+          "year": "2020",
+          "source": "sgis:forestry"
+        },
+        "fishery_cnt": {
+          "value": 52,
+          "year": "2020",
+          "source": "sgis:fishery"
         }
       },
       "computed": {
@@ -95,6 +194,31 @@
           "inputs": {
             "population": 616517,
             "population_prev": 600697
+          }
+        },
+        "L2_aging_index": {
+          "value": 106.0,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 106.0
+          }
+        },
+        "W2_business_count": {
+          "value": 59736,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 59736
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 53557,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 28863,
+            "hospitality_workers": 24694
           }
         }
       },
@@ -116,6 +240,91 @@
           "value": 309126,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 718385,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 43.7,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 1564.0,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 144.7,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 252358,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 68335,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 280404,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 68335,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 217507,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 22592,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 46259,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 7701,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 21439,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 4930,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 252358,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 376,
+          "year": "2020",
+          "source": "sgis:forestry"
+        },
+        "fishery_cnt": {
+          "value": 37,
+          "year": "2020",
+          "source": "sgis:fishery"
         }
       },
       "computed": {
@@ -126,6 +335,31 @@
           "inputs": {
             "population": 728126,
             "population_prev": 730371
+          }
+        },
+        "L2_aging_index": {
+          "value": 144.7,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 144.7
+          }
+        },
+        "W2_business_count": {
+          "value": 68335,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 68335
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 67698,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 46259,
+            "hospitality_workers": 21439
           }
         }
       },
@@ -147,6 +381,86 @@
           "value": 450327,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 1077481,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 42.47,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 4819.97,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 135.13,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 361323,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 106785,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 413755,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 106785,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 436325,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 36685,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 74698,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 10990,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 34135,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 7288,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 361323,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 510,
+          "year": "2020",
+          "source": "sgis:forestry"
         }
       },
       "computed": {
@@ -157,6 +471,31 @@
           "inputs": {
             "population": 1090269,
             "population_prev": 1089752
+          }
+        },
+        "L2_aging_index": {
+          "value": 135.13,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 135.13
+          }
+        },
+        "W2_business_count": {
+          "value": 106785,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 106785
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 108833,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 74698,
+            "hospitality_workers": 34135
           }
         }
       },
@@ -178,6 +517,91 @@
           "value": 107814,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 230189,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 42.9,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 498.8,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 152.7,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 77887,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 26961,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 92642,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 26961,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 143270,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 6269,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 14294,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 3828,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 9341,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 8229,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 77887,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 263,
+          "year": "2020",
+          "source": "sgis:forestry"
+        },
+        "fishery_cnt": {
+          "value": 5,
+          "year": "2020",
+          "source": "sgis:fishery"
         }
       },
       "computed": {
@@ -188,6 +612,31 @@
           "inputs": {
             "population": 223506,
             "population_prev": 222671
+          }
+        },
+        "L2_aging_index": {
+          "value": 152.7,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 152.7
+          }
+        },
+        "W2_business_count": {
+          "value": 26961,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 26961
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 23635,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 14294,
+            "hospitality_workers": 9341
           }
         }
       },
@@ -209,6 +658,91 @@
           "value": 98257,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 215739,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 44.2,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 390.2,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 198.1,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 76656,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 24820,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 86190,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 24820,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 116273,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 6074,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 13838,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 3577,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 8243,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 7943,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 76656,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 233,
+          "year": "2020",
+          "source": "sgis:forestry"
+        },
+        "fishery_cnt": {
+          "value": 8,
+          "year": "2020",
+          "source": "sgis:fishery"
         }
       },
       "computed": {
@@ -219,6 +753,31 @@
           "inputs": {
             "population": 198089,
             "population_prev": 195289
+          }
+        },
+        "L2_aging_index": {
+          "value": 198.1,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 198.1
+          }
+        },
+        "W2_business_count": {
+          "value": 24820,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 24820
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 22081,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 13838,
+            "hospitality_workers": 8243
           }
         }
       },
@@ -240,6 +799,91 @@
           "value": 432271,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 1004079,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 38.8,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 1263.1,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 68.1,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 335307,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 119366,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 388620,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 119366,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 611242,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 29492,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 62303,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 12281,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 34532,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 10395,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 335307,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 311,
+          "year": "2020",
+          "source": "sgis:forestry"
+        },
+        "fishery_cnt": {
+          "value": 363,
+          "year": "2020",
+          "source": "sgis:fishery"
         }
       },
       "computed": {
@@ -250,6 +894,31 @@
           "inputs": {
             "population": 996582,
             "population_prev": 977283
+          }
+        },
+        "L2_aging_index": {
+          "value": 68.1,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 68.1
+          }
+        },
+        "W2_business_count": {
+          "value": 119366,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 119366
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 96835,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 62303,
+            "hospitality_workers": 34532
           }
         }
       },
@@ -271,6 +940,91 @@
           "value": 176355,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 402335,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 43.5,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 936.4,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 144.9,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 137043,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 46139,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 158681,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 46139,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 159703,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 13500,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 30930,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 4587,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 11924,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 3928,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 137043,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 244,
+          "year": "2020",
+          "source": "sgis:forestry"
+        },
+        "fishery_cnt": {
+          "value": 10,
+          "year": "2020",
+          "source": "sgis:fishery"
         }
       },
       "computed": {
@@ -281,6 +1035,31 @@
           "inputs": {
             "population": 397402,
             "population_prev": 396950
+          }
+        },
+        "L2_aging_index": {
+          "value": 144.9,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 144.9
+          }
+        },
+        "W2_business_count": {
+          "value": 46139,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 46139
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 42854,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 30930,
+            "hospitality_workers": 11924
           }
         }
       },
@@ -302,6 +1081,86 @@
           "value": 133062,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 293000,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 43.0,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 944.4,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 137.7,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 108787,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 30845,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 116280,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 30845,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 106390,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 8943,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 17365,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 3590,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 9426,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 3735,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 108787,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 160,
+          "year": "2020",
+          "source": "sgis:forestry"
         }
       },
       "computed": {
@@ -312,6 +1171,31 @@
           "inputs": {
             "population": 296910,
             "population_prev": 291318
+          }
+        },
+        "L2_aging_index": {
+          "value": 137.7,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 137.7
+          }
+        },
+        "W2_business_count": {
+          "value": 30845,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 30845
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 26791,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 17365,
+            "hospitality_workers": 9426
           }
         }
       },
@@ -333,6 +1217,91 @@
           "value": 74115,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 157166,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 47.4,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 190.5,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 334.2,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 53679,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 26224,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 62351,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 26224,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 102895,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 5878,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 13562,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 3679,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 8003,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 6035,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 53679,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 440,
+          "year": "2020",
+          "source": "sgis:forestry"
+        },
+        "fishery_cnt": {
+          "value": 12,
+          "year": "2020",
+          "source": "sgis:fishery"
         }
       },
       "computed": {
@@ -343,6 +1312,31 @@
           "inputs": {
             "population": 140435,
             "population_prev": 141186
+          }
+        },
+        "L2_aging_index": {
+          "value": 334.2,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 334.2
+          }
+        },
+        "W2_business_count": {
+          "value": 26224,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 26224
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 21565,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 13562,
+            "hospitality_workers": 8003
           }
         }
       },
@@ -364,6 +1358,91 @@
           "value": 57047,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 117477,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 48.1,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 193.6,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 293.0,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 43073,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 15967,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 49618,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 15967,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 58696,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 3758,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 8615,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 2191,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 5478,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 6878,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 43073,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 193,
+          "year": "2020",
+          "source": "sgis:forestry"
+        },
+        "fishery_cnt": {
+          "value": 78,
+          "year": "2020",
+          "source": "sgis:fishery"
         }
       },
       "computed": {
@@ -374,6 +1453,31 @@
           "inputs": {
             "population": 113605,
             "population_prev": 114289
+          }
+        },
+        "L2_aging_index": {
+          "value": 293.0,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 293.0
+          }
+        },
+        "W2_business_count": {
+          "value": 15967,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 15967
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 14093,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 8615,
+            "hospitality_workers": 5478
           }
         }
       },
@@ -395,6 +1499,91 @@
           "value": 33201,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 60384,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 51.2,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 71.9,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 419.5,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 24504,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 9737,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 27941,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 9737,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 31207,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 1860,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 3624,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 3535,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 7863,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 3751,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 24504,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 340,
+          "year": "2020",
+          "source": "sgis:forestry"
+        },
+        "fishery_cnt": {
+          "value": 34,
+          "year": "2020",
+          "source": "sgis:fishery"
         }
       },
       "computed": {
@@ -405,6 +1594,31 @@
           "inputs": {
             "population": 62010,
             "population_prev": 62181
+          }
+        },
+        "L2_aging_index": {
+          "value": 419.5,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 419.5
+          }
+        },
+        "W2_business_count": {
+          "value": 9737,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 9737
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 11487,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 3624,
+            "hospitality_workers": 7863
           }
         }
       },
@@ -426,6 +1640,91 @@
           "value": 63884,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 121622,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 50.8,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 138.8,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 359.2,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 47591,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 16234,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 54017,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 16234,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 41982,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 4802,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 7274,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 2848,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 6130,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 6149,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 47591,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 338,
+          "year": "2020",
+          "source": "sgis:forestry"
+        },
+        "fishery_cnt": {
+          "value": 52,
+          "year": "2020",
+          "source": "sgis:fishery"
         }
       },
       "computed": {
@@ -436,6 +1735,31 @@
           "inputs": {
             "population": 126797,
             "population_prev": 126704
+          }
+        },
+        "L2_aging_index": {
+          "value": 359.2,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 359.2
+          }
+        },
+        "W2_business_count": {
+          "value": 16234,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 16234
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 13404,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 7274,
+            "hospitality_workers": 6130
           }
         }
       },
@@ -457,6 +1781,86 @@
           "value": 116555,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 254071,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 40.8,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 5959.9,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 95.7,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 87440,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 20082,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 103897,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 20082,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 81636,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 5172,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 10769,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 3178,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 8836,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 1496,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 87440,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 65,
+          "year": "2020",
+          "source": "sgis:forestry"
         }
       },
       "computed": {
@@ -467,6 +1871,31 @@
           "inputs": {
             "population": 251395,
             "population_prev": 245742
+          }
+        },
+        "L2_aging_index": {
+          "value": 95.7,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 95.7
+          }
+        },
+        "W2_business_count": {
+          "value": 20082,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 20082
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 19605,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 10769,
+            "hospitality_workers": 8836
           }
         }
       },
@@ -488,6 +1917,86 @@
           "value": 141018,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 320872,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 41.8,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 3459.1,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 109.3,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 99020,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 34296,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 131561,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 34296,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 121531,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 12894,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 33849,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 3424,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 11056,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 1078,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 99020,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 98,
+          "year": "2020",
+          "source": "sgis:forestry"
         }
       },
       "computed": {
@@ -498,6 +2007,31 @@
           "inputs": {
             "population": 327681,
             "population_prev": 328118
+          }
+        },
+        "L2_aging_index": {
+          "value": 109.3,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 109.3
+          }
+        },
+        "W2_business_count": {
+          "value": 34296,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 34296
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 44905,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 33849,
+            "hospitality_workers": 11056
           }
         }
       },
@@ -519,6 +2053,86 @@
           "value": 43740,
           "year": "202604",
           "source": "kosis:DT_1B040B3"
+        },
+        "tot_ppltn": {
+          "value": 89466,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "avg_age": {
+          "value": 48.0,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "ppltn_dnsty": {
+          "value": 933.4,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "aged_child_idx": {
+          "value": 295.8,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_house": {
+          "value": 35060,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "corp_cnt": {
+          "value": 8490,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "tot_family": {
+          "value": 38765,
+          "year": "2024",
+          "source": "sgis:main_stats"
+        },
+        "all_corp_cnt": {
+          "value": 8490,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "all_tot_worker": {
+          "value": 30072,
+          "year": "2024",
+          "source": "sgis:company_all"
+        },
+        "wholesale_corp_cnt": {
+          "value": 2276,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "wholesale_tot_worker": {
+          "value": 3972,
+          "year": "2024",
+          "source": "sgis:company_wholesale"
+        },
+        "hospitality_corp_cnt": {
+          "value": 1593,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "hospitality_tot_worker": {
+          "value": 3932,
+          "year": "2024",
+          "source": "sgis:company_hospitality"
+        },
+        "farm_cnt": {
+          "value": 837,
+          "year": "2020",
+          "source": "sgis:farm"
+        },
+        "house_cnt": {
+          "value": 35060,
+          "year": "2024",
+          "source": "sgis:house"
+        },
+        "forestry_cnt": {
+          "value": 41,
+          "year": "2020",
+          "source": "sgis:forestry"
         }
       },
       "computed": {
@@ -529,6 +2143,31 @@
           "inputs": {
             "population": 86293,
             "population_prev": 86695
+          }
+        },
+        "L2_aging_index": {
+          "value": 295.8,
+          "unit": "—",
+          "formula": "65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)",
+          "inputs": {
+            "aged_child_idx_sgis": 295.8
+          }
+        },
+        "W2_business_count": {
+          "value": 8490,
+          "unit": "개",
+          "formula": "SGIS 사업체 통계 (전산업 합계)",
+          "inputs": {
+            "corp_cnt": 8490
+          }
+        },
+        "W8_service_sales_workers": {
+          "value": 7904,
+          "unit": "명",
+          "formula": "도소매(G) 종사자 + 숙박음식(I) 종사자",
+          "inputs": {
+            "wholesale_workers": 3972,
+            "hospitality_workers": 3932
           }
         }
       },

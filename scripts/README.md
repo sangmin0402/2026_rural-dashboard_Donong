@@ -348,11 +348,43 @@ SGIS_TABLES = {
 | -200 | 행정동/년도 정보 확인 | 파라미터 검토 |
 | 412 (HTTP) | Precondition Failed | 필수 파라미터 누락 — endpoint 문서 재확인 |
 
-### 3-7. 자격증명 활성화 대기 (2026-05 현재)
+### 3-7. ⚠️ SGIS 코드 체계 — KOSIS 내부 코드 사용
 
-- 신청 당일에는 통계 데이터 API가 빈 응답을 줄 수 있음 (보통 1-3일 후 활성화)
-- `addr/stage.json` (행정구역 조회 — 권한 기본 API)이 작동하면 인증은 정상
-- 활성화 후 별도 코드 변경 없이 `python fetch_sgis.py` 재실행만으로 데이터 채워짐
+SGIS API는 **행안부 표준 행정구역코드와 다른 KOSIS 내부 분류코드**를 사용:
+
+| 구분 | 행안부 표준 | KOSIS 내부 (SGIS도 이것 사용) |
+|------|------------|------------------------------|
+| 경기도 | 41 | **31** |
+| 남양주시 | 41360 | 31130 |
+| 평택시 | 41220 | 31070 |
+| ... | ... | ... |
+
+매핑은 `lib_meta.py` 의 `SGIS_SIGUN_CODES` (city_id → SGIS 코드 리스트) 와 `SGIS_CODE_TO_CITY` (역매핑) 로 처리. `SGIS_PROV_CODE='31'` 도 정의.
+
+**용인시 분구 처리**:
+- 용인시는 처인구(31191) / 기흥구(31192) / 수지구(31193) 3개 분구로 나뉨
+- `parse_sgis_rows()` 가 카운트류는 합산, 비율/평균류는 평균으로 집계
+- `AVG_FIELDS` 집합에 평균 처리할 필드 명시 (`avg_age`, `ppltn_dnsty`, `aged_child_idx`, `avg_family_member_cnt`)
+
+### 3-8. 인증 루프 — `SgisClient` 클래스
+
+`fetch_sgis.py` 의 `SgisClient` 클래스가 토큰 자동 갱신 처리:
+
+```python
+class SgisClient:
+    MAX_REFRESH = 10                    # 안전장치
+    
+    def authenticate(self):
+        # AccessToken 발급/재발급, refresh_count 증가
+        # MAX_REFRESH 초과 시 RuntimeError
+    
+    def call(self, cfg, year, adm_cd, low_search, _retry=False):
+        # 응답에서 errCd == -401 (토큰 만료) 감지하면:
+        #   1. authenticate() 재호출 (새 토큰)
+        #   2. 동일 요청 1회 재시도 (_retry=True 플래그)
+```
+
+스크립트 실행은 보통 1분 이내이므로 4시간 토큰은 충분하지만, 장시간 실행이나 토큰 강제 만료 상황에서도 robust.
 
 ---
 

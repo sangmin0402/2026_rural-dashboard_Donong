@@ -25,7 +25,7 @@ if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
     except Exception: pass
 
 
-# ─── 경기도 15개 시군 코드 ────────────────────────────────────────────────
+# ─── 경기도 15개 시군 코드 (행안부 표준 5자리) ────────────────────────────
 
 SIGUN_CODES = {
     'pyeongtaek':  '41220', 'namyangju':   '41360', 'yongin':      '41460',
@@ -35,6 +35,35 @@ SIGUN_CODES = {
     'osan':        '41370', 'hanam':       '41450', 'dongducheon': '41250',
 }
 CODE_TO_CITY = {v: k for k, v in SIGUN_CODES.items()}
+
+
+# ─── SGIS 자체 시군구 코드 ────────────────────────────────────────────────
+# SGIS는 KOSIS 내부 분류코드 사용 (경기=31, 행안부 표준 41과 다름)
+# 분구가 있는 시군은 여러 5자리 코드 → 합산 필요 (현재 15개 중 용인만 해당)
+SGIS_PROV_CODE = '31'        # 경기도 (SGIS 내부)
+
+SGIS_SIGUN_CODES = {
+    'pyeongtaek':  ['31070'],
+    'namyangju':   ['31130'],
+    'yongin':      ['31191', '31192', '31193'],  # 처인·기흥·수지 (3개 분구 합산)
+    'icheon':      ['31210'],
+    'anseong':     ['31220'],
+    'hwaseong':    ['31240'],
+    'gwangju':     ['31250'],
+    'yangju':      ['31260'],
+    'pocheon':     ['31270'],
+    'yeoju':       ['31280'],
+    'gapyeong':    ['31570'],
+    'yangpyeong':  ['31580'],
+    'osan':        ['31140'],
+    'hanam':       ['31180'],
+    'dongducheon': ['31080'],
+}
+# 역매핑: SGIS 5자리 코드 → city_id (분구도 모두 같은 city_id로)
+SGIS_CODE_TO_CITY = {}
+for cid, codes in SGIS_SIGUN_CODES.items():
+    for code in codes:
+        SGIS_CODE_TO_CITY[code] = cid
 
 
 # ─── 경로 ─────────────────────────────────────────────────────────────────
@@ -177,14 +206,14 @@ def compute_indicators(raw: dict) -> dict:
             'inputs':  {'population': pop, 'population_prev': prev},
         }
 
-    # ── L2: 노령화지수 — SGIS aging_idx 직접 활용 ──
-    aging = get('aging_idx')
+    # ── L2: 노령화지수 — SGIS aged_child_idx 직접 활용 ──
+    aging = get('aged_child_idx')
     if aging is not None:
         computed['L2_aging_index'] = {
             'value':   float(aging),
             'unit':    '—',
-            'formula': '65세이상 인구 / 0-14세 인구 × 100 (SGIS 직접 제공)',
-            'inputs':  {'aging_idx_sgis': aging},
+            'formula': '65세이상 인구 / 0-14세 인구 × 100 (SGIS aged_child_idx 직접 제공)',
+            'inputs':  {'aged_child_idx_sgis': aging},
         }
 
     # ── L3: 인구순이동률 = (전입 - 전출) / 인구 × 1000 ──
