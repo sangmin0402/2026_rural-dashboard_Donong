@@ -574,6 +574,12 @@
         <!-- Leaflet 지도 -->
         <div id="map"></div>
 
+        <!-- 지도 컨텍스트 HUD: 줌 11+에서 현재 보고 있는 시군·읍면 표시 -->
+        <div id="map-context-hud" class="map-context-hud is-hidden" aria-live="polite"></div>
+
+        <!-- 선택 레벨 토스트: 클릭 시 무엇을 선택했는지 잠깐 표시 -->
+        <div id="map-select-toast" class="map-select-toast is-hidden" aria-live="assertive"></div>
+
         <!-- 지도 범례 -->
         <div id="legend-container">
           <div class="legend-title">농촌다움 점수</div>

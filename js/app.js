@@ -717,11 +717,17 @@ function initMap() {
   // KOSIS 메타정보 캐시 로드 (있을 때만)
   loadRegionMeta();
 
-  // 줌 변경 시 행정동·행정리 가시성 + 라벨 크기 업데이트
+  // 줌 변경 시 행정동·행정리 가시성 + 라벨 크기 + HUD 업데이트
   map.on('zoomend', () => {
     updateDongVisibility();
     updateRiVisibility();
     updateCityLabelSize();
+    updateMapContextHud();
+  });
+
+  // 지도 이동 시 HUD 업데이트 (어느 시군·읍면을 보고 있는지 갱신)
+  map.on('moveend', () => {
+    updateMapContextHud();
   });
 }
 
@@ -749,7 +755,7 @@ async function initRiLayer() {
         const p = feature.properties || {};
         const name = p.ri_nm || '';
         layer.bindTooltip(name, {
-          permanent: false, direction: 'center', className: 'ri-tooltip',
+          permanent: true, direction: 'center', className: 'ri-label-permanent',
         });
         layer.on('mouseover', function () {
           if (state.selectedRi !== p.ri_cd) {
@@ -825,7 +831,7 @@ async function initDongLayer() {
         const p = feature.properties || {};
         const name = p.adm_nm || '';
         layer.bindTooltip(name, {
-          permanent: false, direction: 'center', className: 'dong-tooltip',
+          permanent: true, direction: 'center', className: 'dong-label-permanent',
         });
         // 호버 강조 — 선택된 읍면은 제외
         layer.on('mouseover', function () {
@@ -1285,6 +1291,11 @@ function selectCity(cityId) {
 
   // 지역 경로 breadcrumb 렌더
   if (typeof renderRegionBreadcrumb === 'function') renderRegionBreadcrumb();
+
+  // 선택 토스트 + HUD 업데이트
+  const cityNameForToast = CITIES[cityId] ? CITIES[cityId].name : cityId;
+  showMapSelectToast('🏙️', cityNameForToast, '시군');
+  updateMapContextHud();
 
   // 지도 이동
   if (map) {
@@ -2519,6 +2530,8 @@ function selectDong(admCd, admNm, cityId) {
   showDongDetailPanel(admCd, admNm, cityId);
   renderRegionBreadcrumb();
   highlightSelectedDongOnMap(admCd);
+  showMapSelectToast('📍', admNm, '읍면');
+  updateMapContextHud();
 }
 
 /**
@@ -2735,6 +2748,8 @@ function selectRi(riCd, riNm, dongCd, cityId, leafletLayer) {
   showRiDetailPanel(riCd, riNm, dongCd, cityId, leafletLayer);
   renderRegionBreadcrumb();
   highlightSelectedRiOnMap(riCd);
+  showMapSelectToast('🏘️', riNm, '행정리');
+  updateMapContextHud();
 }
 
 function clearRiSelection(opts = {}) {
@@ -3586,6 +3601,105 @@ function initOverlayScreens() {
       else { hideAllOverlayScreens(); returnToLanding(); }
     }
   });
+}
+
+// ===================================================================
+// === 지도 컨텍스트 HUD + 선택 토스트 ===
+// ===================================================================
+
+/**
+ * 지도 컨텍스트 HUD 업데이트
+ * - zoom 11+ 에서 현재 뷰포트 중심이 속하는 시군(·읍면) 이름을 지도 위에 표시
+ * - state.selected* 가 있으면 그것을 우선 사용 (bbox 탐지보다 정확)
+ * - zoom < 11 이면 HUD 숨김 (시군 라벨이 이미 잘 보이는 줌 레벨)
+ */
+function updateMapContextHud() {
+  const hud = document.getElementById('map-context-hud');
+  if (!hud || !map) return;
+
+  const zoom = map.getZoom();
+  if (zoom < DONG_ZOOM_THRESHOLD) {
+    hud.classList.add('is-hidden');
+    return;
+  }
+
+  const center = map.getCenter();
+
+  // ── 1. 시군 이름 결정 (state 우선, 없으면 viewport bbox 탐지) ──
+  let cityName = '';
+  if (state.selectedCity && CITIES[state.selectedCity]) {
+    cityName = CITIES[state.selectedCity].name;
+  } else {
+    // geoJsonFeatures bbox 체크 (정확도보다 속도 우선)
+    for (const [cityId, layer] of Object.entries(geoJsonFeatures)) {
+      try {
+        if (layer.getBounds().contains(center)) {
+          cityName = CITIES[cityId] ? CITIES[cityId].name : cityId;
+          break;
+        }
+      } catch (_) { /* feature 아직 로드 안 됨 */ }
+    }
+  }
+
+  // ── 2. 읍면 이름 결정 (zoom 13+, state 우선 → bbox 탐지) ──
+  let dongName = '';
+  if (zoom >= RI_ZOOM_THRESHOLD && dongLayer) {
+    if (state.selectedDong) {
+      // state에서 이름 조회 (dongLayer feature 검색)
+      dongLayer.eachLayer(l => {
+        const p = l.feature && l.feature.properties;
+        if (p && p.adm_cd === state.selectedDong) dongName = p.adm_nm || '';
+      });
+    }
+    if (!dongName) {
+      // viewport 중심 bbox 탐지
+      dongLayer.eachLayer(l => {
+        if (dongName) return; // 이미 찾았으면 스킵
+        try {
+          if (l.getBounds().contains(center)) {
+            const p = l.feature && l.feature.properties;
+            dongName = (p && p.adm_nm) || '';
+          }
+        } catch (_) {}
+      });
+    }
+  }
+
+  // ── 3. HUD 렌더 ──
+  if (!cityName && !dongName) {
+    hud.classList.add('is-hidden');
+    return;
+  }
+  hud.classList.remove('is-hidden');
+  let html = '📍 ' + (cityName || '경기도');
+  if (dongName) {
+    html += `<span class="hud-sep">›</span><span class="hud-dong">${dongName}</span>`;
+  }
+  hud.innerHTML = html;
+}
+
+/**
+ * 지도 위 선택 레벨 플래시 토스트
+ * @param {string} emoji   - 레벨 이모지 (🏙️/📍/🏘️)
+ * @param {string} name    - 선택된 이름 (예: '청평면')
+ * @param {string} level   - 레벨 한글 (예: '읍면')
+ */
+function showMapSelectToast(emoji, name, level) {
+  const el = document.getElementById('map-select-toast');
+  if (!el) return;
+  // 진행 중인 타이머 취소
+  if (el._hideTimer)  { clearTimeout(el._hideTimer);  el._hideTimer  = null; }
+  if (el._fadeTimer)  { clearTimeout(el._fadeTimer);  el._fadeTimer  = null; }
+
+  el.textContent = `${emoji} ${name} (${level} 선택됨)`;
+  el.classList.remove('is-hidden', 'is-fading');
+
+  // 1.6s 후 fade-out 시작
+  el._fadeTimer = setTimeout(() => {
+    el.classList.add('is-fading');
+    // 0.5s 후 완전히 숨김
+    el._hideTimer = setTimeout(() => el.classList.add('is-hidden'), 500);
+  }, 1600);
 }
 
 // ===================================================================
