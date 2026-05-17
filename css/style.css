@@ -4956,3 +4956,183 @@ a:focus-visible {
   .analysis-purpose-tab { padding: 7px 12px; font-size: 12.5px; }
   .analysis-color-legend-ticks { left: 40px; right: 40px; }
 }
+
+/* ============================================================================
+   29. 지역 드릴다운 — Breadcrumb + 읍면 상세
+   ============================================================================ */
+
+.region-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 10px 14px;
+  margin: 0 0 12px;
+  background: linear-gradient(180deg, #F4F7F1 0%, #FFFFFF 100%);
+  border: 1px solid rgba(45, 95, 63, 0.10);
+  border-radius: 10px;
+  font-size: 13px;
+}
+.region-breadcrumb:empty { display: none; }
+
+.region-breadcrumb-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  color: var(--text-muted, #5A6660);
+  cursor: pointer;
+  transition: background 140ms, color 140ms;
+  white-space: nowrap;
+}
+.region-breadcrumb-step:hover:not(.is-active):not(.is-disabled) {
+  background: rgba(45, 95, 63, 0.08);
+  color: var(--primary, #2D5F3F);
+}
+.region-breadcrumb-step.is-active {
+  background: rgba(45, 95, 63, 0.12);
+  color: var(--primary, #2D5F3F);
+  font-weight: 700;
+  cursor: default;
+}
+.region-breadcrumb-step.is-disabled {
+  color: rgba(120, 130, 125, 0.65);
+  cursor: not-allowed;
+  font-style: italic;
+}
+.region-breadcrumb-sep {
+  color: rgba(0, 0, 0, 0.25);
+  font-size: 14px;
+  margin: 0 2px;
+  user-select: none;
+}
+.region-breadcrumb-sep--placeholder { color: rgba(0, 0, 0, 0.12); }
+
+/* 읍면 상세 카드 */
+.dong-detail {
+  padding: 18px 20px 20px;
+  margin: 0 0 16px;
+  background: linear-gradient(165deg, #FFF8EA 0%, #FFFFFF 60%);
+  border: 1px solid rgba(212, 165, 116, 0.32);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(212, 165, 116, 0.08);
+  animation: dong-detail-fade-in 0.32s cubic-bezier(.4, 0, .2, 1);
+}
+@keyframes dong-detail-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.dong-detail.hidden { display: none; }
+
+.dong-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.dong-detail-name {
+  font-family: 'Noto Serif KR', serif;
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--primary, #2D5F3F);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+.dong-detail-meta-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #B8742E;
+  background: rgba(255, 200, 100, 0.18);
+  border: 1px solid rgba(212, 165, 116, 0.45);
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+
+.dong-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.dong-info-card {
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.dong-info-card--wide { grid-column: 1 / -1; }
+.dong-info-label {
+  font-size: 11.5px;
+  color: var(--text-muted, #6B7770);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.dong-info-value {
+  font-size: 15px;
+  color: var(--text-body, #2C3530);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+}
+.dong-info-card--wide .dong-info-value {
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.55;
+}
+
+.dong-detail-note {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--text-muted, #5A6660);
+  background: rgba(45, 95, 63, 0.04);
+  border: 1px dashed rgba(45, 95, 63, 0.18);
+  border-radius: 8px;
+  line-height: 1.55;
+}
+
+.dong-back-btn {
+  margin-top: 14px;
+  padding: 9px 16px;
+  background: var(--primary, #2D5F3F);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Noto Sans KR', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms, transform 120ms;
+}
+.dong-back-btn:hover { background: var(--primary-light, #3A7A52); }
+.dong-back-btn:active { transform: scale(0.98); }
+
+/* 읍면 모드일 때 시군 상세 카드들 숨김 */
+.is-dong-mode #city-header,
+.is-dong-mode #radar-chart-container,
+.is-dong-mode #score-cards,
+.is-dong-mode #indicator-list-section,
+.is-dong-mode #namyangju-section,
+.is-dong-mode #add-comparison-wrapper {
+  display: none !important;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .region-breadcrumb { padding: 8px 10px; font-size: 12px; gap: 4px; }
+  .region-breadcrumb-step { padding: 3px 7px; font-size: 12px; }
+  .dong-detail { padding: 14px 14px 16px; }
+  .dong-info-grid { grid-template-columns: 1fr; }
+}

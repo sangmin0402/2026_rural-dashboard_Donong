@@ -655,6 +655,23 @@
         <!-- 시군 선택 후 상세 정보 (기본 hidden) -->
         <div id="city-detail" class="hidden">
 
+          <!-- 지역 경로 breadcrumb (시군 › 읍면 › 행정리) -->
+          <nav id="region-breadcrumb" class="region-breadcrumb" aria-label="지역 경로"></nav>
+
+          <!-- 읍면 선택 시 표시되는 상세 (기본 hidden) -->
+          <section id="dong-detail" class="dong-detail hidden">
+            <header class="dong-detail-head">
+              <h2 class="dong-detail-name" id="dong-detail-name">읍면명</h2>
+              <span class="dong-detail-meta-badge">예시 데이터</span>
+            </header>
+            <div class="dong-info-grid" id="dong-info-grid"></div>
+            <p class="dong-detail-note">
+              💡 읍면 단위 농촌다움 지표는 시군 단위에서만 산출됩니다.
+              이 화면은 해당 읍면의 일반 메타정보(인구·면적·특성)를 제공합니다.
+            </p>
+            <button id="dong-back-btn" class="dong-back-btn" type="button">← 시군 보기로 돌아가기</button>
+          </section>
+
           <!-- 시군 제목 -->
           <div id="city-header">
             <div class="city-name-row">

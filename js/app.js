@@ -303,6 +303,8 @@ const CITIES = {
 
 const state = {
   selectedCity: null,
+  selectedDong: null,   // 읍면 adm_cd (드릴다운 2단계)
+  selectedRi:   null,   // 행정리 adm_cd (Phase 2 — 현재 미사용)
   comparisonCities: [],
   activeTab: 'overview',
   activeIndicator: 'total',
@@ -730,9 +732,26 @@ async function initDongLayer() {
         dashArray: '3,2',
       },
       onEachFeature: (feature, layer) => {
-        const name = feature.properties.adm_nm || '';
+        const p = feature.properties || {};
+        const name = p.adm_nm || '';
         layer.bindTooltip(name, {
           permanent: false, direction: 'center', className: 'dong-tooltip',
+        });
+        // 호버 강조 — 선택된 읍면은 제외
+        layer.on('mouseover', function () {
+          if (state.selectedDong !== p.adm_cd) {
+            this.setStyle({ color: '#2D5F3F', weight: 1.8, fillColor: '#2D5F3F', fillOpacity: 0.06, dashArray: null });
+          }
+        });
+        layer.on('mouseout', function () {
+          if (state.selectedDong !== p.adm_cd) {
+            this.setStyle({ color: 'rgba(40,40,40,0.4)', weight: 0.7, fillColor: 'transparent', fillOpacity: 0, dashArray: '3,2' });
+          }
+        });
+        // 클릭 → 읍면 선택
+        layer.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          selectDong(p.adm_cd, p.adm_nm, p.city_id);
         });
       },
     });
@@ -1146,6 +1165,9 @@ function selectCity(cityId) {
 
   state.selectedCity = cityId;
 
+  // 새 시군 선택 시 읍면 선택 자동 해제
+  if (typeof clearDongSelection === 'function') clearDongSelection({ skipBreadcrumb: true });
+
   // 안내 메시지 숨김, 상세 뷰 표시
   const noMsg = document.getElementById('no-selection-msg');
   if (noMsg) noMsg.style.display = 'none';
@@ -1157,6 +1179,9 @@ function selectCity(cityId) {
   updateRadarChart(cityId);
   highlightMarker(cityId);
   updateIndicatorList();
+
+  // 지역 경로 breadcrumb 렌더
+  if (typeof renderRegionBreadcrumb === 'function') renderRegionBreadcrumb();
 
   // 지도 이동
   if (map) {
@@ -2321,6 +2346,184 @@ function renderAnalysisHeatmap(cfg) {
 }
 
 // ===================================================================
+// === 지역 드릴다운 — 시군 → 읍면 (행정리는 Phase 2) ===
+// ===================================================================
+
+// 읍면 일반정보 캐시 (adm_cd → info)
+const DONG_INFO_CACHE = {};
+
+/**
+ * 읍면 일반정보 결정론적 mock 생성
+ * — 농촌다움 지표가 아닌 "지역 메타정보" (인구·면적·특성 등)
+ */
+function getDongInfo(admCd, admNm, cityId) {
+  if (DONG_INFO_CACHE[admCd]) return DONG_INFO_CACHE[admCd];
+  const seed = parseInt(String(admCd).slice(-4), 10) || 0;
+  // LCG 계열 결정론적 난수
+  const rng = (mod) => Math.abs(((seed * 9301 + 49297) % 233280)) % mod;
+  const rng2 = (mod) => Math.abs((((seed + 17) * 1103515245 + 12345) % 2147483648)) % mod;
+  const rng3 = (mod) => Math.abs(((seed * 31 + 7919) ^ 0x5A5A5A) % mod);
+  const city = CITIES[cityId];
+  const landMixes = ['주거 중심', '농업 중심', '복합형', '관광·휴양', '산업 단지 인접'];
+  const characters = [
+    '도시 접근성 우수, 베드타운 성격',
+    '평야 농업지대, 곡창 역할',
+    '산림·계곡 풍부, 자연환경 강세',
+    '도농 혼재, 신규 개발 활발',
+    '전통 농촌, 고령 인구 비중 높음',
+    '하천 인접, 수변 자원 보유',
+  ];
+  const info = {
+    admCd, admNm, cityId,
+    cityName: (city && city.name) || cityId,
+    cityType: (city && city.type) || '',
+    population:  2000 + rng(18000),
+    area:        (5 + (rng2(85) / 10)).toFixed(1),     // 5.0~13.5
+    households:  800 + rng3(7200),
+    landMix:     landMixes[rng(landMixes.length)],
+    character:   characters[rng2(characters.length)],
+  };
+  DONG_INFO_CACHE[admCd] = info;
+  return info;
+}
+
+/**
+ * 읍면 선택
+ */
+function selectDong(admCd, admNm, cityId) {
+  if (!admCd) return;
+  state.selectedDong = admCd;
+  state.selectedRi = null;
+
+  // 시군과 어긋나면 시군도 맞춤 (단, selectCity 재호출 X — 무한루프 방지)
+  if (state.selectedCity !== cityId && CITIES[cityId]) {
+    state.selectedCity = cityId;
+    const noMsg = document.getElementById('no-selection-msg');
+    if (noMsg) noMsg.style.display = 'none';
+    const cityDetail = document.getElementById('city-detail');
+    if (cityDetail) cityDetail.classList.remove('hidden');
+  }
+
+  showDongDetailPanel(admCd, admNm, cityId);
+  renderRegionBreadcrumb();
+  highlightSelectedDongOnMap(admCd);
+}
+
+/**
+ * 읍면 선택 해제 — 시군 보기로 복귀
+ * @param {object} [opts] - { skipBreadcrumb: true } 일 때 breadcrumb 재렌더 생략
+ *                          (selectCity 내부 호출 시 중복 렌더 방지용)
+ */
+function clearDongSelection(opts = {}) {
+  state.selectedDong = null;
+  state.selectedRi = null;
+  hideDongDetailPanel();
+  highlightSelectedDongOnMap(null);
+  if (!opts.skipBreadcrumb) renderRegionBreadcrumb();
+}
+
+/**
+ * Breadcrumb 동적 렌더
+ */
+function renderRegionBreadcrumb() {
+  const root = document.getElementById('region-breadcrumb');
+  if (!root) return;
+  const cityId = state.selectedCity;
+  if (!cityId) { root.innerHTML = ''; return; }
+
+  const cityName = (CITIES[cityId] && CITIES[cityId].name) || cityId;
+  const dongCd = state.selectedDong;
+  const dongInfo = dongCd ? DONG_INFO_CACHE[dongCd] : null;
+
+  const parts = [];
+  // 시군 step
+  parts.push(
+    `<button class="region-breadcrumb-step ${!dongCd ? 'is-active' : ''}" ` +
+    `data-level="city" data-id="${cityId}" type="button">🏙️ ${cityName}</button>`
+  );
+  // 읍면 step
+  parts.push('<span class="region-breadcrumb-sep">›</span>');
+  if (dongCd && dongInfo) {
+    parts.push(
+      `<button class="region-breadcrumb-step is-active" ` +
+      `data-level="dong" data-id="${dongCd}" type="button">📍 ${dongInfo.admNm}</button>`
+    );
+  } else {
+    parts.push('<span class="region-breadcrumb-step is-disabled">읍면을 클릭하세요</span>');
+  }
+  // 행정리 step — Phase 2
+  parts.push('<span class="region-breadcrumb-sep region-breadcrumb-sep--placeholder">›</span>');
+  parts.push('<span class="region-breadcrumb-step is-disabled" data-level="ri">행정리 (준비 중)</span>');
+
+  root.innerHTML = parts.join('');
+  // 시군 step 클릭 → 읍면 선택 해제
+  root.querySelectorAll('[data-level="city"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (state.selectedDong) clearDongSelection();
+    });
+  });
+}
+
+/**
+ * 읍면 상세 패널 표시
+ */
+function showDongDetailPanel(admCd, admNm, cityId) {
+  const info = getDongInfo(admCd, admNm, cityId);
+  const nameEl = document.getElementById('dong-detail-name');
+  const gridEl = document.getElementById('dong-info-grid');
+  const detail = document.getElementById('dong-detail');
+  const cityDetail = document.getElementById('city-detail');
+  if (!nameEl || !gridEl || !detail || !cityDetail) return;
+
+  nameEl.textContent = `${info.cityName} ${info.admNm}`;
+  gridEl.innerHTML = `
+    <div class="dong-info-card">
+      <div class="dong-info-label">인구</div>
+      <div class="dong-info-value">${info.population.toLocaleString()} 명</div>
+    </div>
+    <div class="dong-info-card">
+      <div class="dong-info-label">면적</div>
+      <div class="dong-info-value">${info.area} km²</div>
+    </div>
+    <div class="dong-info-card">
+      <div class="dong-info-label">가구 수</div>
+      <div class="dong-info-value">${info.households.toLocaleString()} 가구</div>
+    </div>
+    <div class="dong-info-card">
+      <div class="dong-info-label">토지 이용</div>
+      <div class="dong-info-value">${info.landMix}</div>
+    </div>
+    <div class="dong-info-card dong-info-card--wide">
+      <div class="dong-info-label">읍면 성격</div>
+      <div class="dong-info-value">${info.character} · ${info.cityType} ${info.cityName} 소속</div>
+    </div>
+  `;
+  cityDetail.classList.add('is-dong-mode');
+  detail.classList.remove('hidden');
+}
+
+function hideDongDetailPanel() {
+  const detail = document.getElementById('dong-detail');
+  const cityDetail = document.getElementById('city-detail');
+  if (detail) detail.classList.add('hidden');
+  if (cityDetail) cityDetail.classList.remove('is-dong-mode');
+}
+
+/**
+ * 지도에서 선택된 읍면 폴리곤만 강조
+ */
+function highlightSelectedDongOnMap(admCd) {
+  if (!dongLayer) return;
+  dongLayer.eachLayer(layer => {
+    const isSel = layer.feature && layer.feature.properties &&
+                  layer.feature.properties.adm_cd === admCd;
+    layer.setStyle(isSel
+      ? { color: '#C56F2E', weight: 3, fillColor: '#E08A4A', fillOpacity: 0.20, dashArray: null }
+      : { color: 'rgba(40,40,40,0.4)', weight: 0.7, fillColor: 'transparent', fillOpacity: 0, dashArray: '3,2' });
+  });
+}
+
+// ===================================================================
 // === 검색 기능 ===
 // ===================================================================
 
@@ -3121,6 +3324,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const headerBrand = document.getElementById('header-brand');
   if (headerBrand) {
     headerBrand.addEventListener('click', () => history.back());
+  }
+
+  // 읍면 상세 → 시군 보기 복귀 버튼
+  const dongBackBtn = document.getElementById('dong-back-btn');
+  if (dongBackBtn) {
+    dongBackBtn.addEventListener('click', () => clearDongSelection());
   }
 
   // 시군 패널 닫기 (닫기 버튼 + 배경 클릭)
