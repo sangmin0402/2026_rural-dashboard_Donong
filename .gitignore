@@ -9,3 +9,11 @@ Thumbs.db
 # 에디터
 .vscode/
 *.swp
+
+# 편집 도구 임시 파일
+*.tmp.*
+
+# Python 가상환경 / 캐시
+scripts/venv/
+scripts/__pycache__/
+*.pyc

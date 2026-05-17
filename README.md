@@ -85,11 +85,12 @@
 - `ANALYSIS_PURPOSES` 객체 확장으로 새 분석 목적 추가 가능
 
 ### 📍 지역 상세 드릴다운 (시군 → 읍면 → 행정리)
-- 지도 줌인 시 읍면 경계 자동 표시 → 읍면 클릭으로 in-place 상세 패널 교체
-- 상단 breadcrumb (`🏙️ 남양주시 › 📍 진접읍 › 행정리`) — 단계 클릭으로 자유 이동
-- 읍면 단계: 일반 메타정보 (인구·면적·가구·토지 이용·읍면 성격)
-- 농촌다움 19지표 ≠ 하위 단위 — 읍면 정보는 "예시 데이터" 배지로 명시
-- 행정리 단계는 구조만 마련 (GeoJSON·데이터 확보 후 활성화 예정)
+- 줌 11+: 읍면 경계 자동 표시 → 클릭 시 우측 패널 in-place 교체
+- 줌 13+: 행정리(법정리) 경계 추가 표시 → 클릭 시 행정리 상세 패널
+- 상단 breadcrumb (`🏙️ 남양주시 › 📍 진건읍 › 🏘️ 신월리`) — 단계 클릭으로 자유 이동
+- 읍면 단계: 일반 메타정보 (인구·면적·가구·토지 이용·성격) — KOSIS 연동 가능
+- 행정리 단계: 소속 읍면·법정리 코드·대표 좌표·개략 면적
+- 농촌다움 19지표 ≠ 하위 단위 — 읍면 정보는 출처 배지(KOSIS/예시)로 명시
 
 ---
 
@@ -190,16 +191,23 @@
 
 ```
 Web/
-├── index.html          # 단일 페이지 앱 (랜딩 + 대시보드)
+├── index.html          # 단일 페이지 앱 (랜딩 + 대시보드 + 오버레이 페이지)
 ├── README.md           # 이 파일
 ├── CLAUDE.md           # AI 작업용 컨텍스트 문서
 ├── css/
-│   └── style.css       # 전체 스타일 (~3900줄)
+│   └── style.css       # 전체 스타일
 ├── js/
-│   └── app.js          # 전체 앱 로직 (~2150줄, 프레임워크 없음)
-└── dat/
-    ├── gyeonggi-sigun.geojson   # 경기도 시군 행정경계 (실제 데이터)
-    └── gyeonggi-dong.geojson    # 읍면동 행정경계 (실제 데이터)
+│   └── app.js          # 전체 앱 로직 (프레임워크 없음)
+├── dat/
+│   ├── gyeonggi-sigun.geojson   # 시군 경계 (실제 데이터)
+│   ├── gyeonggi-dong.geojson    # 읍면동 경계 (실제 데이터)
+│   ├── gyeonggi-ri.geojson      # 행정리 경계 (국토부 LSMD_ADM_SECT_RI 가공)
+│   └── region-meta.json         # KOSIS 통계 캐시 (시군·읍면 메타정보)
+└── scripts/                     # 데이터 가공 스크립트
+    ├── process_ri.py            # SHP → GeoJSON 변환
+    ├── fetch_kosis.py           # KOSIS API 호출 → region-meta.json 생성
+    ├── requirements.txt         # Python 의존성 (geopandas 등)
+    └── README.md                # 가공 절차 안내
 ```
 
 **주요 의존 라이브러리** (CDN)
@@ -264,8 +272,9 @@ const name = CITIES[cityId].name;
 
 | 기능 | 상태 | 비고 |
 |------|------|------|
-| 실제 데이터 API 연동 | 🚧 미착수 | KOSIS Open API 활용 예정 |
-| 행정리 단위 드릴다운 | 🚧 데이터 대기 | `gyeonggi-ri.geojson` 확보 후 즉시 활성화 |
+| 농촌다움 19지표 실제 데이터 교체 | 🚧 미착수 | 현재는 Mock — 시군 단위 지표 수치 채워야 함 |
+| 행정리 질적 데이터 입력 | 🚧 추후 반영 | 인터뷰·현장조사 정보를 행정리 단위로 입력·표시하는 기능 |
+| KOSIS API 호출 코드 구현 | 🚧 미착수 | `scripts/fetch_kosis.py` 안의 TODO 채워 실제 통계 수집 |
 | 데이터 출처 페이지 | 🚧 준비 중 | 지표별 데이터 출처 정리 |
 
 ---

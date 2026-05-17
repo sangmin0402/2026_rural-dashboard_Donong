@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "source": "placeholder",
+    "note": "KOSIS API 키 없이 생성된 빈 데이터. fetch_kosis.py 재실행 필요.",
+    "kosis_help": "https://kosis.kr/openapi/"
+  },
+  "sigun": {
+    "pyeongtaek": {},
+    "namyangju": {},
+    "yongin": {},
+    "icheon": {},
+    "anseong": {},
+    "hwaseong": {},
+    "gwangju": {},
+    "yangju": {},
+    "pocheon": {},
+    "yeoju": {},
+    "gapyeong": {},
+    "yangpyeong": {},
+    "osan": {},
+    "hanam": {},
+    "dongducheon": {}
+  },
+  "dong": {}
+}

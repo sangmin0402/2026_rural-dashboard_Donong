@@ -24,15 +24,22 @@
 
 ```
 Web/
-├── index.html          # 단일 페이지 앱 (랜딩 + 대시보드)
+├── index.html          # 단일 페이지 앱 (랜딩 + 대시보드 + 오버레이)
 ├── CLAUDE.md           # ← 이 파일
 ├── css/
-│   └── style.css       # 전체 스타일 (~3700줄)
+│   └── style.css       # 전체 스타일
 ├── js/
-│   └── app.js          # 전체 앱 로직 (~2050줄, 프레임워크 없음)
-└── dat/
-    ├── gyeonggi-sigun.geojson   # 15개 시군 폴리곤 (중요: 인코딩 주의)
-    └── gyeonggi-dong.geojson    # 읍면동 폴리곤 (줌인 시 표시)
+│   └── app.js          # 전체 앱 로직 (프레임워크 없음)
+├── dat/
+│   ├── gyeonggi-sigun.geojson   # 15개 시군 폴리곤 (인코딩 주의 — 아래 10번 참조)
+│   ├── gyeonggi-dong.geojson    # 읍면동 폴리곤 (줌 11+ 표시)
+│   ├── gyeonggi-ri.geojson      # 행정리 폴리곤 (줌 13+ 표시, ~1.4MB)
+│   └── region-meta.json         # KOSIS 통계 캐시 (시군·읍면 메타정보)
+└── scripts/                     # 데이터 가공 (Python)
+    ├── process_ri.py            # SHP → GeoJSON 변환
+    ├── fetch_kosis.py           # KOSIS API → region-meta.json
+    ├── requirements.txt
+    └── README.md
 ```
 
 ---
@@ -118,6 +125,12 @@ CITIES[cityId] = {
 | `initOverlayScreens()` | 닫기·탭·ESC 인터랙션 초기화 |
 | `initAnalysisView()` / `switchAnalysisPurpose(key)` | 기능별 분석 탭 초기화·목적 전환 |
 | `renderAnalysisScatter(cfg)` / `renderAnalysisHeatmap(cfg)` | 산점도·히트맵 렌더 |
+| `initRiLayer()` / `updateRiVisibility()` | 행정리 GeoJSON 로드·줌 토글 |
+| `loadRegionMeta()` | KOSIS 캐시(`region-meta.json`) 로드 |
+| `selectDong/Ri()` / `clearDongSelection/RiSelection()` | 드릴다운 선택/해제 |
+| `getDongInfo()` / `getRiInfo()` | 메타정보 조회 (KOSIS 우선, mock fallback) |
+| `renderRegionBreadcrumb()` | 시군 › 읍면 › 행정리 path UI |
+| `highlightSelectedDongOnMap()` / `highlightSelectedRiOnMap()` | 지도 폴리곤 강조 |
 | `selectDong(admCd, admNm, cityId)` / `clearDongSelection()` | 읍면 드릴다운 진입·복귀 |
 | `renderRegionBreadcrumb()` / `showDongDetailPanel()` / `getDongInfo()` | breadcrumb·읍면 패널·mock 메타정보 |
 | `highlightSelectedDongOnMap(admCd)` | 선택된 읍면 폴리곤 강조 |
@@ -230,7 +243,7 @@ const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
 - **시군 랭킹 페이지** (`#ranking-screen`, hash `#ranking`) — 4 탭 + 포디움 + 리스트
 - **지표 가이드 페이지** (`#guide-screen`, hash `#guide`) — 카테고리별 공통/자율 카드
 - **기능별 분석 탭** (6번째 탭 `data-tab="analysis"`) — `ANALYSIS_PURPOSES` 매핑, 통과형 식별(산점도) + 체류 전환(히트맵)
-- **지역 드릴다운** — 시군↔읍면 in-place 패널 교체 + breadcrumb (`#region-breadcrumb`). 행정리는 framework만, `gyeonggi-ri.geojson` 확보 시 즉시 활성화
+- **지역 드릴다운 3단계** — 시군↔읍면↔행정리 in-place 패널 + breadcrumb (`#region-breadcrumb`). 줌 11+ 읍면, 13+ 행정리. `region-meta.json` 있으면 KOSIS 데이터 사용, 없으면 mock + 출처 배지
 
 ### 🚧 준비 중
 - **데이터 출처 페이지** (`data-action="sources"`) — toast 안내 중

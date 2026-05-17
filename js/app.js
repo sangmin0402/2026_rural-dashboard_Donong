@@ -527,9 +527,12 @@ const markers = {};
 let geoJsonLayer = null;
 const geoJsonFeatures = {}; // cityId → GeoJSON layer reference
 let dongLayer = null;       // 행정동 경계 레이어 (줌 11+ 표시)
+let riLayer = null;         // 행정리 경계 레이어 (줌 13+ 표시)
+let regionMeta = null;      // KOSIS 캐시 (region-meta.json)
 let labelGroup = null;      // 시군명 라벨 레이어
 let outlineLayer = null;    // 대상지(15개 시군) 합쳐진 외곽선 효과 레이어
 const DONG_ZOOM_THRESHOLD = 11;
+const RI_ZOOM_THRESHOLD   = 13;
 
 // ===================================================================
 // === 베이스맵 비교 (basemap-compare 브랜치 전용) ===
@@ -707,11 +710,95 @@ function initMap() {
   // 행정동 경계 레이어 비동기 로드
   initDongLayer();
 
-  // 줌 변경 시 행정동 가시성 + 라벨 크기 업데이트
+  // 행정리 경계 레이어 비동기 로드 (있을 때만)
+  initRiLayer();
+
+  // KOSIS 메타정보 캐시 로드 (있을 때만)
+  loadRegionMeta();
+
+  // 줌 변경 시 행정동·행정리 가시성 + 라벨 크기 업데이트
   map.on('zoomend', () => {
     updateDongVisibility();
+    updateRiVisibility();
     updateCityLabelSize();
   });
+}
+
+/**
+ * 행정리 경계 레이어 초기화 (줌 13+ 에서만 표시) — graceful: 파일 없으면 silent
+ */
+async function initRiLayer() {
+  try {
+    const resp = await fetch('./dat/gyeonggi-ri.geojson');
+    if (!resp.ok) {
+      console.info('[GeoJSON] 행정리 파일 없음 — 드릴다운 2단계만 사용');
+      return;
+    }
+    const data = await resp.json();
+
+    riLayer = L.geoJSON(data, {
+      style: {
+        fillColor: 'transparent',
+        color: 'rgba(74, 144, 217, 0.55)',
+        weight: 0.6,
+        fillOpacity: 0,
+        dashArray: '2,2',
+      },
+      onEachFeature: (feature, layer) => {
+        const p = feature.properties || {};
+        const name = p.ri_nm || '';
+        layer.bindTooltip(name, {
+          permanent: false, direction: 'center', className: 'ri-tooltip',
+        });
+        layer.on('mouseover', function () {
+          if (state.selectedRi !== p.ri_cd) {
+            this.setStyle({ color: '#4A90D9', weight: 1.6, fillColor: '#4A90D9', fillOpacity: 0.08, dashArray: null });
+          }
+        });
+        layer.on('mouseout', function () {
+          if (state.selectedRi !== p.ri_cd) {
+            this.setStyle({ color: 'rgba(74, 144, 217, 0.55)', weight: 0.6, fillColor: 'transparent', fillOpacity: 0, dashArray: '2,2' });
+          }
+        });
+        layer.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          selectRi(p.ri_cd, p.ri_nm, p.dong_cd, p.city_id, layer);
+        });
+      },
+    });
+    updateRiVisibility();
+  } catch (err) {
+    console.info('[GeoJSON] 행정리 로드 실패 (정상 — 데이터 없음 가능):', err.message);
+  }
+}
+
+/**
+ * 현재 줌 레벨에 따라 행정리 레이어 표시/숨김
+ */
+function updateRiVisibility() {
+  if (!map || !riLayer) return;
+  const zoom = map.getZoom();
+  if (zoom >= RI_ZOOM_THRESHOLD) {
+    if (!map.hasLayer(riLayer)) {
+      riLayer.addTo(map);
+      riLayer.bringToFront(); // 읍면 위에 표시
+    }
+  } else {
+    if (map.hasLayer(riLayer)) map.removeLayer(riLayer);
+  }
+}
+
+/**
+ * KOSIS 메타정보 JSON 캐시 로드 (없으면 빈 객체)
+ */
+async function loadRegionMeta() {
+  try {
+    const resp = await fetch('./dat/region-meta.json');
+    if (!resp.ok) { regionMeta = {}; return; }
+    regionMeta = await resp.json();
+  } catch (err) {
+    regionMeta = {};
+  }
 }
 
 /**
@@ -2358,8 +2445,10 @@ const DONG_INFO_CACHE = {};
  */
 function getDongInfo(admCd, admNm, cityId) {
   if (DONG_INFO_CACHE[admCd]) return DONG_INFO_CACHE[admCd];
+
+  // KOSIS 캐시 우선 사용
+  const kosis = regionMeta && regionMeta.dong && regionMeta.dong[admCd];
   const seed = parseInt(String(admCd).slice(-4), 10) || 0;
-  // LCG 계열 결정론적 난수
   const rng = (mod) => Math.abs(((seed * 9301 + 49297) % 233280)) % mod;
   const rng2 = (mod) => Math.abs((((seed + 17) * 1103515245 + 12345) % 2147483648)) % mod;
   const rng3 = (mod) => Math.abs(((seed * 31 + 7919) ^ 0x5A5A5A) % mod);
@@ -2377,11 +2466,13 @@ function getDongInfo(admCd, admNm, cityId) {
     admCd, admNm, cityId,
     cityName: (city && city.name) || cityId,
     cityType: (city && city.type) || '',
-    population:  2000 + rng(18000),
-    area:        (5 + (rng2(85) / 10)).toFixed(1),     // 5.0~13.5
-    households:  800 + rng3(7200),
-    landMix:     landMixes[rng(landMixes.length)],
-    character:   characters[rng2(characters.length)],
+    population:  (kosis && kosis.population) || (2000 + rng(18000)),
+    area:        (kosis && kosis.area) || (5 + (rng2(85) / 10)).toFixed(1),
+    households:  (kosis && kosis.households) || (800 + rng3(7200)),
+    landMix:     (kosis && kosis.landMix) || landMixes[rng(landMixes.length)],
+    character:   (kosis && kosis.character) || characters[rng2(characters.length)],
+    // 데이터 출처 표기 — 모든 필드 KOSIS면 'kosis', 일부라도 mock 섞이면 'mixed'
+    _source:     (kosis && Object.keys(kosis).length >= 3) ? 'kosis' : 'mock',
   };
   DONG_INFO_CACHE[admCd] = info;
   return info;
@@ -2393,7 +2484,12 @@ function getDongInfo(admCd, admNm, cityId) {
 function selectDong(admCd, admNm, cityId) {
   if (!admCd) return;
   state.selectedDong = admCd;
-  state.selectedRi = null;
+  // 읍면 선택 시 행정리 선택은 자동 해제
+  if (state.selectedRi) {
+    state.selectedRi = null;
+    hideRiDetailPanel();
+    highlightSelectedRiOnMap(null);
+  }
 
   // 시군과 어긋나면 시군도 맞춤 (단, selectCity 재호출 X — 무한루프 방지)
   if (state.selectedCity !== cityId && CITIES[cityId]) {
@@ -2416,7 +2512,12 @@ function selectDong(admCd, admNm, cityId) {
  */
 function clearDongSelection(opts = {}) {
   state.selectedDong = null;
-  state.selectedRi = null;
+  // 하위 행정리도 함께 해제
+  if (state.selectedRi) {
+    state.selectedRi = null;
+    hideRiDetailPanel();
+    highlightSelectedRiOnMap(null);
+  }
   hideDongDetailPanel();
   highlightSelectedDongOnMap(null);
   if (!opts.skipBreadcrumb) renderRegionBreadcrumb();
@@ -2434,32 +2535,51 @@ function renderRegionBreadcrumb() {
   const cityName = (CITIES[cityId] && CITIES[cityId].name) || cityId;
   const dongCd = state.selectedDong;
   const dongInfo = dongCd ? DONG_INFO_CACHE[dongCd] : null;
+  const riCd = state.selectedRi;
+  const riInfo = riCd ? RI_INFO_CACHE[riCd] : null;
 
   const parts = [];
   // 시군 step
   parts.push(
-    `<button class="region-breadcrumb-step ${!dongCd ? 'is-active' : ''}" ` +
+    `<button class="region-breadcrumb-step ${!dongCd && !riCd ? 'is-active' : ''}" ` +
     `data-level="city" data-id="${cityId}" type="button">🏙️ ${cityName}</button>`
   );
   // 읍면 step
   parts.push('<span class="region-breadcrumb-sep">›</span>');
   if (dongCd && dongInfo) {
     parts.push(
-      `<button class="region-breadcrumb-step is-active" ` +
+      `<button class="region-breadcrumb-step ${!riCd ? 'is-active' : ''}" ` +
       `data-level="dong" data-id="${dongCd}" type="button">📍 ${dongInfo.admNm}</button>`
     );
   } else {
     parts.push('<span class="region-breadcrumb-step is-disabled">읍면을 클릭하세요</span>');
   }
-  // 행정리 step — Phase 2
-  parts.push('<span class="region-breadcrumb-sep region-breadcrumb-sep--placeholder">›</span>');
-  parts.push('<span class="region-breadcrumb-step is-disabled" data-level="ri">행정리 (준비 중)</span>');
+  // 행정리 step
+  parts.push('<span class="region-breadcrumb-sep">›</span>');
+  if (riCd && riInfo) {
+    parts.push(
+      `<button class="region-breadcrumb-step is-active" ` +
+      `data-level="ri" data-id="${riCd}" type="button">🏘️ ${riInfo.riNm}</button>`
+    );
+  } else if (dongCd && riLayer) {
+    parts.push('<span class="region-breadcrumb-step is-disabled">행정리를 클릭하세요</span>');
+  } else if (!riLayer) {
+    parts.push('<span class="region-breadcrumb-step is-disabled">행정리 데이터 없음</span>');
+  } else {
+    parts.push('<span class="region-breadcrumb-step is-disabled">행정리</span>');
+  }
 
   root.innerHTML = parts.join('');
-  // 시군 step 클릭 → 읍면 선택 해제
+  // 시군 step 클릭 → 읍면·행정리 선택 해제
   root.querySelectorAll('[data-level="city"]').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (state.selectedDong) clearDongSelection();
+      if (state.selectedDong || state.selectedRi) clearDongSelection();
+    });
+  });
+  // 읍면 step 클릭 (이미 선택된 상태) → 행정리만 해제
+  root.querySelectorAll('[data-level="dong"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (state.selectedRi) clearRiSelection();
     });
   });
 }
@@ -2470,12 +2590,24 @@ function renderRegionBreadcrumb() {
 function showDongDetailPanel(admCd, admNm, cityId) {
   const info = getDongInfo(admCd, admNm, cityId);
   const nameEl = document.getElementById('dong-detail-name');
+  const sourceEl = document.getElementById('dong-detail-source');
   const gridEl = document.getElementById('dong-info-grid');
   const detail = document.getElementById('dong-detail');
   const cityDetail = document.getElementById('city-detail');
   if (!nameEl || !gridEl || !detail || !cityDetail) return;
 
   nameEl.textContent = `${info.cityName} ${info.admNm}`;
+  // 데이터 출처 배지
+  if (sourceEl) {
+    sourceEl.classList.remove('is-source-kosis', 'is-source-mock');
+    if (info._source === 'kosis') {
+      sourceEl.textContent = 'KOSIS 데이터';
+      sourceEl.classList.add('is-source-kosis');
+    } else {
+      sourceEl.textContent = '예시 데이터';
+      sourceEl.classList.add('is-source-mock');
+    }
+  }
   gridEl.innerHTML = `
     <div class="dong-info-card">
       <div class="dong-info-label">인구</div>
@@ -2520,6 +2652,134 @@ function highlightSelectedDongOnMap(admCd) {
     layer.setStyle(isSel
       ? { color: '#C56F2E', weight: 3, fillColor: '#E08A4A', fillOpacity: 0.20, dashArray: null }
       : { color: 'rgba(40,40,40,0.4)', weight: 0.7, fillColor: 'transparent', fillOpacity: 0, dashArray: '3,2' });
+  });
+}
+
+// ===================================================================
+// === 행정리(Ri) 드릴다운 (위계 3단계) ===
+// ===================================================================
+
+const RI_INFO_CACHE = {};
+
+/**
+ * 행정리 메타정보 (boundary 속성 기반 + 가능한 한 보강)
+ */
+function getRiInfo(riCd, riNm, dongCd, cityId, leafletLayer) {
+  if (RI_INFO_CACHE[riCd]) return RI_INFO_CACHE[riCd];
+  const city = CITIES[cityId];
+  // 부모 읍면 이름 — dongLayer feature 검색
+  let dongNm = '';
+  if (dongLayer) {
+    dongLayer.eachLayer(l => {
+      const p = l.feature && l.feature.properties;
+      if (p && p.adm_cd === dongCd) dongNm = p.adm_nm;
+    });
+  }
+  // 면적/중심좌표 — Leaflet layer 활용
+  let areaText = '-';
+  let centerText = '-';
+  if (leafletLayer) {
+    try {
+      const bounds = leafletLayer.getBounds();
+      const c = bounds.getCenter();
+      centerText = `${c.lat.toFixed(4)}, ${c.lng.toFixed(4)}`;
+      // 면적 계산 — 간이 (실측 위해선 turf 필요; 여기선 bbox 기준 근사)
+      const ne = bounds.getNorthEast(), sw = bounds.getSouthWest();
+      const widthKm = (ne.lng - sw.lng) * 111 * Math.cos(c.lat * Math.PI / 180);
+      const heightKm = (ne.lat - sw.lat) * 111;
+      const bboxArea = widthKm * heightKm;
+      areaText = `≈ ${(bboxArea * 0.55).toFixed(2)} km² (개략)`;
+    } catch (_) {}
+  }
+  const info = {
+    riCd, riNm, dongCd, dongNm, cityId,
+    cityName: (city && city.name) || cityId,
+    cityType: (city && city.type) || '',
+    areaText,
+    centerText,
+    legalCode: riCd,
+  };
+  RI_INFO_CACHE[riCd] = info;
+  return info;
+}
+
+function selectRi(riCd, riNm, dongCd, cityId, leafletLayer) {
+  if (!riCd) return;
+  state.selectedRi = riCd;
+  // 상위 단위도 동기화
+  if (CITIES[cityId]) state.selectedCity = cityId;
+  state.selectedDong = dongCd;
+
+  // 시군 패널 표시 보장
+  const noMsg = document.getElementById('no-selection-msg');
+  if (noMsg) noMsg.style.display = 'none';
+  const cityDetail = document.getElementById('city-detail');
+  if (cityDetail) cityDetail.classList.remove('hidden');
+
+  showRiDetailPanel(riCd, riNm, dongCd, cityId, leafletLayer);
+  renderRegionBreadcrumb();
+  highlightSelectedRiOnMap(riCd);
+}
+
+function clearRiSelection(opts = {}) {
+  state.selectedRi = null;
+  hideRiDetailPanel();
+  highlightSelectedRiOnMap(null);
+  if (!opts.skipBreadcrumb) renderRegionBreadcrumb();
+}
+
+function showRiDetailPanel(riCd, riNm, dongCd, cityId, leafletLayer) {
+  const info = getRiInfo(riCd, riNm, dongCd, cityId, leafletLayer);
+  const nameEl = document.getElementById('ri-detail-name');
+  const parentEl = document.getElementById('ri-detail-parent');
+  const gridEl = document.getElementById('ri-info-grid');
+  const detail = document.getElementById('ri-detail');
+  const cityDetail = document.getElementById('city-detail');
+  if (!nameEl || !gridEl || !detail || !cityDetail) return;
+
+  nameEl.textContent = info.riNm;
+  if (parentEl) parentEl.textContent = info.dongNm ? `${info.cityName} ${info.dongNm}` : info.cityName;
+  gridEl.innerHTML = `
+    <div class="ri-info-card">
+      <div class="ri-info-label">소속 시군</div>
+      <div class="ri-info-value">${info.cityName}</div>
+    </div>
+    <div class="ri-info-card">
+      <div class="ri-info-label">소속 읍·면</div>
+      <div class="ri-info-value">${info.dongNm || '-'}</div>
+    </div>
+    <div class="ri-info-card">
+      <div class="ri-info-label">법정리 코드</div>
+      <div class="ri-info-value" style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">${info.legalCode}</div>
+    </div>
+    <div class="ri-info-card">
+      <div class="ri-info-label">대표 좌표</div>
+      <div class="ri-info-value" style="font-size: 13px;">${info.centerText}</div>
+    </div>
+    <div class="ri-info-card ri-info-card--wide">
+      <div class="ri-info-label">개략 면적 (bbox 기반)</div>
+      <div class="ri-info-value">${info.areaText}</div>
+    </div>
+  `;
+  cityDetail.classList.add('is-ri-mode');
+  detail.classList.remove('hidden');
+}
+
+function hideRiDetailPanel() {
+  const detail = document.getElementById('ri-detail');
+  const cityDetail = document.getElementById('city-detail');
+  if (detail) detail.classList.add('hidden');
+  if (cityDetail) cityDetail.classList.remove('is-ri-mode');
+}
+
+function highlightSelectedRiOnMap(riCd) {
+  if (!riLayer) return;
+  riLayer.eachLayer(layer => {
+    const p = layer.feature && layer.feature.properties;
+    const isSel = p && p.ri_cd === riCd;
+    layer.setStyle(isSel
+      ? { color: '#2C5A8A', weight: 2.5, fillColor: '#4A90D9', fillOpacity: 0.22, dashArray: null }
+      : { color: 'rgba(74, 144, 217, 0.55)', weight: 0.6, fillColor: 'transparent', fillOpacity: 0, dashArray: '2,2' });
   });
 }
 
@@ -3330,6 +3590,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const dongBackBtn = document.getElementById('dong-back-btn');
   if (dongBackBtn) {
     dongBackBtn.addEventListener('click', () => clearDongSelection());
+  }
+
+  // 행정리 상세 → 읍면 보기 복귀 버튼
+  const riBackBtn = document.getElementById('ri-back-btn');
+  if (riBackBtn) {
+    riBackBtn.addEventListener('click', () => clearRiSelection());
   }
 
   // 시군 패널 닫기 (닫기 버튼 + 배경 클릭)
