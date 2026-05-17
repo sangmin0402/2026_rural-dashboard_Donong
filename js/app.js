@@ -1565,6 +1565,24 @@ function renderKosisSigunStats(cityId) {
   }
 
   section.classList.remove('hidden');
+  // 'is-collapsed' 는 사용자 토글로만 변경 — 여기서는 건드리지 않음 (기본 접힘 상태 유지)
+}
+
+/**
+ * KOSIS 토글 버튼 초기화 (DOMContentLoaded에서 1회 호출)
+ */
+function initKosisToggle() {
+  const btn = document.getElementById('kosis-toggle-btn');
+  const sec = document.getElementById('kosis-sigun-stats');
+  if (!btn || !sec) return;
+  btn.addEventListener('click', () => {
+    const isCollapsed = sec.classList.toggle('is-collapsed');
+    btn.setAttribute('aria-expanded', String(!isCollapsed));
+    const icon = btn.querySelector('.kosis-toggle-icon');
+    const hint = btn.querySelector('.kosis-toggle-hint');
+    if (icon) icon.textContent = isCollapsed ? '▶' : '▼';
+    if (hint) hint.textContent = isCollapsed ? '클릭하여 펼치기' : '클릭하여 접기';
+  });
 }
 
 /**
@@ -1683,7 +1701,14 @@ function updateJayulSection(cityId) {
       }).join('')}
     </div>
   `;
-  cityDetail.appendChild(section);
+  // 자율지표 섹션은 세부지표 다음·KOSIS 토글 앞에 위치 — 시군 패널 우선순위 유지
+  const anchorBeforeJayul = document.getElementById('kosis-toggle-btn')
+                         || document.getElementById('add-comparison-wrapper');
+  if (anchorBeforeJayul) {
+    cityDetail.insertBefore(section, anchorBeforeJayul);
+  } else {
+    cityDetail.appendChild(section);
+  }
 }
 
 // 역호환 — 옛 이름으로 호출하는 곳이 있을 수 있어 alias 유지
@@ -4065,6 +4090,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 지도/패널 드래그 리사이저
   initPanelResizer();
+
+  // KOSIS 기본 통계 토글 (시군 패널 맨 아래 접힘 섹션)
+  initKosisToggle();
 
   showLoading();
 

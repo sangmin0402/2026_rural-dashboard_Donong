@@ -708,23 +708,7 @@
             </div>
           </div>
 
-          <!-- 레이더 차트 -->
-          <div id="radar-chart-container">
-            <div class="section-title">
-              <span class="section-icon">📡</span>
-              농촌다움 종합 분석
-            </div>
-            <canvas id="radar-canvas"></canvas>
-          </div>
-
-          <!-- KOSIS 실제 통계 — 시군 기본 통계 (JS에서 동적 렌더) -->
-          <section id="kosis-sigun-stats" class="kosis-sigun-stats hidden">
-            <h3 class="kosis-section-title">📊 지역 기본 통계</h3>
-            <div class="kosis-stats-grid" id="kosis-stats-grid"></div>
-            <p class="kosis-source-note" id="kosis-source-note"></p>
-          </section>
-
-          <!-- 점수 카드 (삶터/일터/쉼터) -->
+          <!-- 점수 카드 (삶터/일터/쉼터) — 가장 중요한 농촌다움 점수, 맨 위에 -->
           <div id="score-cards">
             <div class="score-card score-card--samlter">
               <div class="score-card-header">
@@ -750,6 +734,15 @@
               <div class="score-card-value" id="score-shimter">-</div>
               <div class="score-card-rank" id="rank-shimter">경기도 -위</div>
             </div>
+          </div>
+
+          <!-- 레이더 차트 (농촌다움 종합 분석) -->
+          <div id="radar-chart-container">
+            <div class="section-title">
+              <span class="section-icon">📡</span>
+              농촌다움 종합 분석
+            </div>
+            <canvas id="radar-canvas"></canvas>
           </div>
 
           <!-- 지표 카드 목록 -->
@@ -820,6 +813,18 @@
               </div>
             </div>
           </div>
+
+          <!-- KOSIS·SGIS 지역 기본 통계 (접힘 토글, 자율지표 아래) -->
+          <button id="kosis-toggle-btn" class="kosis-toggle-btn" type="button" aria-expanded="false" aria-controls="kosis-sigun-stats">
+            <span class="kosis-toggle-icon" aria-hidden="true">▶</span>
+            <span class="kosis-toggle-label">📊 지역 기본 통계 (KOSIS · SGIS)</span>
+            <span class="kosis-toggle-hint">클릭하여 펼치기</span>
+          </button>
+          <section id="kosis-sigun-stats" class="kosis-sigun-stats hidden is-collapsed">
+            <h3 class="kosis-section-title">📊 지역 기본 통계</h3>
+            <div class="kosis-stats-grid" id="kosis-stats-grid"></div>
+            <p class="kosis-source-note" id="kosis-source-note"></p>
+          </section>
 
           <!-- 비교에 추가 버튼 -->
           <div id="add-comparison-wrapper">
