@@ -5427,3 +5427,77 @@ a:focus-visible {
 #map-select-toast.is-fading {
   animation: toast-fade-out 0.5s ease forwards;
 }
+
+/* ============================================================================
+   34. KOSIS 시군 기본 통계 섹션 (#kosis-sigun-stats)
+   ============================================================================ */
+
+.kosis-sigun-stats {
+  margin: var(--space-4) 0 var(--space-3) 0;
+  padding: var(--space-3) var(--space-4);
+  background: rgba(45, 95, 63, 0.03);
+  border: 1px solid rgba(45, 95, 63, 0.13);
+  border-radius: var(--radius-lg);
+}
+.kosis-sigun-stats.hidden {
+  display: none;
+}
+
+.kosis-section-title {
+  font-family: 'Noto Serif KR', serif;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 var(--space-3) 0;
+  letter-spacing: 0.01em;
+}
+
+.kosis-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+}
+
+.kosis-stat-card {
+  background: #fff;
+  border: 1px solid rgba(45, 95, 63, 0.09);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-2);
+  text-align: center;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.kosis-stat-card:hover {
+  border-color: rgba(45, 95, 63, 0.22);
+  box-shadow: 0 2px 8px rgba(45, 95, 63, 0.10);
+}
+
+.kosis-stat-emoji {
+  font-size: 18px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.kosis-stat-value {
+  font-family: 'Noto Serif KR', serif;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+.kosis-stat-label {
+  font-size: var(--fs-xs);
+  color: #666;
+  font-weight: 500;
+}
+.kosis-stat-period {
+  font-size: 10px;
+  color: rgba(100, 100, 100, 0.65);
+  margin-top: 2px;
+}
+
+.kosis-source-note {
+  margin: var(--space-3) 0 0 0;
+  font-size: 10px;
+  color: rgba(80, 80, 80, 0.7);
+  line-height: 1.45;
+}

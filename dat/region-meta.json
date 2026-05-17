@@ -1,25 +1,88 @@
 {
   "_meta": {
-    "source": "placeholder",
-    "note": "KOSIS API 키 없이 생성된 빈 데이터. fetch_kosis.py 재실행 필요.",
-    "kosis_help": "https://kosis.kr/openapi/"
+    "source": "kosis_api",
+    "fetched_at": "2026-05-17T16:15:48.721570",
+    "tables": {
+      "sigun_pop": {
+        "tblId": "DT_1B040A3",
+        "period": "202604",
+        "count": 15,
+        "status": "ok"
+      },
+      "sigun_hh": {
+        "tblId": "DT_1B040B3",
+        "period": "202604",
+        "count": 15,
+        "status": "ok"
+      }
+    },
+    "coverage": {
+      "sigun": 15,
+      "dong": 0
+    },
+    "note": "읍면동 인구·연령·사업체 통계: KOSIS API 파라미터 미확인으로 현재 제외. TABLES dict 활성화 후 재실행 가능."
   },
   "sigun": {
-    "pyeongtaek": {},
-    "namyangju": {},
-    "yongin": {},
-    "icheon": {},
-    "anseong": {},
-    "hwaseong": {},
-    "gwangju": {},
-    "yangju": {},
-    "pocheon": {},
-    "yeoju": {},
-    "gapyeong": {},
-    "yangpyeong": {},
-    "osan": {},
-    "hanam": {},
-    "dongducheon": {}
+    "pyeongtaek": {
+      "population": 616517,
+      "households": 297218
+    },
+    "namyangju": {
+      "population": 728126,
+      "households": 309126
+    },
+    "yongin": {
+      "population": 1090269,
+      "households": 450327
+    },
+    "icheon": {
+      "population": 223506,
+      "households": 107814
+    },
+    "anseong": {
+      "population": 198089,
+      "households": 98257
+    },
+    "hwaseong": {
+      "population": 996582,
+      "households": 432271
+    },
+    "gwangju": {
+      "population": 397402,
+      "households": 176355
+    },
+    "yangju": {
+      "population": 296910,
+      "households": 133062
+    },
+    "pocheon": {
+      "population": 140435,
+      "households": 74115
+    },
+    "yeoju": {
+      "population": 113605,
+      "households": 57047
+    },
+    "gapyeong": {
+      "population": 62010,
+      "households": 33201
+    },
+    "yangpyeong": {
+      "population": 126797,
+      "households": 63884
+    },
+    "osan": {
+      "population": 251395,
+      "households": 116555
+    },
+    "hanam": {
+      "population": 327681,
+      "households": 141018
+    },
+    "dongducheon": {
+      "population": 86293,
+      "households": 43740
+    }
   },
   "dong": {}
 }

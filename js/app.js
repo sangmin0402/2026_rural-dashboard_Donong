@@ -1338,6 +1338,77 @@ function updateDetailPanel(cityId) {
 
   // 남양주 자율지표 섹션
   updateNamyangjuSection(cityId);
+
+  // KOSIS 시군 기본 통계 섹션
+  renderKosisSigunStats(cityId);
+}
+
+/**
+ * KOSIS 시군 기본 통계 섹션 렌더
+ * regionMeta.sigun[cityId]에 데이터가 있는 항목만 카드로 표시.
+ * 데이터가 전혀 없으면 섹션 전체를 숨김.
+ * @param {string} cityId
+ */
+function renderKosisSigunStats(cityId) {
+  const section  = document.getElementById('kosis-sigun-stats');
+  const grid     = document.getElementById('kosis-stats-grid');
+  const noteEl   = document.getElementById('kosis-source-note');
+  if (!section || !grid) return;
+
+  const meta = regionMeta && regionMeta.sigun && regionMeta.sigun[cityId];
+  if (!meta || Object.keys(meta).length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+
+  // 표시 항목 정의 — 향후 확장 시 여기에 항목 추가
+  const STAT_DEFS = [
+    { key: 'population',   label: '총인구',      emoji: '👥', fmt: v => v.toLocaleString() + ' 명',   tbl: 'sigun_pop' },
+    { key: 'households',   label: '세대 수',      emoji: '🏠', fmt: v => v.toLocaleString() + ' 가구',  tbl: 'sigun_hh'  },
+    { key: 'senior_ratio', label: '고령화율',     emoji: '👴', fmt: v => v.toFixed(1) + ' %',          tbl: 'sigun_age' },
+    { key: 'youth_ratio',  label: '청년인구 비율', emoji: '🌱', fmt: v => v.toFixed(1) + ' %',          tbl: 'sigun_age' },
+    { key: 'businesses',   label: '사업체 수',    emoji: '🏢', fmt: v => v.toLocaleString() + ' 개',   tbl: 'sigun_biz' },
+    { key: 'workers',      label: '종사자 수',    emoji: '👷', fmt: v => v.toLocaleString() + ' 명',   tbl: 'sigun_biz' },
+  ];
+
+  const tableMeta = (regionMeta._meta && regionMeta._meta.tables) || {};
+  const visible   = STAT_DEFS.filter(def => meta[def.key] != null);
+
+  if (visible.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+
+  // 기준 기간 포맷 (202604 → 2026년 4월)
+  const fmtPeriod = (p) => {
+    if (!p) return '';
+    const s = String(p);
+    if (s.length === 6) return `${s.slice(0, 4)}년 ${parseInt(s.slice(4), 10)}월`;
+    if (s.length === 4) return `${s}년`;
+    return s;
+  };
+
+  grid.innerHTML = visible.map(def => {
+    const tbl    = tableMeta[def.tbl] || {};
+    const period = fmtPeriod(tbl.period || '');
+    return `
+      <div class="kosis-stat-card">
+        <div class="kosis-stat-emoji">${def.emoji}</div>
+        <div class="kosis-stat-value">${def.fmt(meta[def.key])}</div>
+        <div class="kosis-stat-label">${def.label}</div>
+        ${period ? `<div class="kosis-stat-period">${period}</div>` : ''}
+      </div>`;
+  }).join('');
+
+  // 출처 노트
+  if (noteEl) {
+    const periods = [...new Set(
+      visible.map(def => fmtPeriod((tableMeta[def.tbl] || {}).period || '')).filter(Boolean)
+    )];
+    noteEl.textContent = `출처: KOSIS Open API — 주민등록인구통계 (행정안전부)${periods.length ? ' · 기준: ' + periods.join(', ') : ''}`;
+  }
+
+  section.classList.remove('hidden');
 }
 
 /**
