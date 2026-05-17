@@ -787,12 +787,12 @@ function updateRiVisibility() {
   const zoom = map.getZoom();
   if (zoom >= RI_ZOOM_THRESHOLD) {
     if (!map.hasLayer(riLayer)) riLayer.addTo(map);
-    // 레이어 순서 보장: geoJson(fill) → ri(파랑점선) → dong(어두운점선) → sigunBorder(최상위)
-    if (dongLayer && map.hasLayer(dongLayer)) dongLayer.bringToFront();
+    // riLayer를 dong 위에 유지 → 클릭이 ri에 먼저 도달 (dong 클릭 차단 방지)
+    riLayer.bringToFront();
+    // 시군 경계선은 non-interactive로 최상위 (클릭 통과)
     if (sigunBorderLayer) sigunBorderLayer.bringToFront();
   } else {
     if (map.hasLayer(riLayer)) map.removeLayer(riLayer);
-    // ri가 사라진 후에도 sigunBorder를 dong 위에 유지
     if (sigunBorderLayer && dongLayer && map.hasLayer(dongLayer)) sigunBorderLayer.bringToFront();
   }
 }
@@ -2525,6 +2525,10 @@ function selectDong(admCd, admNm, cityId) {
     if (noMsg) noMsg.style.display = 'none';
     const cityDetail = document.getElementById('city-detail');
     if (cityDetail) cityDetail.classList.remove('hidden');
+    // 시군 패널 데이터도 채워놔야 dong→city 복귀 시 비어있지 않음
+    updateDetailPanel(cityId);
+    updateRadarChart(cityId);
+    updateIndicatorList();
   }
 
   showDongDetailPanel(admCd, admNm, cityId);
@@ -2549,6 +2553,12 @@ function clearDongSelection(opts = {}) {
   }
   hideDongDetailPanel();
   highlightSelectedDongOnMap(null);
+  // 시군 패널 데이터 재렌더 — dong → city 복귀 시 점수·차트가 비어있지 않도록
+  if (state.selectedCity) {
+    updateDetailPanel(state.selectedCity);
+    updateRadarChart(state.selectedCity);
+    updateIndicatorList();
+  }
   if (!opts.skipBreadcrumb) renderRegionBreadcrumb();
 }
 
