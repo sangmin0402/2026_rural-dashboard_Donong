@@ -910,6 +910,69 @@ async function loadRegionMeta() {
   } catch (err) {
     regionMeta = {};
   }
+  // SGIS computed 값으로 CITIES mock 덮어쓰기 (실측 우선)
+  applySgisOverridesToCities();
+}
+
+/**
+ * region-meta.json 의 computed/raw 값으로 CITIES mock 값을 덮어씀.
+ *
+ * SGIS·KOSIS 실측이 있는 지표는 mock 값 대신 실측 사용 → 표·차트·지도 색상
+ * 모두 같은 출처로 일관됨. 실측이 없는 지표(예: W3 재정자립도)는 mock 유지.
+ *
+ * 매핑 (computed key → CITIES 의 어떤 위치):
+ *   L1_pop_growth_rate        → city.indicators.L1
+ *   L2_aging_index            → city.indicators.L2
+ *   L3_net_migration_rate     → city.indicators.L3
+ *   W2_business_count         → city.indicators.W2
+ *   W8_service_sales_workers  → city.jayulIndicators.W8
+ *
+ * 또한 raw 의 일부 SGIS 필드도 보조 매핑 가능 (corp_cnt 등) — 추후 확장.
+ */
+function applySgisOverridesToCities() {
+  if (!regionMeta || !regionMeta.sigun || typeof CITIES === 'undefined') return;
+  let overriddenCount = 0;
+
+  const COMMON_MAP = {
+    L1: 'L1_pop_growth_rate',
+    L2: 'L2_aging_index',
+    L3: 'L3_net_migration_rate',
+    W2: 'W2_business_count',
+  };
+  const JAYUL_MAP = {
+    W8: 'W8_service_sales_workers',
+  };
+
+  Object.entries(regionMeta.sigun).forEach(([cid, data]) => {
+    const city = CITIES[cid];
+    if (!city || !data) return;
+    const computed = data.computed || {};
+
+    // 공통지표 (indicators) 덮어쓰기
+    Object.entries(COMMON_MAP).forEach(([indKey, compKey]) => {
+      const rec = computed[compKey];
+      if (rec && rec.value != null && city.indicators) {
+        city.indicators[indKey] = (typeof rec.value === 'number')
+          ? Math.round(rec.value * 100) / 100   // 소수점 2자리
+          : rec.value;
+        overriddenCount++;
+      }
+    });
+
+    // 자율지표 (jayulIndicators) 덮어쓰기
+    Object.entries(JAYUL_MAP).forEach(([indKey, compKey]) => {
+      const rec = computed[compKey];
+      if (rec && rec.value != null && city.jayulIndicators) {
+        city.jayulIndicators[indKey] = rec.value;
+        overriddenCount++;
+      }
+    });
+  });
+
+  // 캐시된 5분위 quantile 등이 있으면 무효화 가능 — 이번엔 별도 캐시 없음
+  if (overriddenCount > 0) {
+    console.log(`[CITIES override] SGIS computed 값으로 ${overriddenCount}개 필드 덮어씀`);
+  }
 }
 
 /**
