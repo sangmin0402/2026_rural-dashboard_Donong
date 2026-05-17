@@ -34,12 +34,14 @@ Web/
 │   ├── gyeonggi-sigun.geojson   # 15개 시군 폴리곤 (인코딩 주의 — 아래 10번 참조)
 │   ├── gyeonggi-dong.geojson    # 읍면동 폴리곤 (줌 11+ 표시)
 │   ├── gyeonggi-ri.geojson      # 행정리 폴리곤 (줌 13+ 표시, ~1.4MB)
-│   └── region-meta.json         # KOSIS 통계 캐시 — 3-layer (raw/computed/manual)
+│   └── region-meta.json         # KOSIS+SGIS+manual 통계 캐시 — 3-layer (raw/computed/manual)
 ├── docs/
-│   └── KOSIS-MAPPING.md         # 21지표 × KOSIS 매핑 마스터
+│   └── DATA-SOURCES.md          # 21지표 × KOSIS·SGIS·외부 출처 매핑 마스터
 └── scripts/                     # 데이터 가공 (Python)
+    ├── lib_meta.py              # 공통 모듈 (3-layer 스키마, 산식, 상수)
+    ├── fetch_kosis.py           # KOSIS Open API → 인구·세대수 (source='kosis:*')
+    ├── fetch_sgis.py            # SGIS Open API → 노령화·사업체·농가 등 (source='sgis:*')
     ├── process_ri.py            # SHP → GeoJSON 변환
-    ├── fetch_kosis.py           # KOSIS API → region-meta.json
     ├── requirements.txt
     └── README.md
 ```
@@ -47,15 +49,20 @@ Web/
 ### region-meta.json — 3-layer 스키마
 ```jsonc
 sigun[cityId] = {
-  raw:      { population: { value, year, source: 'kosis:DT_...' }, ... },
-  computed: { L1_pop_growth_rate: { value, unit, formula, inputs }, ... },
+  raw:      {
+    population: { value, year, source: 'kosis:DT_1B040A3' },
+    aging_idx:  { value, year, source: 'sgis:main_stats' },
+    ...
+  },
+  computed: { L1_pop_growth_rate: { value, unit, formula, inputs }, L2_aging_index: {...}, ... },
   manual:   { W3_fiscal_independence: { value, year, source, updated_by, ... }, ... }
 }
 ```
-- `raw`: KOSIS API 원본 (fetch_kosis.py가 매번 덮어씀)
-- `computed`: raw로부터 산식 계산 (`compute_indicators()`)
-- `manual`: 사용자 직접 입력 (스크립트가 `load_existing_manual()`로 보존)
-- UI는 `renderKosisSigunStats()`에서 `readField(key)`로 3-layer 통합 조회 (우선순위: computed > raw > manual)
+- `raw`: KOSIS·SGIS API 원본 — 각 필드에 `source` 메타로 출처 구분
+- `computed`: raw로부터 산식 계산 (`scripts/lib_meta.py` 의 `compute_indicators()`)
+- `manual`: 사용자 직접 입력 — 두 fetch 스크립트가 모두 보존
+- **source-aware merge**: `merge_raw_by_source(existing, new_raw, 'kosis')` → KOSIS source raw 만 덮어씀, SGIS raw 와 manual 보존 (반대도 동일)
+- UI는 `renderKosisSigunStats()`의 `readField(key)`로 3-layer 통합 조회 (우선순위: computed > raw > manual)
 
 ---
 

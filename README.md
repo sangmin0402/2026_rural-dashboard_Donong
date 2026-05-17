@@ -146,7 +146,7 @@
 | **computed** | 산식 자동 계산값 (예: L1 인구증가율) | ❌ (raw로부터 자동 재계산) |
 | **manual** | 사용자 직접 입력 (예: 재정자립도, 국가유산) | ✅ (스크립트 재실행 시 보존됨) |
 
-상세 매핑: [`docs/KOSIS-MAPPING.md`](docs/KOSIS-MAPPING.md)  
+상세 매핑: [`docs/DATA-SOURCES.md`](docs/DATA-SOURCES.md)  
 스크립트 사용법: [`scripts/README.md`](scripts/README.md)
 
 ### ⚠️ 현재 가상(Mock) 데이터 항목
@@ -235,16 +235,23 @@ npx serve Web
 
 ## 8. 데이터 갱신 가이드
 
-### A. KOSIS 실제 통계 갱신 (`region-meta.json`)
+### A. KOSIS / SGIS 실제 통계 갱신 (`region-meta.json`)
 
 ```powershell
 # PowerShell (Web/scripts/ 에서 실행)
+
+# 1) KOSIS — 인구·세대수
 $env:KOSIS_API_KEY = "발급받은_키"
 python fetch_kosis.py
+
+# 2) SGIS — 노령화·사업체·농가 등 (자격증명 활성화 후)
+$env:SGIS_SERVICE_ID = "발급받은_ID"
+$env:SGIS_SECRET_KEY = "발급받은_Key"
+python fetch_sgis.py
 ```
 
-→ `dat/region-meta.json` 자동 갱신 (15개 시군 인구·세대수)  
-→ 상세 절차 및 API 파라미터: [`scripts/README.md`](scripts/README.md) 참조
+두 스크립트는 **독립 실행** — 각자 자기 source raw 만 갱신, 다른 source · manual 보존.  
+→ 상세 절차 및 API 가이드: [`scripts/README.md`](scripts/README.md), [`docs/DATA-SOURCES.md`](docs/DATA-SOURCES.md)
 
 ### B. 농촌다움 19지표 교체 (`app.js` → `CITIES` 객체)
 
@@ -288,15 +295,27 @@ const name = CITIES[cityId].name;
 
 ## 9. 이슈 트래커 — 데이터 수집 미해결 항목
 
-### 🔴 KOSIS API 시도했으나 차단된 항목
+### 🟡 SGIS API 활성화 대기 (자격증명 발급은 완료, 통계 권한 활성화 대기 중)
+
+`fetch_sgis.py` 작성 완료, 인증은 통과하나 통계 API가 빈 응답 — 신청 후 1-3일 활성화 예상.  
+활성화 후 코드 변경 없이 `python fetch_sgis.py` 1회 실행으로 아래 모두 해결:
+
+| 지표 | SGIS endpoint | 해결 가능 항목 |
+|------|--------------|---------------|
+| L2 노령화지수 | population.json (aging_idx) | ✅ 자동 |
+| W2 사업체수 / 종사자수 | company.json | ✅ 자동 |
+| **W8 서비스판매 종사자** | company.json + class_code G·I | ✅ 자동 |
+| W5 농업 세대교체 입력 | farmhousehold.json | ✅ 자동 (부분) |
+| 평균나이 / 인구밀도 / 농가수 | population.json | ✅ 자동 |
+
+### 🔴 KOSIS API 차단 항목 (시군구 단위 미제공)
 
 | 지표 | KOSIS 표 | 차단 사유 | 다음 단계 |
 |------|---------|---------|---------|
-| L2 노령화지수 | DT_1IN1502 | 40,000셀 초과 | 65세이상/0-14세 ITM_ID 확인 후 활성화 |
-| L3 인구순이동률 | DT_1B26001 | 시군구 breakdown 없음 (시도 단위만) | 시군구별 별도 표 검색 |
-| W2 사업체수 / W8 서비스판매 종사자 | DT_1K51003 | 40,000셀 초과 | 전산업 합계 코드 확인 |
-| W4 GRDP | DT_1C81 | 시군구 breakdown 없음 | KOSIS 웹에서 시군구별 표 검색 또는 Excel 다운 |
-| 읍면동별 인구 | DT_1B040M1 | 40,000셀 초과 | 시도별 분할 호출 (객체 코드 형식 확인) |
+| L3 인구순이동률 | DT_1B26001 | 시도 단위만 | KOSIS 웹 Excel 다운 → manual |
+| W4 GRDP | DT_1C81 | 시도 단위만 | KOSIS 웹 Excel 다운 → manual |
+| 읍면동별 인구 | DT_1B040M1 | 40,000셀 초과 | 시도별 분할 호출 (객체 코드 형식 미확인) |
+| 귀농귀촌 통계 | DT_1ET2002 외 | 모든 ID ERR 21 | KOSIS 웹에서 정확한 tblId 검색 |
 
 ### 🟡 KOSIS 외 출처 — 수동 입력 필요
 
@@ -324,4 +343,4 @@ const name = CITIES[cityId].name;
 
 ---
 
-*최종 갱신: 2026.05 — KOSIS 인구·세대수 실제 연동 + L1 자동 계산 + 3-layer 스키마 + R8·W8 등록*
+*최종 갱신: 2026.05 — KOSIS + SGIS 듀얼 API 구조 + L1 자동 계산 + 3-layer 스키마 + R8·W8 등록*

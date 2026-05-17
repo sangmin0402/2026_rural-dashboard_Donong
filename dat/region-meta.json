@@ -1,7 +1,7 @@
 {
   "_meta": {
     "source": "kosis_api + manual",
-    "fetched_at": "2026-05-17T16:45:56.738702",
+    "fetched_at": "2026-05-17T17:16:33.032210",
     "schema": "3-layer (raw / computed / manual)",
     "tables": {
       "sigun_pop": {
@@ -15,6 +15,51 @@
         "period": "202604",
         "count": 15,
         "status": "ok"
+      },
+      "sgis_main_stats": {
+        "endpoint": "population",
+        "year": 2023,
+        "status": "failed"
+      },
+      "sgis_company_all": {
+        "endpoint": "company",
+        "year": 2023,
+        "status": "failed"
+      },
+      "sgis_company_wholesale": {
+        "endpoint": "company",
+        "year": 2023,
+        "status": "failed"
+      },
+      "sgis_company_hospitality": {
+        "endpoint": "company",
+        "year": 2023,
+        "status": "failed"
+      },
+      "sgis_farm": {
+        "endpoint": "farmhousehold",
+        "year": 2023,
+        "status": "failed"
+      },
+      "sgis_house": {
+        "endpoint": "house",
+        "year": 2023,
+        "status": "failed"
+      },
+      "sgis_forestry": {
+        "endpoint": "forestryhousehold",
+        "year": 2023,
+        "status": "failed"
+      },
+      "sgis_fishery": {
+        "endpoint": "fisheryhousehold",
+        "year": 2023,
+        "status": "failed"
+      },
+      "sgis_household_member": {
+        "endpoint": "householdmember",
+        "year": 2023,
+        "status": "failed"
       }
     },
     "coverage": {
