@@ -2158,6 +2158,153 @@ a:focus-visible {
 
 
 /* ============================================================================
+   19-b. Jayul (자율지표) section — 15시군 공통 (남양주 전용 → 일반화)
+   ============================================================================ */
+.jayul-section {
+  margin: var(--space-4) var(--space-6);
+  padding: var(--space-5);
+  background: linear-gradient(135deg, var(--accent-soft) 0%, #F9F1E2 100%);
+  border: 1px solid rgba(212, 165, 116, 0.3);
+  border-radius: var(--radius-lg);
+  position: relative;
+}
+.jayul-section::before {
+  content: '🎯';
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-5);
+  font-size: 14px;
+  opacity: 0.6;
+}
+.jayul-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--accent-dark);
+  margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid rgba(212, 165, 116, 0.25);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.section-title.jayul-title {
+  color: var(--accent-dark);
+}
+.jayul-count-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(212, 165, 116, 0.18);
+  color: var(--accent-dark);
+  letter-spacing: 0.01em;
+}
+.jayul-help-text {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 var(--space-3) 0;
+}
+
+.jayul-indicator-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+}
+
+/* 카드 베이스 */
+.jayul-ind-card {
+  --cat-color: #666;
+  background: var(--surface-card);
+  border-radius: var(--radius-sm);
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--cat-color);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+  position: relative;
+}
+.jayul-ind-card:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+/* 선정된 카드: 진한 색 + 그림자 */
+.jayul-ind-card.is-selected {
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(45, 95, 63, 0.12);
+}
+
+/* 후보 카드: 회색조 + 약간 흐리게 */
+.jayul-ind-card.is-candidate {
+  background: rgba(255, 255, 255, 0.55);
+  opacity: 0.7;
+  filter: grayscale(0.25);
+}
+.jayul-ind-card.is-candidate:hover {
+  opacity: 0.95;
+  filter: grayscale(0);
+}
+
+.jayul-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.jayul-ind-key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cat-color);
+}
+
+.jayul-state-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.jayul-state-badge.selected {
+  background: rgba(45, 95, 63, 0.12);
+  color: var(--primary);
+}
+.jayul-state-badge.candidate {
+  background: rgba(120, 120, 120, 0.12);
+  color: var(--text-muted);
+}
+
+.jayul-ind-name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+  letter-spacing: -0.005em;
+  line-height: 1.4;
+}
+.jayul-ind-value {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+.jayul-ind-meta {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  letter-spacing: 0.01em;
+}
+
+
+/* ============================================================================
    20. Comparison section (bottom collapsible)
    ============================================================================ */
 #comparison-section {
@@ -2684,9 +2831,14 @@ a:focus-visible {
     height: 180px;
   }
 
-  .namyangju-section {
+  .namyangju-section,
+  .jayul-section {
     margin: var(--space-4);
     padding: var(--space-4);
+  }
+
+  .jayul-indicator-grid {
+    grid-template-columns: 1fr;
   }
 
   .namyangju-indicator-grid {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 경기도 농촌다움 지표 웹 대시보드
  * app.js - 메인 애플리케이션 로직
  *
@@ -44,7 +44,9 @@ const INDICATORS = {
 // === 남양주 자율지표 정의 ===
 // ===================================================================
 
-const NAMYANGJU_INDICATORS = {
+// 자율지표 풀 — 15개 시군이 모두 값을 가지고 있고, 각 시군이 자기들이 "선정"한 지표만
+// 농촌다움 종합 점수에 포함됨. 시군별 selectedJayulKeys 로 선정 여부 제어.
+const JAYUL_INDICATORS_POOL = {
   L5: { name: '귀촌인 증감률',          unit: '%',      category: 'samlter', higherBetter: true, spatial: '시군',   year: 2023 },
   L6: { name: '3년 귀촌 규모 유지율',   unit: '%',      category: 'samlter', higherBetter: true, spatial: '시군',   year: 2023 },
   W5: { name: '농업 세대교체 수준',      unit: '%',      category: 'ilter',   higherBetter: true, spatial: '읍면동', year: 2022 },
@@ -138,14 +140,15 @@ const CITIES = {
       W1: 63.5,  W2: 8420,  W3: 28.4, W4: 18500,
       R1: 52.3,  R2: 1.52,  R3: 68.4,
     },
-    namyangjuIndicators: {
+    jayulIndicators: {
       L5: 12.4, L6: 84.2,
       W5: 18.3, W6: 22.1, W7: 15.8,
       R4: 3.4,  R5: 78.5, R6: 2840,
-      // 신규 — 데이터 수집 전 placeholder (UI 구조 확인용)
-      R8: null,   // 국가유산 개수 — 문화재청 수동 수집 대기
-      W8: null,   // 서비스판매 종사자 — 사업체조사 수동/외부 수집 대기
+      R8: 12,            // 국가유산 (mock — 문화재청 수동 수집 전)
+      W8: 67698,         // 서비스판매 종사자 (SGIS 도소매+숙박음식 합산값 동기)
     },
+    // 남양주가 농촌다움 종합점수 산정 시 "우리 시군의 자율지표"로 선정한 키들
+    selectedJayulKeys: ['L5', 'L6', 'W5', 'W6', 'W7', 'R4', 'R5', 'R6'],
   },
   gapyeong: {
     id: 'gapyeong', name: '가평군',
@@ -304,6 +307,83 @@ const CITIES = {
 };
 
 // ===================================================================
+// === 자율지표 풀 자동 채움 + 시군별 선정 키 부여 ===
+// ===================================================================
+//
+// 핵심 컨셉: "자율지표는 시군마다 자기들이 선정하는 개념"
+//   - 모든 자율지표(JAYUL_INDICATORS_POOL)는 15시군 모두에 값이 계산되어 있음 (raw data)
+//   - 각 시군의 selectedJayulKeys 가 "농촌다움 종합 점수"에 포함될 자율지표 결정
+//   - UI는 선정/후보 모두 표시하되 선정된 것은 시각적으로 강조
+
+// 5대 권역별 권장 자율지표 (보고서 표 2-36 기준 농촌공간 유형별 특성)
+const RECOMMENDED_JAYUL_BY_ZONE = {
+  'north-border':  ['W6', 'L6', 'R5', 'R8'],            // 경계도시형: 귀촌 유지·수질·국가유산
+  'south-farm':    ['W5', 'W7', 'R4', 'W6'],            // 농업생산형: 세대교체·친환경·체험
+  'west-coast':    ['W7', 'W8', 'R5', 'R6'],            // 서해안형: 친환경·서비스판매·수변
+  'east-mountain': ['L5', 'R5', 'R8', 'R6'],            // 산지전원형: 귀촌·수질·국가유산
+  'urban-edge':    ['L5', 'L6', 'R4', 'W8'],            // 도농전환형: 귀촌·체험·서비스판매
+};
+
+// 시군 → 권역 매핑 (CLAUDE.md 9절 기준)
+const CITY_ZONE = {
+  yangju: 'north-border',  dongducheon: 'north-border', pocheon: 'north-border',
+  anseong: 'south-farm',   yeoju: 'south-farm',         icheon: 'south-farm',
+  pyeongtaek: 'west-coast', hwaseong: 'west-coast',     osan: 'west-coast',
+  gapyeong: 'east-mountain', yangpyeong: 'east-mountain',
+  namyangju: 'urban-edge', yongin: 'urban-edge',        gwangju: 'urban-edge', hanam: 'urban-edge',
+};
+
+/**
+ * 시군 ID에서 결정론적 시드 생성
+ */
+function _jayulSeed(cityId) {
+  let s = 0;
+  for (let i = 0; i < cityId.length; i++) s = (s * 31 + cityId.charCodeAt(i)) % 0x7fffffff;
+  return s;
+}
+
+/**
+ * 결정론적 mock 자율지표 값 생성
+ * @param {string} cityId
+ * @returns {object} { L5: ..., L6: ..., W5: ..., ..., R8: ..., W8: ... }
+ */
+function generateJayulData(cityId) {
+  const seed = _jayulSeed(cityId);
+  const rng  = (n) => Math.abs(((seed * 9301 + 49297) >>> 0) % 233280) % n;
+  const rng2 = (n) => Math.abs((((seed + 17) * 1103515245 + 12345) >>> 0) % 2147483648) % n;
+  const rng3 = (n) => Math.abs(((seed * 31 + 7919) ^ 0x5A5A5A) % n);
+
+  return {
+    L5: (rng(200) / 10) - 5,         // -5 ~ 15%  (귀촌인 증감률)
+    L6: 60 + rng2(35),               // 60 ~ 94%  (3년 귀촌 유지율)
+    W5: 8 + rng(25),                 // 8 ~ 32%   (농업 세대교체)
+    W6: 5 + rng2(30),                // 5 ~ 34%   (청년 귀농 유입)
+    W7: 4 + rng3(20),                // 4 ~ 23%   (친환경 인증 농가)
+    R4: parseFloat((1 + (rng(60) / 10)).toFixed(1)),    // 1.0 ~ 6.9 건/천명
+    R5: 50 + rng2(45),               // 50 ~ 94%  (양호수질 하천)
+    R6: 800 + rng3(3200),            // 800 ~ 3999 ㎡/천명 (수변·생태쉼터)
+    R8: 3 + rng2(18),                // 3 ~ 20 개 (국가유산)
+    W8: 8000 + rng(60000),           // 8000 ~ 67999 명 (서비스판매 종사자)
+  };
+}
+
+// ── 모든 시군에 자율지표 풀 + 선정 키 자동 부여 ──
+Object.keys(CITIES).forEach(cid => {
+  const city = CITIES[cid];
+
+  // 1) jayulIndicators 풀: 없으면 결정론적 mock으로 채움
+  if (!city.jayulIndicators) {
+    city.jayulIndicators = generateJayulData(cid);
+  }
+
+  // 2) selectedJayulKeys: 없으면 권역 기반 4~5개 자동 추천
+  if (!city.selectedJayulKeys) {
+    const zone = CITY_ZONE[cid];
+    city.selectedJayulKeys = (RECOMMENDED_JAYUL_BY_ZONE[zone] || []).slice();
+  }
+});
+
+// ===================================================================
 // === 전역 상태 관리 ===
 // ===================================================================
 
@@ -411,7 +491,12 @@ function getColorForValue(value, breaks, category, higherBetter = true) {
  */
 function getAllValuesForIndicator(indicatorKey) {
   return Object.values(CITIES)
-    .map(city => city.indicators[indicatorKey])
+    .map(city => {
+      // 공통지표는 city.indicators, 자율지표는 city.jayulIndicators 에서 조회
+      if (city.indicators && indicatorKey in city.indicators) return city.indicators[indicatorKey];
+      if (city.jayulIndicators && indicatorKey in city.jayulIndicators) return city.jayulIndicators[indicatorKey];
+      return undefined;
+    })
     .filter(v => v !== undefined && v !== null);
 }
 
@@ -438,12 +523,23 @@ function calcCategoryScore(cityId, category) {
   const city = CITIES[cityId];
   if (!city) return 0;
 
-  const keys = Object.keys(INDICATORS).filter(k => INDICATORS[k].category === category);
-  if (keys.length === 0) return 0;
+  // 공통지표 (해당 카테고리만)
+  const commonKeys = Object.keys(INDICATORS).filter(k => INDICATORS[k].category === category);
 
-  const scores = keys.map(key => {
-    const indicator = INDICATORS[key];
-    const value = city.indicators[key];
+  // + 시군이 선정한 자율지표 (해당 카테고리만) — 농촌다움 종합 점수에 포함
+  const selectedJayul = (city.selectedJayulKeys || []).filter(k => {
+    const ind = JAYUL_INDICATORS_POOL[k];
+    return ind && ind.category === category;
+  });
+
+  const allKeys = [...commonKeys, ...selectedJayul];
+  if (allKeys.length === 0) return 0;
+
+  const scores = allKeys.map(key => {
+    const indicator = INDICATORS[key] || JAYUL_INDICATORS_POOL[key];
+    const value     = (city.indicators[key] !== undefined)
+                      ? city.indicators[key]
+                      : (city.jayulIndicators ? city.jayulIndicators[key] : undefined);
     if (value === undefined || value === null) return 0.5;
     const { min, max } = getIndicatorRange(key);
     let normalized = (value - min) / (max - min + 1e-9);
@@ -1343,7 +1439,7 @@ function updateDetailPanel(cityId) {
   updateComparisonButton(cityId);
 
   // 남양주 자율지표 섹션
-  updateNamyangjuSection(cityId);
+  updateJayulSection(cityId);
 
   // KOSIS 시군 기본 통계 섹션
   renderKosisSigunStats(cityId);
@@ -1525,35 +1621,63 @@ function updateComparisonButton(cityId) {
  * 남양주 자율지표 섹션 업데이트
  * @param {string} cityId
  */
-function updateNamyangjuSection(cityId) {
-  // 기존 자율지표 섹션 제거
-  const existing = document.getElementById('namyangju-extra-section');
-  if (existing) existing.remove();
+/**
+ * 자율지표 섹션 업데이트 — 모든 시군에서 작동 (남양주 전용 아님)
+ *
+ * 표시 구조:
+ *   - 상단 헤더: "자율지표 — N개 선정 / 10개 후보"
+ *   - 카드: 모든 후보 표시. 선정된 카드는 강조 색상·체크 배지, 비선정은 회색·"후보" 라벨.
+ *
+ * @param {string} cityId
+ */
+function updateJayulSection(cityId) {
+  // 기존 섹션 제거 (호환 — 이전 id도 함께 제거)
+  const oldByNew = document.getElementById('jayul-extra-section');
+  if (oldByNew) oldByNew.remove();
+  const oldByLegacy = document.getElementById('namyangju-extra-section');
+  if (oldByLegacy) oldByLegacy.remove();
 
-  if (cityId !== 'namyangju') return;
-
-  const city = CITIES.namyangju;
-  if (!city || !city.namyangjuIndicators) return;
+  const city = CITIES[cityId];
+  if (!city || !city.jayulIndicators) return;
 
   const cityDetail = document.getElementById('city-detail');
   if (!cityDetail) return;
 
+  const selectedSet = new Set(city.selectedJayulKeys || []);
+  const totalCount  = Object.keys(JAYUL_INDICATORS_POOL).length;
+  const selectedCnt = selectedSet.size;
+
   const section = document.createElement('div');
-  section.id = 'namyangju-extra-section';
-  section.className = 'namyangju-section';
+  section.id = 'jayul-extra-section';
+  section.className = 'jayul-section';
   section.innerHTML = `
-    <h3 class="section-title namyangju-title">남양주 자율지표</h3>
-    <div class="namyangju-indicator-grid">
-      ${Object.entries(NAMYANGJU_INDICATORS).map(([key, ind]) => {
-        const value = city.namyangjuIndicators[key];
+    <h3 class="section-title jayul-title">
+      🎯 자율지표
+      <span class="jayul-count-badge">${selectedCnt} 선정 / ${totalCount} 후보</span>
+    </h3>
+    <p class="jayul-help-text">
+      ${city.name}이(가) 농촌다움 종합 점수 산정 시 포함하기로 선정한 지표입니다.
+      후보 카드는 데이터는 보유하나 종합 점수에는 미반영.
+    </p>
+    <div class="jayul-indicator-grid">
+      ${Object.entries(JAYUL_INDICATORS_POOL).map(([key, ind]) => {
+        const value     = city.jayulIndicators[key];
+        const isSelected = selectedSet.has(key);
         const catColors = { samlter: '#3498db', ilter: '#e67e22', shimter: '#27ae60' };
         const catColor  = catColors[ind.category] || '#666';
+        const stateClass = isSelected ? 'is-selected' : 'is-candidate';
+        const stateBadge = isSelected
+          ? `<span class="jayul-state-badge selected">✓ 선정</span>`
+          : `<span class="jayul-state-badge candidate">후보</span>`;
         return `
-          <div class="namyangju-ind-card" style="border-left: 3px solid ${catColor};">
-            <div class="namyangju-ind-key" style="color:${catColor};">${key}</div>
-            <div class="namyangju-ind-name">${ind.name}</div>
-            <div class="namyangju-ind-value">${formatValue(value, ind.unit)}</div>
-            <div class="namyangju-ind-meta">${ind.spatial} · ${ind.year}년</div>
+          <div class="jayul-ind-card ${stateClass}" style="--cat-color:${catColor};">
+            <div class="jayul-card-top">
+              <span class="jayul-ind-key">${key}</span>
+              ${stateBadge}
+            </div>
+            <div class="jayul-ind-name">${ind.name}</div>
+            <div class="jayul-ind-value">${formatValue(value, ind.unit)}</div>
+            <div class="jayul-ind-meta">${ind.spatial} · ${ind.year}년</div>
           </div>
         `;
       }).join('')}
@@ -1561,6 +1685,9 @@ function updateNamyangjuSection(cityId) {
   `;
   cityDetail.appendChild(section);
 }
+
+// 역호환 — 옛 이름으로 호출하는 곳이 있을 수 있어 alias 유지
+function updateNamyangjuSection(cityId) { return updateJayulSection(cityId); }
 
 // ===================================================================
 // === 지표 목록 ===
@@ -2035,9 +2162,9 @@ function calcScenarioValues(cityId) {
   // 베이스 값: 남양주 자율지표 + 시나리오 레버가 영향을 주는 공통지표
   const base = {};
 
-  Object.keys(NAMYANGJU_INDICATORS).forEach(k => {
-    base[k] = (cityId === 'namyangju' && city.namyangjuIndicators?.[k] !== undefined)
-      ? city.namyangjuIndicators[k]
+  Object.keys(JAYUL_INDICATORS_POOL).forEach(k => {
+    base[k] = (city.jayulIndicators?.[k] !== undefined && city.jayulIndicators[k] !== null)
+      ? city.jayulIndicators[k]
       : 0;
   });
 
@@ -2070,12 +2197,12 @@ function renderScenarioCharts(cityId) {
   const { before, after } = calcScenarioValues(cityId);
 
   // 레이더 차트는 남양주 자율지표 8개만 표시 (해석 용이)
-  const labels = Object.values(NAMYANGJU_INDICATORS).map(i => i.name);
-  const beforeVals = Object.keys(NAMYANGJU_INDICATORS).map(k => before[k] || 0);
-  const afterVals  = Object.keys(NAMYANGJU_INDICATORS).map(k => after[k] || 0);
+  const labels = Object.values(JAYUL_INDICATORS_POOL).map(i => i.name);
+  const beforeVals = Object.keys(JAYUL_INDICATORS_POOL).map(k => before[k] || 0);
+  const afterVals  = Object.keys(JAYUL_INDICATORS_POOL).map(k => after[k] || 0);
 
   // 공통 최대값 (정규화 기준)
-  const maxVals = Object.keys(NAMYANGJU_INDICATORS).map((k, i) =>
+  const maxVals = Object.keys(JAYUL_INDICATORS_POOL).map((k, i) =>
     Math.max(beforeVals[i], afterVals[i], 1) * 1.2
   );
   const maxVal = Math.max(...maxVals, 1);
@@ -2146,7 +2273,7 @@ function renderScenarioDeltaTable(before, after) {
   if (!container) return;
 
   // 베이스에 포함된 모든 지표 표시 (남양주 자율지표 + 레버가 건드리는 공통지표)
-  const allIndicators = { ...INDICATORS, ...NAMYANGJU_INDICATORS };
+  const allIndicators = { ...INDICATORS, ...JAYUL_INDICATORS_POOL };
   const keys = Object.keys(before).filter(k => allIndicators[k]);
 
   const rows = keys.map(key => {
@@ -2252,7 +2379,7 @@ function switchAnalysisPurpose(key) {
   } else if (cfg.vizType === 'heatmap') {
     if (axisUl) {
       axisUl.innerHTML = cfg.indicators.map(k => {
-        const def = INDICATORS[k] || NAMYANGJU_INDICATORS[k];
+        const def = INDICATORS[k] || JAYUL_INDICATORS_POOL[k];
         const cat = def?.category || '';
         return `<li class="axis-info-indicator axis-info-indicator--${cat}"><b>${k}</b> · ${def ? def.name : k}</li>`;
       }).join('');
@@ -2461,7 +2588,7 @@ function renderAnalysisHeatmap(cfg) {
   // 정규화 함수 — 0~1, higherBetter 반전
   const normForCity = (cityId, indKey) => {
     const range = getIndicatorRange(indKey);
-    const ind   = INDICATORS[indKey] || NAMYANGJU_INDICATORS[indKey];
+    const ind   = INDICATORS[indKey] || JAYUL_INDICATORS_POOL[indKey];
     const raw   = CITIES[cityId].indicators[indKey];
     if (raw == null) return null;
     let norm = (raw - range.min) / (range.max - range.min + 1e-9);
@@ -2555,7 +2682,7 @@ function renderAnalysisHeatmap(cfg) {
             color: (ctx) => {
               const key = colKeys[ctx.index];
               if (key === TOTAL_KEY) return '#C56F2E';
-              const def = INDICATORS[key] || NAMYANGJU_INDICATORS[key];
+              const def = INDICATORS[key] || JAYUL_INDICATORS_POOL[key];
               if (def?.category === 'samlter') return '#3673BC';
               if (def?.category === 'ilter')   return '#C56F2E';
               if (def?.category === 'shimter') return '#3B8A4E';
@@ -2578,7 +2705,7 @@ function renderAnalysisHeatmap(cfg) {
             label: (ctx) => {
               const r = ctx.raw || {};
               if (r.isTotal) return `${r.y} · 종합 ${Math.round(r.v * 100)}점`;
-              const def = INDICATORS[r.x] || NAMYANGJU_INDICATORS[r.x];
+              const def = INDICATORS[r.x] || JAYUL_INDICATORS_POOL[r.x];
               const name = def ? def.name : r.x;
               return `${r.y} · ${name} · ${Math.round(r.v * 100)}점 (원값 ${r.raw})`;
             },
@@ -3529,7 +3656,7 @@ const CATEGORY_META = {
 
 // 시군별 자율지표 정의 매핑 — 향후 다른 시군 추가 시 여기에 등록
 const AUTONOMY_INDICATORS_BY_CITY = {
-  namyangju: { city: '남양주시', indicators: NAMYANGJU_INDICATORS },
+  namyangju: { city: '남양주시', indicators: JAYUL_INDICATORS_POOL },
 };
 
 /**
