@@ -531,6 +531,7 @@ let riLayer = null;         // 행정리 경계 레이어 (줌 13+ 표시)
 let regionMeta = null;      // KOSIS 캐시 (region-meta.json)
 let labelGroup = null;      // 시군명 라벨 레이어
 let outlineLayer = null;    // 대상지(15개 시군) 합쳐진 외곽선 효과 레이어
+let sigunBorderLayer = null; // 시군 경계선 전용 오버레이 (dong/ri 위에 항상 표시)
 const DONG_ZOOM_THRESHOLD = 11;
 const RI_ZOOM_THRESHOLD   = 13;
 
@@ -779,12 +780,14 @@ function updateRiVisibility() {
   if (!map || !riLayer) return;
   const zoom = map.getZoom();
   if (zoom >= RI_ZOOM_THRESHOLD) {
-    if (!map.hasLayer(riLayer)) {
-      riLayer.addTo(map);
-      riLayer.bringToFront(); // 읍면 위에 표시
-    }
+    if (!map.hasLayer(riLayer)) riLayer.addTo(map);
+    // 레이어 순서 보장: geoJson(fill) → ri(파랑점선) → dong(어두운점선) → sigunBorder(최상위)
+    if (dongLayer && map.hasLayer(dongLayer)) dongLayer.bringToFront();
+    if (sigunBorderLayer) sigunBorderLayer.bringToFront();
   } else {
     if (map.hasLayer(riLayer)) map.removeLayer(riLayer);
+    // ri가 사라진 후에도 sigunBorder를 dong 위에 유지
+    if (sigunBorderLayer && dongLayer && map.hasLayer(dongLayer)) sigunBorderLayer.bringToFront();
   }
 }
 
@@ -856,10 +859,9 @@ function updateDongVisibility() {
   if (!map || !dongLayer) return;
   const zoom = map.getZoom();
   if (zoom >= DONG_ZOOM_THRESHOLD) {
-    if (!map.hasLayer(dongLayer)) {
-      dongLayer.addTo(map);
-      dongLayer.bringToFront(); // 시군구 위에 표시
-    }
+    if (!map.hasLayer(dongLayer)) dongLayer.addTo(map);
+    // 시군 경계선이 읍면 위에 항상 최상위로 유지
+    if (sigunBorderLayer) sigunBorderLayer.bringToFront();
   } else {
     if (map.hasLayer(dongLayer)) map.removeLayer(dongLayer);
   }
@@ -938,6 +940,20 @@ async function initGeoJSONLayer() {
           }
           this.closeTooltip();
         });
+      },
+    }).addTo(map);
+
+    // ── 시군 경계선 오버레이 (경계선만, 채우기 없음) ──
+    // dong/ri 레이어가 추가되어도 시군 경계가 항상 최상위에 표시되도록
+    if (sigunBorderLayer) map.removeLayer(sigunBorderLayer);
+    sigunBorderLayer = L.geoJSON({ type: 'FeatureCollection', features }, {
+      interactive: false, // 마우스 이벤트 차단 — 하위 레이어로 클릭 통과
+      style: {
+        fillColor: 'transparent',
+        fillOpacity: 0,
+        color: 'rgba(20, 35, 25, 0.50)',
+        weight: 2.0,
+        opacity: 1,
       },
     }).addTo(map);
 
@@ -3573,6 +3589,62 @@ function initOverlayScreens() {
 }
 
 // ===================================================================
+// === 지도/패널 드래그 구분선 (데스크톱 전용) ===
+// ===================================================================
+
+/**
+ * #map-container 와 #detail-panel 사이 드래그 리사이저 초기화
+ * - 좌우로 드래그해 지도·패널 너비 비율을 실시간 조절
+ * - 모바일(flex-direction: column) 상태에서는 무동작
+ */
+function initPanelResizer() {
+  const resizer = document.getElementById('panel-resizer');
+  const layout  = document.getElementById('main-layout');
+  const mapCont = document.getElementById('map-container');
+  if (!resizer || !layout || !mapCont) return;
+
+  let dragging = false;
+  let startX   = 0;
+  let startW   = 0;
+
+  resizer.addEventListener('pointerdown', (e) => {
+    // 세로 레이아웃(모바일)에서는 무시
+    if (window.getComputedStyle(layout).flexDirection === 'column') return;
+    dragging = true;
+    startX   = e.clientX;
+    startW   = mapCont.getBoundingClientRect().width;
+    resizer.setPointerCapture(e.pointerId);
+    resizer.classList.add('is-dragging');
+    document.body.style.cursor     = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  resizer.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const totalW = layout.getBoundingClientRect().width;
+    const dx     = e.clientX - startX;
+    // 최소 260px, 최대 totalW - 280px 범위로 제한
+    const newW   = Math.max(260, Math.min(totalW - 280, startW + dx));
+    mapCont.style.flex = `0 0 ${newW}px`;
+    // Leaflet 지도 크기 즉시 반영
+    if (map) map.invalidateSize({ animate: false });
+  });
+
+  const stopDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('is-dragging');
+    document.body.style.cursor     = '';
+    document.body.style.userSelect = '';
+    if (map) map.invalidateSize();
+  };
+
+  resizer.addEventListener('pointerup',     stopDrag);
+  resizer.addEventListener('pointercancel', stopDrag);
+}
+
+// ===================================================================
 // === 앱 초기화 진입점 ===
 // ===================================================================
 
@@ -3608,6 +3680,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') hideCityPanel();
   });
+
+  // 지도/패널 드래그 리사이저
+  initPanelResizer();
 
   showLoading();
 

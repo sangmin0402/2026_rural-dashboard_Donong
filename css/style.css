@@ -5252,3 +5252,51 @@ a:focus-visible {
   .dong-detail, .ri-detail { padding: 14px 14px 16px; }
   .dong-info-grid, .ri-info-grid { grid-template-columns: 1fr; }
 }
+
+/* ============================================================================
+   30. 지도/패널 드래그 구분선 (panel resizer)
+   ============================================================================ */
+
+/* map-container 기존 border-right 제거 — resizer가 대신 담당 */
+#map-container {
+  border-right: none;
+}
+
+#panel-resizer {
+  flex: 0 0 6px;
+  position: relative;
+  background: var(--border-soft, rgba(0, 0, 0, 0.08));
+  cursor: col-resize;
+  z-index: 50;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.18s;
+}
+#panel-resizer:hover,
+#panel-resizer.is-dragging {
+  background: rgba(45, 95, 63, 0.28);
+}
+/* 중앙 그립 핸들 (3점) */
+#panel-resizer::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 2px;
+  height: 48px;
+  border-radius: 2px;
+  background: rgba(80, 100, 90, 0.35);
+  transition: background 0.18s, height 0.18s;
+}
+#panel-resizer:hover::after,
+#panel-resizer.is-dragging::after {
+  background: var(--primary, #2D5F3F);
+  height: 64px;
+  opacity: 0.7;
+}
+
+/* 모바일(세로 레이아웃)에서는 숨김 */
+@media (max-width: 768px) {
+  #panel-resizer { display: none; }
+}
