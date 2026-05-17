@@ -3350,10 +3350,7 @@ function initLandingScreen() {
     setTimeout(hide, 650);
   };
 
-  const mainCta = document.getElementById('landing-cta-main');
-  if (mainCta) {
-    mainCta.addEventListener('click', () => closeAndAct('map'));
-  }
+  // landing-cta-main 는 이제 data-action="map" 보유 — 아래 위임 핸들러에서 처리
 
   // 액션이 있는 모든 버튼 (네비, Bento, 보조 CTA)
   screen.querySelectorAll('[data-action]').forEach(btn => {

@@ -3172,6 +3172,45 @@ a:focus-visible {
   color: #fff;
 }
 
+/* ── 보조 primary 버튼 (지표별로 보기) — 골든 액센트 ── */
+.landing-cta-primary--alt {
+  background: linear-gradient(135deg, #E8C088 0%, #D4A574 60%, #B5874A 100%);
+  color: #2A1F12;
+  box-shadow:
+    0 6px 24px rgba(180, 130, 70, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+.landing-cta-primary--alt:hover {
+  box-shadow:
+    0 10px 32px rgba(180, 130, 70, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+}
+
+/* ── 작은 hint 텍스트 링크 (기능 둘러보기) ── */
+.landing-cta-hint {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: color 0.18s ease;
+}
+.landing-cta-hint:hover {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.landing-cta-hint:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
 /* ?곗륫 KPI + 誘몃땲留?*/
 .landing-hero-right {
   display: flex; flex-direction: column;
