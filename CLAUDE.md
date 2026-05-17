@@ -266,6 +266,20 @@ const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
 
 ## 11. 현재 구현 상태
 
+### ✅ 완료된 기능 (최신)
+
+**🆕 시군 패널 UX 재배열 (feat/indicator-explorer 브랜치)**:
+- 점수 카드(삶터·일터·쉼터) → 레이더 차트 위로 이동
+- 자율지표 섹션 → 세부지표 다음·KOSIS 토글 앞
+- KOSIS·SGIS 기본 통계 → 시군 패널 맨 아래, 접힘 토글 (`#kosis-toggle-btn`)
+
+**🆕 지표 탐색 페이지 (`#explore-screen`)** — 풀스크린 오버레이:
+- 좌측 사이드바: 21개 지표 (공통 11 + 자율 10), 검색·카테고리 탭
+- 우측 상세: 산식/출처, 15시군 비교 표 (정렬 가능), 막대 차트, 미니 코로플레스, "지도에서 보기" 버튼
+- 진입로: 랜딩 Bento "📊 지표 탐색" 카드 / 지도 우측 패널의 지표 카드 클릭 / `#explore` 또는 `#explore/L1` 해시
+- 함수: `showExplorePage(key?)`, `renderExploreSidebar()`, `renderExploreDetail(key)`, `renderExploreBarChart(key, rows)`, `renderExploreMinimap(key, rows)`, `initExploreScreen()`
+- 자율지표는 "선정" 열에 ✓ 표시 (시군별 selectedJayulKeys 기반)
+
 ### ✅ 완료된 기능
 - Leaflet 코로플레스 지도 (줌 기반 읍면 레이어 전환)
 - 공통지표 11개 + 남양주 자율지표 8개 데이터

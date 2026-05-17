@@ -1688,7 +1688,7 @@ function updateJayulSection(cityId) {
           ? `<span class="jayul-state-badge selected">✓ 선정</span>`
           : `<span class="jayul-state-badge candidate">후보</span>`;
         return `
-          <div class="jayul-ind-card ${stateClass}" style="--cat-color:${catColor};">
+          <div class="jayul-ind-card ${stateClass}" data-key="${key}" style="--cat-color:${catColor};">
             <div class="jayul-card-top">
               <span class="jayul-ind-key">${key}</span>
               ${stateBadge}
@@ -3288,6 +3288,9 @@ function initLandingScreen() {
       showRankingPage();
     } else if (h === '#guide') {
       showGuidePage();
+    } else if (h === '#explore' || h.startsWith('#explore/')) {
+      const key = h.startsWith('#explore/') ? h.slice('#explore/'.length) : null;
+      showExplorePage(key);
     } else if (h === '#dashboard') {
       hideAllOverlayScreens();
       screen.classList.add('is-hidden');
@@ -3313,6 +3316,12 @@ function initLandingScreen() {
   if (initialHash === '#guide') {
     screen.classList.add('is-hidden');
     setTimeout(() => showGuidePage(), 0);
+    return;
+  }
+  if (initialHash === '#explore' || initialHash.startsWith('#explore/')) {
+    screen.classList.add('is-hidden');
+    const key = initialHash.startsWith('#explore/') ? initialHash.slice('#explore/'.length) : null;
+    setTimeout(() => showExplorePage(key), 0);
     return;
   }
 
@@ -3364,6 +3373,10 @@ function initLandingScreen() {
       }
       if (action === 'ranking') {
         showRankingPage();
+        return;
+      }
+      if (action === 'explore') {
+        showExplorePage();
         return;
       }
       // 데이터 출처는 아직 준비 중
@@ -3853,6 +3866,468 @@ function showGuidePage() {
   showOverlayScreen('guide-screen', '#guide');
 }
 
+// ===================================================================
+// === 지표 탐색 페이지 (#explore-screen) — 21지표 × 15시군 비교 ===
+// ===================================================================
+
+// 탐색 페이지 상태
+const exploreState = {
+  activeKey:  null,       // 현재 선택된 지표 key
+  catFilter:  'all',      // 'all' | 'samlter' | 'ilter' | 'shimter'
+  search:     '',         // 검색어 (소문자)
+  sortBy:     'value',    // 'value' | 'name'
+  sortDir:    'desc',     // 'asc' | 'desc'
+  chart:      null,       // Chart.js 인스턴스
+  initialized: false,
+};
+
+// 지표 메타 통합 조회 — INDICATORS + JAYUL_INDICATORS_POOL
+function getIndicatorMeta(key) {
+  return (typeof INDICATORS !== 'undefined' && INDICATORS[key])
+      || (typeof JAYUL_INDICATORS_POOL !== 'undefined' && JAYUL_INDICATORS_POOL[key])
+      || null;
+}
+function isJayulKey(key) {
+  return !!(typeof JAYUL_INDICATORS_POOL !== 'undefined' && JAYUL_INDICATORS_POOL[key]);
+}
+
+// 시군의 지표 값 — 공통 또는 자율지표 둘 다 조회
+function getCityIndicatorValue(cityId, key) {
+  const city = CITIES[cityId];
+  if (!city) return null;
+  if (city.indicators && key in city.indicators) return city.indicators[key];
+  if (city.jayulIndicators && key in city.jayulIndicators) return city.jayulIndicators[key];
+  return null;
+}
+
+// raw 데이터 조회 — region-meta.json 의 raw/computed 층 활용
+function getIndicatorRawDetails(cityId, key) {
+  const meta = (regionMeta && regionMeta.sigun && regionMeta.sigun[cityId]) || null;
+  if (!meta) return null;
+  // computed에 있으면 그것 + raw 입력 함께
+  const computedKey = {
+    L1: 'L1_pop_growth_rate',
+    L2: 'L2_aging_index',
+    L3: 'L3_net_migration_rate',
+    W2: 'W2_business_count',
+    W8: 'W8_service_sales_workers',
+  }[key];
+  if (computedKey && meta.computed && meta.computed[computedKey]) {
+    const c = meta.computed[computedKey];
+    return { value: c.value, formula: c.formula, raw: c.inputs || {}, source: 'computed' };
+  }
+  return null;
+}
+
+// 5분위 등급 (1=낮음, 5=높음) — 정렬 순위 기반
+function getQuantileClass(rank, total) {
+  const q = Math.ceil((rank / total) * 5);
+  return Math.min(5, Math.max(1, q));
+}
+
+/**
+ * 탐색 페이지 열기 (메인 진입점)
+ * @param {string} [indicatorKey] 선택할 지표 key (없으면 빈 상태)
+ */
+function showExplorePage(indicatorKey = null) {
+  if (!exploreState.initialized) initExploreScreen();
+  exploreState.activeKey = indicatorKey || exploreState.activeKey || null;
+  renderExploreSidebar();
+  const hash = indicatorKey ? `#explore/${indicatorKey}` : '#explore';
+  showOverlayScreen('explore-screen', hash);
+  if (exploreState.activeKey) {
+    renderExploreDetail(exploreState.activeKey);
+  } else {
+    // 빈 상태 (안내) — HTML 초기 마크업 유지
+    const detail = document.getElementById('explore-detail');
+    if (detail && !detail.querySelector('.explore-detail-empty')) {
+      detail.innerHTML = `
+        <div class="explore-detail-empty">
+          <div class="explore-empty-emoji">👈</div>
+          <h3>좌측에서 지표를 선택해보세요</h3>
+          <p>각 지표마다 15개 시군의 값 · raw 데이터 · 막대 차트 · 미니맵을 확인할 수 있습니다.</p>
+        </div>`;
+    }
+  }
+}
+
+/**
+ * 좌측 사이드바 렌더 (지표 21개 목록 — 필터·검색 적용)
+ */
+function renderExploreSidebar() {
+  const list = document.getElementById('explore-indicator-list');
+  if (!list) return;
+  const all = [];
+  Object.keys(INDICATORS).forEach(k => all.push({ key: k, type: 'common', meta: INDICATORS[k] }));
+  Object.keys(JAYUL_INDICATORS_POOL).forEach(k => all.push({ key: k, type: 'jayul', meta: JAYUL_INDICATORS_POOL[k] }));
+
+  list.innerHTML = all.map(item => {
+    const { key, type, meta } = item;
+    const catCls = meta.category ? `cat-${meta.category}` : '';
+    const isActive = key === exploreState.activeKey;
+    const matchesCat = exploreState.catFilter === 'all' || meta.category === exploreState.catFilter;
+    const q = exploreState.search;
+    const matchesSearch = !q || key.toLowerCase().includes(q) || (meta.name || '').toLowerCase().includes(q);
+    const hidden = (!matchesCat || !matchesSearch) ? 'is-hidden' : '';
+    return `
+      <li class="explore-ind-item ${isActive ? 'is-active' : ''} ${hidden}" data-key="${key}" role="button" tabindex="0">
+        <span class="explore-ind-key ${catCls}">${key}</span>
+        <span class="explore-ind-name">${meta.name}</span>
+        <span class="explore-ind-type type-${type}">${type === 'jayul' ? '자율' : '공통'}</span>
+      </li>`;
+  }).join('');
+}
+
+/**
+ * 우측 상세 패널 렌더 — 헤더·산식·표·차트·미니맵·액션
+ */
+function renderExploreDetail(key) {
+  const detail = document.getElementById('explore-detail');
+  const meta   = getIndicatorMeta(key);
+  if (!detail || !meta) return;
+
+  const catCls = meta.category ? `cat-${meta.category}` : '';
+  const catLabel = { samlter: '삶터', ilter: '일터', shimter: '쉼터' }[meta.category] || '';
+  const dirLabel = meta.higherBetter ? '높을수록 좋음' : '낮을수록 좋음';
+  const isJayul = isJayulKey(key);
+
+  // 산식·출처 — KOSIS/SGIS 연결된 것만 명시, 나머지는 mock
+  const formula = ({
+    L1: '(현재인구 − 전년인구) ÷ 전년인구 × 100',
+    L2: '65세이상 인구 ÷ 0–14세 인구 × 100  <em>(SGIS aged_child_idx 직접 제공)</em>',
+    L3: '(전입 − 전출) ÷ 총인구 × 1000',
+    W2: 'SGIS company.json — corp_cnt (전산업 합계)',
+    W8: '도소매(G) 종사자 + 숙박음식(I) 종사자',
+  })[key] || (isJayul
+    ? '(현재 데이터는 mock — 시군이 자율적으로 선정·실측 입력하는 지표)'
+    : '<em>(공통지표 — 현재 mock 데이터, 실측 교체 예정)</em>');
+  const sourceText = ({
+    L1: 'KOSIS Open API · DT_1B040A3 (자동 계산)',
+    L2: 'SGIS Open API · 총조사 주요지표 (population.json)',
+    W2: 'SGIS Open API · 사업체통계 (company.json)',
+    W8: 'SGIS Open API · 도소매·숙박음식 종사자 합산',
+  })[key] || (isJayul
+    ? '향후 시군별 실측 또는 외부 출처 (manual 입력)'
+    : '향후 KOSIS·외부 출처에서 수집 예정 (현재 mock)');
+
+  // 시군별 데이터 수집 + 정렬 + 등급
+  const rows = Object.keys(CITIES).map(cid => {
+    const city = CITIES[cid];
+    const value = getCityIndicatorValue(cid, key);
+    const rawDetails = getIndicatorRawDetails(cid, key);
+    // 자율지표는 시군이 "선정"했는지 표시
+    const isSelected = isJayul && Array.isArray(city.selectedJayulKeys) && city.selectedJayulKeys.includes(key);
+    return { cityId: cid, cityName: city.name, value, rawDetails, isSelected };
+  });
+  // 정렬
+  const sortKey = exploreState.sortBy;
+  const dir = exploreState.sortDir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => {
+    if (sortKey === 'name') return a.cityName.localeCompare(b.cityName, 'ko') * dir;
+    const va = (a.value == null ? -Infinity : a.value);
+    const vb = (b.value == null ? -Infinity : b.value);
+    return (va - vb) * dir;
+  });
+  // 등급 부여 (값 기반 5분위 — higherBetter 면 큰 값이 1등급)
+  const validRows = rows.filter(r => r.value != null);
+  // 등급은 정렬 방향과 무관하게 항상 값 기준으로 — 값으로만 별도 정렬해 등급
+  const byValueDesc = [...validRows].sort((a, b) => (b.value - a.value));
+  validRows.forEach(r => {
+    const idxFromTop = byValueDesc.findIndex(x => x.cityId === r.cityId) + 1;
+    r.qclass = getQuantileClass(idxFromTop, validRows.length);
+  });
+
+  // raw 데이터 HTML
+  const rawCol = (r) => {
+    if (r.rawDetails && r.rawDetails.raw) {
+      return Object.entries(r.rawDetails.raw)
+        .map(([k, v]) => `<code>${k}=${(typeof v === 'number') ? v.toLocaleString() : v}</code>`)
+        .join(' ');
+    }
+    return '<span style="opacity:0.4">(mock)</span>';
+  };
+
+  // 등급 색상 (5분위)
+  const qcolor = (q) => ({
+    1: '#62A03F', 2: '#9CC267', 3: '#E0CE74', 4: '#E89C5A', 5: '#C56F2E',
+  })[q] || '#888';
+
+  const unitDisplay = meta.unit ? `${meta.unit}` : '';
+  const spatialDisplay = meta.spatial ? meta.spatial : '시군';
+  const yearDisplay = meta.year ? `${meta.year}년` : '';
+
+  detail.innerHTML = `
+    <header class="explore-detail-header">
+      <span class="explore-key-badge ${catCls}">${key}</span>
+      <h2>${meta.name}</h2>
+      ${catLabel ? `<span class="explore-cat-chip ${meta.category}">${catLabel}</span>` : ''}
+      <span class="explore-meta-chip">${unitDisplay ? unitDisplay + ' · ' : ''}${spatialDisplay}${yearDisplay ? ' · ' + yearDisplay : ''} · ${dirLabel}</span>
+      ${isJayul ? '<span class="explore-cat-chip" style="background:var(--accent)">자율지표</span>' : ''}
+    </header>
+    <div class="explore-formula">
+      <h3>산식</h3>
+      <p>${formula}</p>
+      <h3>출처</h3>
+      <p>${sourceText}</p>
+    </div>
+
+    <div class="explore-table-wrap">
+      <table class="explore-table" id="explore-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th class="sortable" data-sort="name">시군</th>
+            <th class="sortable ${sortKey==='value' ? (exploreState.sortDir==='asc'?'sort-asc':'sort-desc'):''}" data-sort="value">값${unitDisplay ? ` (${unitDisplay})` : ''}</th>
+            <th>raw 데이터</th>
+            <th>등급</th>
+            ${isJayul ? '<th>선정</th>' : ''}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r, i) => `
+            <tr data-city-id="${r.cityId}">
+              <td class="rank-cell">${i + 1}</td>
+              <td><strong>${r.cityName}</strong></td>
+              <td>${r.value == null ? '-' : (typeof r.value === 'number' ? r.value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : r.value)}</td>
+              <td>${rawCol(r)}</td>
+              <td>${r.qclass ? `<span class="quantile-chip" style="background:${qcolor(r.qclass)}">${r.qclass}</span>` : '-'}</td>
+              ${isJayul ? `<td>${r.isSelected ? '<span style="color:var(--primary);font-weight:700;">✓</span>' : '-'}</td>` : ''}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="explore-chart">
+      <canvas id="explore-bar-canvas"></canvas>
+    </div>
+
+    <div class="explore-minimap">
+      <p class="explore-minimap-title">🗺️ 시군별 분포 (코로플레스)</p>
+      <div id="explore-minimap-svg"></div>
+    </div>
+
+    <div class="explore-actions">
+      <button class="btn-primary" id="explore-show-on-map" type="button">🗺️ 지도에서 이 지표로 보기</button>
+    </div>
+  `;
+
+  // 차트·미니맵 렌더 + 표 이벤트 binding
+  renderExploreBarChart(key, rows);
+  renderExploreMinimap(key, rows);
+  // 표 행 클릭 → 해당 시군 지도에서 선택
+  detail.querySelectorAll('.explore-table tbody tr').forEach(tr => {
+    tr.addEventListener('click', () => {
+      const cid = tr.dataset.cityId;
+      hideAllOverlayScreens();
+      document.getElementById('landing-screen')?.classList.add('is-hidden');
+      const dashboard = document.getElementById('app-screen');
+      if (dashboard) dashboard.classList.remove('hidden');
+      if (typeof selectCity === 'function') selectCity(cid);
+    });
+  });
+  // 정렬 헤더 클릭
+  detail.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', () => {
+      const newSort = th.dataset.sort;
+      if (exploreState.sortBy === newSort) {
+        exploreState.sortDir = exploreState.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        exploreState.sortBy = newSort;
+        exploreState.sortDir = 'desc';
+      }
+      renderExploreDetail(key);
+    });
+  });
+  // "지도에서 보기" 버튼
+  const showBtn = document.getElementById('explore-show-on-map');
+  if (showBtn) {
+    showBtn.addEventListener('click', () => {
+      state.activeIndicator = key;
+      hideAllOverlayScreens();
+      document.getElementById('landing-screen')?.classList.add('is-hidden');
+      const dashboard = document.getElementById('app-screen');
+      if (dashboard) dashboard.classList.remove('hidden');
+      const sel = document.getElementById('indicator-selector');
+      if (sel) {
+        // 지도 드롭다운에 공통지표만 있을 수 있으므로 선택 가능 시만 변경
+        const opt = Array.from(sel.options).find(o => o.value === key);
+        if (opt) { sel.value = key; sel.dispatchEvent(new Event('change')); }
+      }
+      if (typeof updateMapColors === 'function') updateMapColors();
+      history.pushState(null, '', '#dashboard');
+    });
+  }
+}
+
+/**
+ * Chart.js 막대 차트 — 시군별 지표값
+ */
+function renderExploreBarChart(key, rows) {
+  if (typeof Chart === 'undefined') return;
+  if (exploreState.chart) {
+    try { exploreState.chart.destroy(); } catch(_) {}
+    exploreState.chart = null;
+  }
+  const canvas = document.getElementById('explore-bar-canvas');
+  if (!canvas) return;
+  const meta = getIndicatorMeta(key);
+  const catColor = ({
+    samlter: '#4A90D9', ilter: '#E8A44A', shimter: '#52A866',
+  })[meta?.category] || '#2D5F3F';
+  const data = rows.filter(r => r.value != null);
+  exploreState.chart = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: data.map(r => r.cityName),
+      datasets: [{
+        label: meta?.name || key,
+        data: data.map(r => r.value),
+        backgroundColor: catColor + 'CC',
+        borderColor: catColor,
+        borderWidth: 1,
+        borderRadius: 4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.parsed.y.toLocaleString(undefined,{maximumFractionDigits:2})}${meta?.unit ? ' ' + meta.unit : ''}`,
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45 } },
+        y: { beginAtZero: false, ticks: { font: { size: 10 } } },
+      },
+    },
+  });
+}
+
+/**
+ * SVG 미니맵 — 코로플레스 (랜딩 미니맵 패턴 차용, 외부 GeoJSON fetch 캐시)
+ */
+let _exploreMinimapGeo = null;  // 캐시
+async function renderExploreMinimap(key, rows) {
+  const host = document.getElementById('explore-minimap-svg');
+  if (!host) return;
+  host.innerHTML = '<div style="font-size:11px;color:var(--text-muted);padding:var(--space-2)">로딩 중…</div>';
+  try {
+    if (!_exploreMinimapGeo) {
+      const resp = await fetch('./dat/gyeonggi-sigun.geojson');
+      _exploreMinimapGeo = await resp.json();
+    }
+    const geo = _exploreMinimapGeo;
+    // 값 매핑 (city_id → value)
+    const valById = {};
+    rows.forEach(r => { if (r.value != null) valById[r.cityId] = r.value; });
+    // 값 범위
+    const vals = Object.values(valById).filter(v => v != null);
+    if (vals.length === 0) {
+      host.innerHTML = '<p style="font-size:11px;color:var(--text-muted)">데이터 없음</p>';
+      return;
+    }
+    const meta = getIndicatorMeta(key);
+    const higherBetter = meta?.higherBetter !== false;
+    const vmin = Math.min(...vals), vmax = Math.max(...vals);
+    const colorFor = (v) => {
+      if (v == null) return '#e5e5e5';
+      const t = vmax === vmin ? 0.5 : (v - vmin) / (vmax - vmin);
+      const score = higherBetter ? t : 1 - t;
+      // 5단계 색상 (높을수록 진한 녹색)
+      const palette = ['#E89C5A','#E0CE74','#9CC267','#62A03F','#2D5F3F'];
+      const idx = Math.min(4, Math.floor(score * 5));
+      return palette[idx];
+    };
+    // 단순 SVG 프로젝션 (경기도 범위에 맞춤)
+    // 위경도 → 화면 좌표
+    const W = 360, H = 280;
+    // 경기도 대략 범위
+    const bb = { minLng: 126.4, maxLng: 127.85, minLat: 36.85, maxLat: 38.30 };
+    const proj = ([lng, lat]) => [
+      ((lng - bb.minLng) / (bb.maxLng - bb.minLng)) * W,
+      H - ((lat - bb.minLat) / (bb.maxLat - bb.minLat)) * H,
+    ];
+    const pathFromCoords = (coords, type) => {
+      // type: Polygon (coords = [[ [lng,lat], ... ]]) or MultiPolygon ([[ [[lng,lat]] ]])
+      const rings = type === 'Polygon' ? coords : coords.flat();
+      return rings.map(ring => 'M' + ring.map(pt => proj(pt).map(n => n.toFixed(1)).join(',')).join(' L') + ' Z').join(' ');
+    };
+    const svgParts = ['<svg viewBox="0 0 360 280" xmlns="http://www.w3.org/2000/svg">'];
+    geo.features.forEach(f => {
+      const cid = f.properties.id;
+      const c = f.geometry;
+      if (!c || !c.coordinates) return;
+      const d = pathFromCoords(c.coordinates, c.type);
+      const v = valById[cid];
+      const fill = colorFor(v);
+      const title = `${CITIES[cid]?.name || cid}: ${v == null ? '-' : v.toLocaleString(undefined,{maximumFractionDigits:2})}${meta?.unit ? ' ' + meta.unit : ''}`;
+      svgParts.push(`<path d="${d}" fill="${fill}" stroke="#fff" stroke-width="1" data-city-id="${cid}"><title>${title}</title></path>`);
+    });
+    svgParts.push('</svg>');
+    host.innerHTML = svgParts.join('');
+    // 클릭 → 시군 선택 + 지도로 이동
+    host.querySelectorAll('path[data-city-id]').forEach(p => {
+      p.style.cursor = 'pointer';
+      p.addEventListener('click', () => {
+        const cid = p.dataset.cityId;
+        hideAllOverlayScreens();
+        document.getElementById('landing-screen')?.classList.add('is-hidden');
+        const dashboard = document.getElementById('app-screen');
+        if (dashboard) dashboard.classList.remove('hidden');
+        if (typeof selectCity === 'function') selectCity(cid);
+      });
+    });
+  } catch (e) {
+    host.innerHTML = `<p style="font-size:11px;color:var(--text-muted)">미니맵 로드 실패: ${e.message}</p>`;
+  }
+}
+
+/**
+ * 탐색 페이지 초기화 — 검색·탭·사이드바 클릭 이벤트 1회 binding
+ */
+function initExploreScreen() {
+  if (exploreState.initialized) return;
+  // 검색
+  const searchInput = document.getElementById('explore-search-input');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      exploreState.search = (searchInput.value || '').trim().toLowerCase();
+      renderExploreSidebar();
+    });
+  }
+  // 카테고리 탭
+  document.querySelectorAll('.explore-cat-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.explore-cat-tab').forEach(t => t.classList.remove('is-active'));
+      tab.classList.add('is-active');
+      exploreState.catFilter = tab.dataset.cat;
+      renderExploreSidebar();
+    });
+  });
+  // 사이드바 지표 클릭 (이벤트 위임)
+  const list = document.getElementById('explore-indicator-list');
+  if (list) {
+    list.addEventListener('click', (e) => {
+      const item = e.target.closest('.explore-ind-item');
+      if (!item) return;
+      const key = item.dataset.key;
+      exploreState.activeKey = key;
+      // 사이드바 활성 표시 갱신
+      list.querySelectorAll('.explore-ind-item').forEach(i => i.classList.remove('is-active'));
+      item.classList.add('is-active');
+      // 우측 패널 렌더
+      renderExploreDetail(key);
+      // 해시 갱신
+      history.replaceState(null, '', `#explore/${key}`);
+    });
+  }
+  exploreState.initialized = true;
+}
+
 /**
  * 오버레이 페이지 내부 인터랙션 초기화 — 한 번만 호출
  */
@@ -4093,6 +4568,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // KOSIS 기본 통계 토글 (시군 패널 맨 아래 접힘 섹션)
   initKosisToggle();
+
+  // 우측 패널 지표 카드 / 자율지표 카드 클릭 → 지표 탐색 페이지 열기 (이벤트 위임)
+  const cityDetailEl = document.getElementById('city-detail');
+  if (cityDetailEl) {
+    cityDetailEl.addEventListener('click', (e) => {
+      // 공통지표 카드 (HTML 정적 .indicator-card + JS 동적 .indicator-item 모두)
+      const common = e.target.closest('.indicator-card, .indicator-item');
+      if (common) {
+        const key = common.dataset.id
+                 || common.dataset.key
+                 || common.querySelector('.indicator-id')?.textContent.trim();
+        if (key && (INDICATORS[key] || JAYUL_INDICATORS_POOL[key])) {
+          showExplorePage(key);
+          return;
+        }
+      }
+      // 자율지표 카드 (모든 시군에 적용)
+      const jayul = e.target.closest('.jayul-ind-card');
+      if (jayul) {
+        const key = jayul.dataset.key
+                 || jayul.querySelector('.jayul-ind-key')?.textContent.trim();
+        if (key && (INDICATORS[key] || JAYUL_INDICATORS_POOL[key])) {
+          showExplorePage(key);
+        }
+      }
+    });
+  }
 
   showLoading();
 

@@ -337,7 +337,18 @@
               <span class="bento-arrow" aria-hidden="true">→</span>
             </button>
 
-            <!-- 5. 남양주 (TALL) -->
+            <!-- 5. 지표 탐색 (NEW) -->
+            <button class="bento-card bento-card--explore" data-action="explore" type="button">
+              <span class="bento-badge">NEW</span>
+              <div class="bento-icon-wrap">
+                <span class="bento-icon">📊</span>
+              </div>
+              <h3 class="bento-title">지표 탐색</h3>
+              <p class="bento-desc">21개 지표 · 15시군 비교 · raw 데이터까지</p>
+              <span class="bento-arrow" aria-hidden="true">→</span>
+            </button>
+
+            <!-- 6. 남양주 (TALL) -->
             <button class="bento-card bento-card--namyangju bento-card--tall" data-action="namyangju" type="button">
               <div class="bento-icon-wrap">
                 <span class="bento-icon">🌿</span>
@@ -479,6 +490,45 @@
         </div>
       </section>
       <section class="guide-category-wrap" id="guide-categories"></section>
+    </main>
+  </div>
+
+  <!-- ===== 지표 탐색 오버레이 (NEW) ===== -->
+  <div id="explore-screen" class="overlay-screen is-hidden" role="dialog" aria-modal="true" aria-label="지표 탐색">
+    <header class="overlay-header">
+      <button class="overlay-brand" type="button" aria-label="첫 화면으로">
+        <span class="overlay-brand-logo" aria-hidden="true">🌿</span>
+        <span class="overlay-brand-text">경기도 농촌다움 지표 플랫폼</span>
+      </button>
+      <button class="overlay-close" type="button" aria-label="닫기" data-overlay-close>✕</button>
+    </header>
+    <main class="overlay-main explore-main">
+      <!-- 좌측 사이드바: 21개 지표 목록 -->
+      <nav class="explore-sidebar" aria-label="지표 선택">
+        <h2 class="explore-h2">📊 지표 탐색</h2>
+        <p class="explore-help">지표 선택 시 15개 시군 비교 · raw 데이터 표시</p>
+        <div class="explore-search">
+          <input id="explore-search-input" type="search" placeholder="🔍 지표 이름 검색…" autocomplete="off" />
+        </div>
+        <div class="explore-cat-tabs" role="tablist" aria-label="카테고리 필터">
+          <button class="explore-cat-tab is-active" data-cat="all" type="button">전체</button>
+          <button class="explore-cat-tab" data-cat="samlter" type="button">삶터</button>
+          <button class="explore-cat-tab" data-cat="ilter" type="button">일터</button>
+          <button class="explore-cat-tab" data-cat="shimter" type="button">쉼터</button>
+        </div>
+        <ul id="explore-indicator-list" class="explore-indicator-list" role="list">
+          <!-- JS 동적 생성 — 공통 11 + 자율 10 = 21개 -->
+        </ul>
+      </nav>
+      <!-- 우측 상세 패널: 선택된 지표의 상세 -->
+      <section id="explore-detail" class="explore-detail" aria-live="polite">
+        <!-- 초기: 안내 메시지. 지표 선택 시 JS가 채움 -->
+        <div class="explore-detail-empty">
+          <div class="explore-empty-emoji">👈</div>
+          <h3>좌측에서 지표를 선택해보세요</h3>
+          <p>각 지표마다 15개 시군의 값 · raw 데이터 · 막대 차트 · 미니맵을 확인할 수 있습니다.</p>
+        </div>
+      </section>
     </main>
   </div>
 
