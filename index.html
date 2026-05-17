@@ -507,32 +507,35 @@
       <button class="overlay-close" type="button" aria-label="닫기" data-overlay-close>✕</button>
     </header>
     <main class="overlay-main explore-main">
-      <!-- 좌측 사이드바: 21개 지표 목록 -->
+      <!-- 좌측 (260px): 카테고리 트리 + 검색 -->
       <nav class="explore-sidebar" aria-label="지표 선택">
         <h2 class="explore-h2">📊 지표 탐색</h2>
-        <p class="explore-help">지표 선택 시 15개 시군 비교 · raw 데이터 표시</p>
+        <p class="explore-help">카테고리별 21개 지표 — 클릭하여 시군 비교</p>
         <div class="explore-search">
-          <input id="explore-search-input" type="search" placeholder="🔍 지표 이름 검색…" autocomplete="off" />
+          <input id="explore-search-input" type="search" placeholder="🔍 지표 검색…" autocomplete="off" />
         </div>
-        <div class="explore-cat-tabs" role="tablist" aria-label="카테고리 필터">
-          <button class="explore-cat-tab is-active" data-cat="all" type="button">전체</button>
-          <button class="explore-cat-tab" data-cat="samlter" type="button">삶터</button>
-          <button class="explore-cat-tab" data-cat="ilter" type="button">일터</button>
-          <button class="explore-cat-tab" data-cat="shimter" type="button">쉼터</button>
+        <div class="explore-cat-tree" id="explore-cat-tree" role="tree">
+          <!-- 동적 — 4개 카테고리 그룹 (삶터/일터/쉼터/자율) — collapsible -->
         </div>
-        <ul id="explore-indicator-list" class="explore-indicator-list" role="list">
-          <!-- JS 동적 생성 — 공통 11 + 자율 10 = 21개 -->
-        </ul>
       </nav>
-      <!-- 우측 상세 패널: 선택된 지표의 상세 -->
-      <section id="explore-detail" class="explore-detail" aria-live="polite">
-        <!-- 초기: 안내 메시지. 지표 선택 시 JS가 채움 -->
+
+      <!-- 가운데 (1fr): 지도 + 표 + 차트 -->
+      <section id="explore-main-panel" class="explore-main-panel" aria-live="polite">
         <div class="explore-detail-empty">
           <div class="explore-empty-emoji">👈</div>
-          <h3>좌측에서 지표를 선택해보세요</h3>
-          <p>각 지표마다 15개 시군의 값 · raw 데이터 · 막대 차트 · 미니맵을 확인할 수 있습니다.</p>
+          <h3>좌측에서 지표를 선택하세요</h3>
+          <p>카테고리별로 21개 지표가 정리되어 있습니다.<br/>
+             선택 시 코로플레스 지도·시군 비교 표·차트를 확인할 수 있습니다.</p>
         </div>
       </section>
+
+      <!-- 우측 (320px): 시군 상세 / TOP 3 -->
+      <aside id="explore-aside" class="explore-aside" aria-live="polite">
+        <div class="explore-aside-empty">
+          <span class="explore-aside-emoji">🏙️</span>
+          <p>지도 위 시군에 마우스를 올리거나<br/>클릭해보세요</p>
+        </div>
+      </aside>
     </main>
   </div>
 
