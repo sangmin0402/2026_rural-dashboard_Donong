@@ -53,6 +53,9 @@ const NAMYANGJU_INDICATORS = {
   R4: { name: '인구 1천명당 체험 프로그램', unit: '건/천명', category: 'shimter', higherBetter: true, spatial: '읍면', year: 2024 },
   R5: { name: '양호수질 하천 비율',      unit: '%',      category: 'shimter', higherBetter: true, spatial: '읍면',   year: 2023 },
   R6: { name: '수변·생태쉼터 면적',     unit: '㎡/천명', category: 'shimter', higherBetter: true, spatial: '읍면',  year: 2024 },
+  // ── 신규 (와이어프레임 0518 — 데이터 미수집, 시각화 구조만 사전 등록) ──
+  R8: { name: '국가유산',               unit: '개',      category: 'shimter', higherBetter: true, spatial: '시군',   year: 2025, source: '문화재청', pending: true },
+  W8: { name: '서비스판매 종사자',       unit: '명',      category: 'ilter',   higherBetter: true, spatial: '시군',   year: 2023, source: 'KOSIS 전국사업체조사', pending: true },
 };
 
 // 카테고리 종합 가상 지표 키 매핑
@@ -139,6 +142,9 @@ const CITIES = {
       L5: 12.4, L6: 84.2,
       W5: 18.3, W6: 22.1, W7: 15.8,
       R4: 3.4,  R5: 78.5, R6: 2840,
+      // 신규 — 데이터 수집 전 placeholder (UI 구조 확인용)
+      R8: null,   // 국가유산 개수 — 문화재청 수동 수집 대기
+      W8: null,   // 서비스판매 종사자 — 사업체조사 수동/외부 수집 대기
     },
   },
   gapyeong: {
@@ -1344,68 +1350,109 @@ function updateDetailPanel(cityId) {
 }
 
 /**
- * KOSIS 시군 기본 통계 섹션 렌더
- * regionMeta.sigun[cityId]에 데이터가 있는 항목만 카드로 표시.
- * 데이터가 전혀 없으면 섹션 전체를 숨김.
+ * KOSIS 시군 기본 통계 섹션 렌더 (3-layer 스키마)
+ *
+ * region-meta.json 구조:
+ *   sigun[cityId].raw[field]      = { value, year, source: 'kosis:DT_...' }
+ *   sigun[cityId].computed[field] = { value, unit, formula, inputs }
+ *   sigun[cityId].manual[field]   = { value, year, source, updated_by, updated_at }
+ *
+ * 카드 표시 우선순위: computed > raw > manual (앞쪽 층 값이 있으면 그것을, 없으면 다음 층)
+ * 데이터가 전혀 없는 항목은 카드 자체가 렌더되지 않음 (graceful hide).
+ *
  * @param {string} cityId
  */
 function renderKosisSigunStats(cityId) {
-  const section  = document.getElementById('kosis-sigun-stats');
-  const grid     = document.getElementById('kosis-stats-grid');
-  const noteEl   = document.getElementById('kosis-source-note');
+  const section = document.getElementById('kosis-sigun-stats');
+  const grid    = document.getElementById('kosis-stats-grid');
+  const noteEl  = document.getElementById('kosis-source-note');
   if (!section || !grid) return;
 
   const meta = regionMeta && regionMeta.sigun && regionMeta.sigun[cityId];
-  if (!meta || Object.keys(meta).length === 0) {
+  if (!meta || (!meta.raw && !meta.computed && !meta.manual)) {
     section.classList.add('hidden');
     return;
   }
 
-  // 표시 항목 정의 — 향후 확장 시 여기에 항목 추가
+  // 3-layer 통합 조회 함수 — 어느 층에 있든 값과 메타 반환
+  function readField(key) {
+    if (meta.computed && meta.computed[key]) return { ...meta.computed[key], _layer: 'computed' };
+    if (meta.raw      && meta.raw[key])      return { ...meta.raw[key],      _layer: 'raw'      };
+    if (meta.manual   && meta.manual[key])   return { ...meta.manual[key],   _layer: 'manual'   };
+    return null;
+  }
+
+  // 카드 정의 — 어떤 키든 readField()로 어느 층이든 표시 가능
   const STAT_DEFS = [
-    { key: 'population',   label: '총인구',      emoji: '👥', fmt: v => v.toLocaleString() + ' 명',   tbl: 'sigun_pop' },
-    { key: 'households',   label: '세대 수',      emoji: '🏠', fmt: v => v.toLocaleString() + ' 가구',  tbl: 'sigun_hh'  },
-    { key: 'senior_ratio', label: '고령화율',     emoji: '👴', fmt: v => v.toFixed(1) + ' %',          tbl: 'sigun_age' },
-    { key: 'youth_ratio',  label: '청년인구 비율', emoji: '🌱', fmt: v => v.toFixed(1) + ' %',          tbl: 'sigun_age' },
-    { key: 'businesses',   label: '사업체 수',    emoji: '🏢', fmt: v => v.toLocaleString() + ' 개',   tbl: 'sigun_biz' },
-    { key: 'workers',      label: '종사자 수',    emoji: '👷', fmt: v => v.toLocaleString() + ' 명',   tbl: 'sigun_biz' },
+    // raw 직접 표시
+    { key: 'population',         label: '총인구',       emoji: '👥', fmt: v => v.toLocaleString() + ' 명' },
+    { key: 'households',         label: '세대 수',       emoji: '🏠', fmt: v => v.toLocaleString() + ' 가구' },
+
+    // computed (산식 계산값)
+    { key: 'L1_pop_growth_rate', label: '인구증가율',    emoji: '📈', fmt: v => (v >= 0 ? '+' : '') + v.toFixed(2) + ' %' },
+    { key: 'L3_net_migration_rate', label: '인구순이동률', emoji: '🚚', fmt: v => (v >= 0 ? '+' : '') + v.toFixed(2) + ' ‰' },
+
+    // manual (수동 입력) — 있으면 표시, 없으면 숨김
+    { key: 'W3_fiscal_independence', label: '재정자립도', emoji: '💼', fmt: v => v.toFixed(1) + ' %' },
+    { key: 'W4_grdp',                label: 'GRDP',       emoji: '💰', fmt: v => v.toLocaleString() + ' 억원' },
+    { key: 'R8_heritage_count',      label: '국가유산',   emoji: '🏯', fmt: v => v.toLocaleString() + ' 개' },
   ];
-
-  const tableMeta = (regionMeta._meta && regionMeta._meta.tables) || {};
-  const visible   = STAT_DEFS.filter(def => meta[def.key] != null);
-
-  if (visible.length === 0) {
-    section.classList.add('hidden');
-    return;
-  }
 
   // 기준 기간 포맷 (202604 → 2026년 4월)
   const fmtPeriod = (p) => {
     if (!p) return '';
     const s = String(p);
-    if (s.length === 6) return `${s.slice(0, 4)}년 ${parseInt(s.slice(4), 10)}월`;
-    if (s.length === 4) return `${s}년`;
+    if (s.length === 6 && /^\d+$/.test(s)) return `${s.slice(0, 4)}년 ${parseInt(s.slice(4), 10)}월`;
+    if (s.length === 4 && /^\d+$/.test(s)) return `${s}년`;
     return s;
   };
 
-  grid.innerHTML = visible.map(def => {
-    const tbl    = tableMeta[def.tbl] || {};
-    const period = fmtPeriod(tbl.period || '');
-    return `
-      <div class="kosis-stat-card">
-        <div class="kosis-stat-emoji">${def.emoji}</div>
-        <div class="kosis-stat-value">${def.fmt(meta[def.key])}</div>
+  // 층별 배지 클래스/라벨
+  const LAYER_BADGE = {
+    raw:      { cls: 'kosis-badge-kosis',    label: 'KOSIS' },
+    computed: { cls: 'kosis-badge-computed', label: '계산' },
+    manual:   { cls: 'kosis-badge-manual',   label: '수동' },
+  };
+
+  const cards = [];
+  const sources = new Set();
+
+  STAT_DEFS.forEach(def => {
+    const rec = readField(def.key);
+    if (!rec || rec.value == null) return;
+    const period = fmtPeriod(rec.year || '');
+    const badge  = LAYER_BADGE[rec._layer] || LAYER_BADGE.raw;
+    const tooltip = rec.formula
+      ? `${def.label} = ${rec.formula}`
+      : (rec.source || '');
+
+    sources.add(rec._layer);
+
+    cards.push(`
+      <div class="kosis-stat-card" title="${tooltip}">
+        <div class="kosis-stat-top">
+          <span class="kosis-stat-emoji">${def.emoji}</span>
+          <span class="kosis-stat-badge ${badge.cls}">${badge.label}</span>
+        </div>
+        <div class="kosis-stat-value">${def.fmt(rec.value)}</div>
         <div class="kosis-stat-label">${def.label}</div>
         ${period ? `<div class="kosis-stat-period">${period}</div>` : ''}
-      </div>`;
-  }).join('');
+      </div>`);
+  });
+
+  if (cards.length === 0) {
+    section.classList.add('hidden');
+    return;
+  }
+  grid.innerHTML = cards.join('');
 
   // 출처 노트
   if (noteEl) {
-    const periods = [...new Set(
-      visible.map(def => fmtPeriod((tableMeta[def.tbl] || {}).period || '')).filter(Boolean)
-    )];
-    noteEl.textContent = `출처: KOSIS Open API — 주민등록인구통계 (행정안전부)${periods.length ? ' · 기준: ' + periods.join(', ') : ''}`;
+    const parts = [];
+    if (sources.has('raw'))      parts.push('KOSIS Open API (주민등록인구통계)');
+    if (sources.has('computed')) parts.push('산식 자동 계산');
+    if (sources.has('manual'))   parts.push('수동 입력');
+    noteEl.textContent = '출처: ' + parts.join(' · ');
   }
 
   section.classList.remove('hidden');

@@ -5476,6 +5476,39 @@ a:focus-visible {
   line-height: 1;
   margin-bottom: 4px;
 }
+
+/* 카드 상단 — 이모지 + 출처 배지 가로 배치 */
+.kosis-stat-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 2px;
+}
+.kosis-stat-top .kosis-stat-emoji {
+  margin-bottom: 0;
+}
+
+/* 데이터 출처 배지 (raw=KOSIS / computed=계산 / manual=수동) */
+.kosis-stat-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.kosis-badge-kosis {
+  background: rgba(74, 144, 217, 0.14);
+  color: var(--samlter);
+}
+.kosis-badge-computed {
+  background: rgba(82, 168, 102, 0.16);
+  color: var(--shimter);
+}
+.kosis-badge-manual {
+  background: rgba(232, 164, 74, 0.18);
+  color: var(--ilter);
+}
 .kosis-stat-value {
   font-family: 'Noto Serif KR', serif;
   font-size: var(--fs-sm);

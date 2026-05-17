@@ -1,7 +1,8 @@
 {
   "_meta": {
-    "source": "kosis_api",
-    "fetched_at": "2026-05-17T16:15:48.721570",
+    "source": "kosis_api + manual",
+    "fetched_at": "2026-05-17T16:45:56.738702",
+    "schema": "3-layer (raw / computed / manual)",
     "tables": {
       "sigun_pop": {
         "tblId": "DT_1B040A3",
@@ -20,68 +21,473 @@
       "sigun": 15,
       "dong": 0
     },
-    "note": "읍면동 인구·연령·사업체 통계: KOSIS API 파라미터 미확인으로 현재 제외. TABLES dict 활성화 후 재실행 가능."
+    "note": "읍면동 데이터: KOSIS API 차원 코드 미확인으로 현재 비활성. TABLES dict 활성화 후 재실행 가능."
   },
   "sigun": {
     "pyeongtaek": {
-      "population": 616517,
-      "households": 297218
+      "raw": {
+        "population": {
+          "value": 616517,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 600697,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 297218,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": 2.63,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 616517,
+            "population_prev": 600697
+          }
+        }
+      },
+      "manual": {}
     },
     "namyangju": {
-      "population": 728126,
-      "households": 309126
+      "raw": {
+        "population": {
+          "value": 728126,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 730371,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 309126,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": -0.31,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 728126,
+            "population_prev": 730371
+          }
+        }
+      },
+      "manual": {}
     },
     "yongin": {
-      "population": 1090269,
-      "households": 450327
+      "raw": {
+        "population": {
+          "value": 1090269,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 1089752,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 450327,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": 0.05,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 1090269,
+            "population_prev": 1089752
+          }
+        }
+      },
+      "manual": {}
     },
     "icheon": {
-      "population": 223506,
-      "households": 107814
+      "raw": {
+        "population": {
+          "value": 223506,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 222671,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 107814,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": 0.37,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 223506,
+            "population_prev": 222671
+          }
+        }
+      },
+      "manual": {}
     },
     "anseong": {
-      "population": 198089,
-      "households": 98257
+      "raw": {
+        "population": {
+          "value": 198089,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 195289,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 98257,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": 1.43,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 198089,
+            "population_prev": 195289
+          }
+        }
+      },
+      "manual": {}
     },
     "hwaseong": {
-      "population": 996582,
-      "households": 432271
+      "raw": {
+        "population": {
+          "value": 996582,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 977283,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 432271,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": 1.97,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 996582,
+            "population_prev": 977283
+          }
+        }
+      },
+      "manual": {}
     },
     "gwangju": {
-      "population": 397402,
-      "households": 176355
+      "raw": {
+        "population": {
+          "value": 397402,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 396950,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 176355,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": 0.11,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 397402,
+            "population_prev": 396950
+          }
+        }
+      },
+      "manual": {}
     },
     "yangju": {
-      "population": 296910,
-      "households": 133062
+      "raw": {
+        "population": {
+          "value": 296910,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 291318,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 133062,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": 1.92,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 296910,
+            "population_prev": 291318
+          }
+        }
+      },
+      "manual": {}
     },
     "pocheon": {
-      "population": 140435,
-      "households": 74115
+      "raw": {
+        "population": {
+          "value": 140435,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 141186,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 74115,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": -0.53,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 140435,
+            "population_prev": 141186
+          }
+        }
+      },
+      "manual": {}
     },
     "yeoju": {
-      "population": 113605,
-      "households": 57047
+      "raw": {
+        "population": {
+          "value": 113605,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 114289,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 57047,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": -0.6,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 113605,
+            "population_prev": 114289
+          }
+        }
+      },
+      "manual": {}
     },
     "gapyeong": {
-      "population": 62010,
-      "households": 33201
+      "raw": {
+        "population": {
+          "value": 62010,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 62181,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 33201,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": -0.28,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 62010,
+            "population_prev": 62181
+          }
+        }
+      },
+      "manual": {}
     },
     "yangpyeong": {
-      "population": 126797,
-      "households": 63884
+      "raw": {
+        "population": {
+          "value": 126797,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 126704,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 63884,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": 0.07,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 126797,
+            "population_prev": 126704
+          }
+        }
+      },
+      "manual": {}
     },
     "osan": {
-      "population": 251395,
-      "households": 116555
+      "raw": {
+        "population": {
+          "value": 251395,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 245742,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 116555,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": 2.3,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 251395,
+            "population_prev": 245742
+          }
+        }
+      },
+      "manual": {}
     },
     "hanam": {
-      "population": 327681,
-      "households": 141018
+      "raw": {
+        "population": {
+          "value": 327681,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 328118,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 141018,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": -0.13,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 327681,
+            "population_prev": 328118
+          }
+        }
+      },
+      "manual": {}
     },
     "dongducheon": {
-      "population": 86293,
-      "households": 43740
+      "raw": {
+        "population": {
+          "value": 86293,
+          "year": "202604",
+          "source": "kosis:DT_1B040A3"
+        },
+        "population_prev": {
+          "value": 86695,
+          "year": "202504",
+          "source": "kosis:DT_1B040A3"
+        },
+        "households": {
+          "value": 43740,
+          "year": "202604",
+          "source": "kosis:DT_1B040B3"
+        }
+      },
+      "computed": {
+        "L1_pop_growth_rate": {
+          "value": -0.46,
+          "unit": "%",
+          "formula": "(현재인구 - 전년인구) / 전년인구 × 100",
+          "inputs": {
+            "population": 86293,
+            "population_prev": 86695
+          }
+        }
+      },
+      "manual": {}
     }
   },
   "dong": {}

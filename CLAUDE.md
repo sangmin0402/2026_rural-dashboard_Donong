@@ -34,13 +34,28 @@ Web/
 │   ├── gyeonggi-sigun.geojson   # 15개 시군 폴리곤 (인코딩 주의 — 아래 10번 참조)
 │   ├── gyeonggi-dong.geojson    # 읍면동 폴리곤 (줌 11+ 표시)
 │   ├── gyeonggi-ri.geojson      # 행정리 폴리곤 (줌 13+ 표시, ~1.4MB)
-│   └── region-meta.json         # KOSIS 통계 캐시 (시군·읍면 메타정보)
+│   └── region-meta.json         # KOSIS 통계 캐시 — 3-layer (raw/computed/manual)
+├── docs/
+│   └── KOSIS-MAPPING.md         # 21지표 × KOSIS 매핑 마스터
 └── scripts/                     # 데이터 가공 (Python)
     ├── process_ri.py            # SHP → GeoJSON 변환
     ├── fetch_kosis.py           # KOSIS API → region-meta.json
     ├── requirements.txt
     └── README.md
 ```
+
+### region-meta.json — 3-layer 스키마
+```jsonc
+sigun[cityId] = {
+  raw:      { population: { value, year, source: 'kosis:DT_...' }, ... },
+  computed: { L1_pop_growth_rate: { value, unit, formula, inputs }, ... },
+  manual:   { W3_fiscal_independence: { value, year, source, updated_by, ... }, ... }
+}
+```
+- `raw`: KOSIS API 원본 (fetch_kosis.py가 매번 덮어씀)
+- `computed`: raw로부터 산식 계산 (`compute_indicators()`)
+- `manual`: 사용자 직접 입력 (스크립트가 `load_existing_manual()`로 보존)
+- UI는 `renderKosisSigunStats()`에서 `readField(key)`로 3-layer 통합 조회 (우선순위: computed > raw > manual)
 
 ---
 
@@ -73,8 +88,9 @@ Web/
 | R2 | 토지이용 다양성 지수 | shimter |
 | R3 | 녹지율 | shimter |
 
-### 남양주 자율지표 8개 (NAMYANGJU_INDICATORS)
-L5(귀촌인 증감률), L6(3년 귀촌 규모 유지율), W5(농업 세대교체), W6(청년 귀농 유입), W7(친환경 인증 농가), R4(체험 프로그램), R5(양호수질 하천), R6(수변·생태쉼터)
+### 남양주 자율지표 10개 (NAMYANGJU_INDICATORS)
+L5(귀촌인 증감률), L6(3년 귀촌 규모 유지율), W5(농업 세대교체), W6(청년 귀농 유입), W7(친환경 인증 농가), R4(체험 프로그램), R5(양호수질 하천), R6(수변·생태쉼터)  
+**신규(0518 와이어프레임용)**: R8(국가유산, 시군 단위, 문화재청), W8(서비스판매 종사자, 시군 단위, KOSIS 전국사업체조사) — 현재 데이터 미수집(`pending: true` 플래그), UI 구조만 사전 등록
 
 ### 카테고리 종합 가상 지표 (CATEGORY_TOTALS)
 ```javascript

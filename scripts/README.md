@@ -57,14 +57,40 @@ KOSIS_API_KEY="발급받은_키" python fetch_kosis.py
 
 ---
 
-### 2-2. 현재 수집 테이블 (활성)
+### 2-2. region-meta.json 3-layer 스키마
+
+스크립트가 생성하는 JSON은 다음 3-layer 구조:
+
+```jsonc
+{
+  "sigun": {
+    "namyangju": {
+      "raw":      { /* KOSIS 원본 — 매 실행마다 덮어씀 */ },
+      "computed": { /* raw로부터 산식 계산값 — 결정론적 재계산 */ },
+      "manual":   { /* 사용자 수동 입력 — 스크립트가 보존 */ }
+    }
+  }
+}
+```
+
+- **raw**: KOSIS Open API 응답 원본. `{ value, year, source: 'kosis:DT_...' }`
+- **computed**: `compute_indicators(raw)`에서 계산. `{ value, unit, formula, inputs }`
+- **manual**: 사용자가 직접 편집. `{ value, year, source, updated_by, updated_at }`. `load_existing_manual()`로 보존.
+
+자세한 매핑은 [`docs/KOSIS-MAPPING.md`](../docs/KOSIS-MAPPING.md) 참조.
+
+### 2-3. 현재 활성 테이블 (Tier 1)
 
 | 키 | 테이블명 | orgId | tblId | 파라미터 | 수집 항목 |
 |----|---------|-------|-------|---------|---------|
-| `sigun_pop` | 행정구역(시군구)별 성별 인구수 | 101 | DT_1B040A3 | `objL1=ALL&itmId=ALL&prdSe=M&newEstPrdCnt=1` | 총인구수 (T20) |
+| `sigun_pop` | 행정구역(시군구)별 성별 인구수 | 101 | DT_1B040A3 | `objL1=ALL&itmId=ALL&prdSe=M&newEstPrdCnt=13` | 총인구수 (T20), 13개월 → 현재+전년 |
 | `sigun_hh` | 행정구역(시군구)별 주민등록세대수 | 101 | DT_1B040B3 | `objL1=ALL&itmId=ALL&prdSe=M&newEstPrdCnt=1` | 세대수 (T1) |
 
 두 테이블 모두 **15/15 경기도 시군 완전 수집** 확인 (2026-05 기준).
+
+**자동 계산 지표** (`compute_indicators()`):
+- `L1_pop_growth_rate`: 인구증가율 = (현재-전년)/전년×100 → 단위 %
+- `L3_net_migration_rate`: 인구순이동률 = (전입-전출)/인구×1000 → 단위 ‰ (인구이동 raw 확보 시)
 
 응답 필드 예시 (DT_1B040A3):
 ```json
@@ -80,60 +106,132 @@ KOSIS_API_KEY="발급받은_키" python fetch_kosis.py
 
 ---
 
-### 2-3. 미수집 테이블 (비활성 — 파라미터 미확인)
+### 2-4. 시도 결과 — 비활성 테이블
 
-아래 테이블들은 `fetch_kosis.py` 내 `TABLES` dict에 주석으로 남겨둠.  
-파라미터 확인 후 주석 해제 + 대응 `parse_*` 함수 주석 해제하면 즉시 활성화 가능.
+`fetch_kosis.py`의 `TABLES` dict에 주석으로 보존됨. **검증 결과(2026-05)**:
 
-| 키 | tblId | 수집 목표 | 현재 장애 |
-|----|-------|---------|---------|
-| `sigun_age` | DT_1IN1502 | 고령화율·청년비율 | `objL1=ALL&itmId=ALL` → ERR 31 (40,000셀 초과). 특정 연령 ITM_ID 불명 |
-| `sigun_biz` | DT_1K51003 | 사업체수·종사자수 | `objL1=ALL&objL2=ALL&itmId=ALL` → ERR 31. 경기도 필터 코드 불명 |
-| `dong_pop` | DT_1B040M1 | 읍면동별 인구·세대수 | 3차원 필요, 경기도 필터 적용 시 ERR 21 (코드 체계 불명) |
+#### [시도 단위만 제공 — 시군구 breakdown 없음]
 
-**재시도 힌트**:
-- ERR 31 (40,000셀 초과): `objL1` 또는 `objL2`에 경기도 코드를 지정해 데이터량 감소 필요. KOSIS 내부 차원 코드는 표준 행정구역코드(41, 41220 등)가 아닐 수 있음 — KOSIS 웹에서 해당 표 URL의 `objL1`, `objL2` 파라미터 값을 확인할 것.
-- DT_1IN1502의 경우: `itmId=ALL`이 40,000셀 초과를 유발. KOSIS 웹에서 65세이상 항목의 ITM_ID 값을 확인 후 `itmId=해당코드`로 지정하면 해결 가능.
-- DT_1B040M1의 경우: `objL1=ALL&objL2=ALL&objL3=ALL&itmId=ALL` 조합은 성공하나 40,000셀 초과. 시도별 분할 요청이 필요하나 경기도 코드 형식 미확인.
+| tblId | 표 이름 | 검증 결과 |
+|-------|---------|---------|
+| DT_1B26001 | 시군구/성/연령(5세)별 이동자수 | C1=시도, C2=성별, C3=연령. `objL1='41'` → 경기도 전체만, 시군구 없음 |
+| DT_1C81 | 시도별 지역내총생산 | 1512행, 경기도 시군구 0행. 시도 단위만 |
+| DT_1B81A21 | 합계출산율 | C1=KOSIS 내부 시도코드(31=경기), 시군구 없음 |
+
+→ KOSIS 웹 검색에서 시군구별 표 ID 확보 후 재시도 필요. 또는 KOSIS Excel 다운로드 후 `manual` 층에 직접 입력.
+
+#### [40,000셀 초과 — 차원 필터링 필요]
+
+| tblId | 표 이름 | 재시도 방안 |
+|-------|---------|------------|
+| DT_1IN1502 | 인구통계 노령화지수 | `itmId=<65세이상 코드>,<0-14세 코드>` 특정 지정 |
+| DT_1K51003 | 전국사업체조사 시군구 | `objL1=<전산업 합계 코드>` 지정 |
+| DT_1B040M1 | 행정구역(읍면동)별 주민등록인구 | 시도별 분할 호출 필요 — 경기도 코드 형식 확인 필요 |
+
+#### [테이블 ID 미확인]
+
+| 시도한 ID | 결과 | 대안 |
+|----------|------|------|
+| DT_1ET2002 (귀농귀촌) | ERR 21 | KOSIS 웹에서 「귀농귀촌」 검색 → 정확한 tblId 확보 |
+| DT_113N_SDK1, DT_113N_M001 등 | ERR 21 | 동상 |
 
 ---
 
-### 2-4. 새 테이블 추가 방법
+### 2-5. 새 테이블 추가 방법
 
-`fetch_kosis.py`는 **1 테이블 = TABLES dict 1항목 + parse_* 함수 1개** 구조로 설계됨.
+`fetch_kosis.py`는 **1 테이블 = 1 TABLES 항목 + 1 parse_* 함수 + 1 PARSERS 항목** 구조.
 
 ```python
-# 1. TABLES dict에 항목 추가
+# 1. TABLES dict 에 항목 추가
 TABLES = {
-    ...
     'sigun_agri': {
-        'orgId': '101', 'tblId': 'DT_농업테이블ID',
+        'orgId': '101', 'tblId': 'DT_농업표ID',
         'prdSe': 'Y',   'newEstPrdCnt': '1',
         'extra': {'itmId': 'ALL'},
         'desc':  '시군구별 농가수 및 경지면적',
     },
 }
 
-# 2. 파서 함수 추가
+# 2. 파서 함수 추가 — {city_id: {field: value, _period: str}} 반환
 def parse_sigun_agri(rows):
-    # ... ITM_ID 파악 후 city_id → {farms, area} 매핑
+    itm_ids = _discover_itm_ids(rows)
+    farm_id = _find_itm_id(itm_ids, ['농가수', '농가'])
+    result = {}
+    for r in rows:
+        code5 = _extract_code(r, 5)
+        if not code5 or code5 not in CODE_TO_CITY: continue
+        city_id = CODE_TO_CITY[code5]
+        ...
+        result[city_id] = {'farms': val, '_period': period}
     return result
 
-# 3. fetch_all() 내 PARSERS dict에 추가
+# 3. fetch_all() 의 PARSERS dict 에 추가
 PARSERS = {
-    ...
+    ...,
     'sigun_agri': parse_sigun_agri,
 }
+```
 
-# 4. merge_all() 내 병합 로직 추가
-if 'sigun_agri' in parsed:
-    for cid, vals in parsed['sigun_agri'].items():
-        sigun[cid].update(...)
+**3-layer 자동 처리** — 파서가 반환한 데이터는 `merge_all()`이 자동으로 `raw` 층에 wrapping:
+```python
+sigun[cid]['raw']['farms'] = {
+    'value': val,
+    'year':  period,
+    'source': 'kosis:DT_농업표ID',
+}
+```
+
+산식 계산 지표 추가 시 `compute_indicators()`에 분기 추가:
+```python
+def compute_indicators(raw):
+    computed = {}
+    farms = (raw.get('farms') or {}).get('value')
+    population = (raw.get('population') or {}).get('value')
+    if farms and population:
+        computed['farm_density'] = {
+            'value': round(farms / population * 1000, 2),
+            'unit': '농가/천명',
+            'formula': '농가수 / 인구 × 1000',
+            'inputs': {'farms': farms, 'population': population},
+        }
+    return computed
 ```
 
 ---
 
-### 2-5. KOSIS API 공통 파라미터
+### 2-6. 수동 입력값 추가 방법 (manual 층)
+
+KOSIS에 없는 지표(재정자립도, 국가유산 등)는 `region-meta.json`을 직접 편집해 추가:
+
+```jsonc
+"sigun": {
+  "namyangju": {
+    "raw": { /* 건드리지 않음 */ },
+    "computed": { /* 건드리지 않음 */ },
+    "manual": {
+      "W3_fiscal_independence": {
+        "value": 38.6,
+        "year": "2024",
+        "source": "지방재정365",
+        "updated_by": "your_name",
+        "updated_at": "2026-05-17"
+      },
+      "R8_heritage_count": {
+        "value": 12,
+        "year": "2025",
+        "source": "문화재청 국가유산포털"
+      }
+    }
+  }
+}
+```
+
+> `fetch_kosis.py`를 재실행해도 `manual` 층은 `load_existing_manual()`이 읽어 보존함.  
+> 키 이름은 [`docs/KOSIS-MAPPING.md`](../docs/KOSIS-MAPPING.md)의 매핑 표 참고.
+
+---
+
+### 2-7. KOSIS API 공통 파라미터
 
 | 파라미터 | 값 | 설명 |
 |---------|---|------|
@@ -141,7 +239,7 @@ if 'sigun_agri' in parsed:
 | `format` | `json` | 응답 형식 |
 | `jsonVD` | `Y` | JSON 값 직접 반환 |
 | `prdSe` | `M` (월) / `Y` (연) | 수록 주기 |
-| `newEstPrdCnt` | `1` | 최신 1개 기간 |
+| `newEstPrdCnt` | `N` | 최신 N개 기간 (인구증가율 계산엔 `13` 필요) |
 | `objL1` | `ALL` | 1차 분류 전체 |
 | `itmId` | `ALL` | 항목 전체 |
 
@@ -150,9 +248,10 @@ if 'sigun_agri' in parsed:
 **에러 코드**:
 | 코드 | 의미 | 조치 |
 |------|------|------|
-| 20 | 필수 파라미터 누락 | `objL1/objL2` 또는 `itmId` 추가 |
-| 21 | 잘못된 요청 변수 | tblId/orgId 또는 objL 값 재확인 |
-| 31 | 40,000셀 초과 | 특정 objL 값으로 필터링 필요 |
+| 20 | 필수 파라미터 누락 | `objL1/objL2` 또는 `itmId` 추가. 에러 메시지의 `(objL)` 등 단서 확인 |
+| 21 | 잘못된 요청 변수 / 표 없음 | tblId/orgId 또는 objL 값 재확인. 차원 코드는 KOSIS 내부 분류일 수 있음 |
+| 30 | 데이터 없음 | 기간 또는 코드 변경 |
+| 31 | 40,000셀 초과 | 특정 objL 값으로 필터링하여 데이터 양 감소 |
 
 ---
 
