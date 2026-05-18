@@ -3480,7 +3480,7 @@ function initLandingMinimap() {
   const tooltip = document.getElementById('landing-minimap-tooltip');
   if (!svg) return;
 
-  fetch('./dat/gyeonggi-sigun.geojson')
+  fetch('./dat/gyeonggi-sigun.geojson', { cache: 'no-cache' })
     .then(r => r.json())
     .then(geo => {
       // 모든 좌표의 bbox 계산
@@ -4487,7 +4487,7 @@ async function renderExploreMainMap(key, rows) {
   host.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:var(--space-3)">지도 로딩 중…</div>';
   try {
     if (!_exploreMainMapGeo) {
-      const resp = await fetch('./dat/gyeonggi-sigun.geojson');
+      const resp = await fetch('./dat/gyeonggi-sigun.geojson', { cache: 'no-cache' });
       _exploreMainMapGeo = await resp.json();
     }
     const geo = _exploreMainMapGeo;
