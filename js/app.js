@@ -948,11 +948,12 @@ async function loadRegionMeta() {
   }
   // SGIS computed 값으로 CITIES mock 덮어쓰기 (실측 우선)
   applySgisOverridesToCities();
+  updateMapColors();
+  updateLegend();
   if (state.selectedCity) {
     updateDetailPanel(state.selectedCity);
     updateRadarChart(state.selectedCity);
     updateIndicatorList();
-    updateMapColors();
   }
 }
 
@@ -2085,6 +2086,23 @@ function initTabs() {
 function switchTab(tab) {
   state.activeTab = tab;
 
+  // 상단 탭(종합·삶터·일터·쉼터) ↔ 지도 코로플레스·단계구분도 범례 동기화
+  // (지표 드롭다운은 state.activeIndicator만 사용 — 탭을 바꿀 때 같이 맞춰야 함)
+  const mapTabToIndicator = {
+    overview: 'total',
+    samlter: 'samlter_total',
+    ilter: 'ilter_total',
+    shimter: 'shimter_total',
+  };
+  if (Object.prototype.hasOwnProperty.call(mapTabToIndicator, tab)) {
+    state.activeIndicator = mapTabToIndicator[tab];
+    const sel = document.getElementById('indicator-selector');
+    if (sel) {
+      const hasOpt = Array.from(sel.options).some(o => o.value === state.activeIndicator);
+      if (hasOpt) sel.value = state.activeIndicator;
+    }
+  }
+
   // 탭 버튼 활성 상태 업데이트
   document.querySelectorAll('.tab-btn').forEach(btn => {
     if (btn.dataset.tab === tab) {
@@ -2123,6 +2141,7 @@ function switchTab(tab) {
 
   updateIndicatorList();
   updateMapColors();
+  updateLegend();
 
   // 시나리오 탭일 때 레이더 업데이트
   if (tab === 'scenario' && state.selectedCity) {
