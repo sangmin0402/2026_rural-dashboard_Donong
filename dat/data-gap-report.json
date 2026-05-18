@@ -1,0 +1,207 @@
+{
+  "_meta": {
+    "generated_at": "2026-05-18T11:35:32.072020",
+    "source": "reference workbook + local0427 import + current API coverage"
+  },
+  "import_status": {
+    "indicator_reference": {
+      "status": "ok",
+      "count": 24
+    },
+    "field_survey": {
+      "status": "ok",
+      "count": 4
+    },
+    "housing": {
+      "status": "ok",
+      "count": 15,
+      "path": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\삶터\\주택_현황_및_보급률_경기도.xlsx"
+    },
+    "medical_facilities": {
+      "status": "ok",
+      "count": 15,
+      "path": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\삶터\\의료시설 수_경기도.xlsx"
+    },
+    "experience_farms": {
+      "status": "ok",
+      "count": 43,
+      "path": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\W9_남양주체험농장정보.xlsx"
+    },
+    "urban_parks": {
+      "status": "ok",
+      "count": 172,
+      "path": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\쉼터\\R5_남양주시_도시공원정보.csv"
+    },
+    "agri_managers": {
+      "status": "ok",
+      "count": 17326,
+      "path": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\농업경영체 현황_남양주.xlsx"
+    },
+    "return_farm": {
+      "status": "ok",
+      "count": 1,
+      "path": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\귀농인현황_남양주.xlsx"
+    },
+    "eco_certified_farms": {
+      "status": "ok",
+      "count": 1,
+      "path": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\친환경인증농가현황_남양주.xlsx"
+    },
+    "jobs_namyangju": {
+      "status": "ok",
+      "count": 1,
+      "path": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\직업별_취업자_남양주시.xlsx"
+    },
+    "water_quality": {
+      "status": "ok",
+      "count": 15,
+      "path": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\쉼터\\R4_2024_기후에너지환경부_물환경 수질측정망 정보(SHP)"
+    }
+  },
+  "items": [
+    {
+      "indicator": "W5",
+      "label": "농업 세대교체 수준",
+      "status": "partial",
+      "scope": "dong",
+      "reason": "농업경영체 읍면명 매칭 실패: 일패동",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\농업경영체 현황_남양주.xlsx"
+    },
+    {
+      "indicator": "W5",
+      "label": "농업 세대교체 수준",
+      "status": "partial",
+      "scope": "dong",
+      "reason": "농업경영체 읍면명 매칭 실패: 이패동",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\농업경영체 현황_남양주.xlsx"
+    },
+    {
+      "indicator": "W5",
+      "label": "농업 세대교체 수준",
+      "status": "partial",
+      "scope": "dong",
+      "reason": "농업경영체 읍면명 매칭 실패: 삼패동",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\농업경영체 현황_남양주.xlsx"
+    },
+    {
+      "indicator": "W5",
+      "label": "농업 세대교체 수준",
+      "status": "partial",
+      "scope": "dong",
+      "reason": "농업경영체 읍면명 매칭 실패: 수석동",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\농업경영체 현황_남양주.xlsx"
+    },
+    {
+      "indicator": "W5",
+      "label": "농업 세대교체 수준",
+      "status": "partial",
+      "scope": "dong",
+      "reason": "농업경영체 읍면명 매칭 실패: 지금동",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\농업경영체 현황_남양주.xlsx"
+    },
+    {
+      "indicator": "W5",
+      "label": "농업 세대교체 수준",
+      "status": "partial",
+      "scope": "dong",
+      "reason": "농업경영체 읍면명 매칭 실패: 도농동",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\농업경영체 현황_남양주.xlsx"
+    },
+    {
+      "indicator": "W5",
+      "label": "농업 세대교체 수준",
+      "status": "partial",
+      "scope": "dong",
+      "reason": "농업경영체 읍면명 매칭 실패: 다산동",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\농업경영체 현황_남양주.xlsx"
+    },
+    {
+      "indicator": "L5",
+      "label": "귀촌인 증감률",
+      "status": "partial",
+      "scope": "sigun",
+      "reason": "KOSIS 귀농귀촌 통계 표는 있으나 0427 로컬 파일이 1행 1열로 저장되어 파싱 불가. API 차원 파라미터 확정 필요",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\삶터\\L5L6_시도별_시군별__·_성별_귀촌인_20260424004831_분석(전년_대비_증감,증감률).xlsx"
+    },
+    {
+      "indicator": "L6",
+      "label": "3년 귀촌 규모 유지율",
+      "status": "partial",
+      "scope": "sigun",
+      "reason": "KOSIS 귀농귀촌 통계 표는 있으나 3년 전/현재 귀촌인수 항목 파라미터 확정 필요",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\삶터\\L5L6_시도별_시군별__·_성별_귀촌인_20260424004831_분석(전년_대비_증감,증감률).xlsx"
+    },
+    {
+      "indicator": "W4",
+      "label": "GRDP",
+      "status": "partial",
+      "scope": "sigun",
+      "reason": "KOSIS 지역소득 표는 있으나 0427 로컬 파일이 1행 1열로 저장되어 파싱 불가. API 차원 파라미터 확정 필요",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\일터\\W3_GRDP_시_군_구__20260424005846_.xlsx"
+    },
+    {
+      "indicator": "R8",
+      "label": "국가유산",
+      "status": "local_only",
+      "scope": "sigun",
+      "reason": "국가유산은 0427 로컬/문화재청 계열 원천 확인 대상이며 KOSIS/SGIS 통계 API 수집 대상이 아님",
+      "source": "C:\\Users\\liber\\Dropbox\\04_Tasks\\04_수업\\지역활성화시스템론\\0427_데이터\\쉼터\\R8_경기도_국가유산.xlsx"
+    },
+    {
+      "indicator": "L3",
+      "label": "인구순이동률",
+      "status": "partial",
+      "scope": "sigun",
+      "reason": "KOSIS DT_1B26001 표는 응답하지만 전체 차원 호출 시 40,000셀 제한에 걸림. 시군구 전입/전출 항목별 파라미터 확정 후 별도 파서 필요",
+      "source": ""
+    },
+    {
+      "indicator": "L4",
+      "label": "생활SOC 충족지수",
+      "status": "not_available",
+      "scope": "sigun",
+      "reason": "기준 출처가 RAISE/농어촌서비스기준 실태조사로, 현재 KOSIS/SGIS Open API 수집 대상이 아님",
+      "source": ""
+    },
+    {
+      "indicator": "W1",
+      "label": "고용률",
+      "status": "partial",
+      "scope": "sigun",
+      "reason": "KOSIS 경제활동인구조사 표는 있으나 현재 fetch_kosis.py 파라미터/공간단위 파서 미구현",
+      "source": ""
+    },
+    {
+      "indicator": "W3",
+      "label": "재정자립도",
+      "status": "not_available",
+      "scope": "sigun",
+      "reason": "기준 출처가 행안부 지방재정365로, KOSIS/SGIS Open API 대상이 아님",
+      "source": ""
+    },
+    {
+      "indicator": "R1",
+      "label": "농촌환경 보전율",
+      "status": "not_available",
+      "scope": "sigun",
+      "reason": "기준 출처가 보호지역 DB/토지피복도 공간분석으로, KOSIS/SGIS 통계 API가 아닌 GIS 원천 처리 대상",
+      "source": ""
+    },
+    {
+      "indicator": "R2",
+      "label": "토지이용 다양성 지수",
+      "status": "not_available",
+      "scope": "sigun",
+      "reason": "기준 출처가 토지피복도 Shannon 다양성 산식으로, KOSIS/SGIS 통계 API가 아닌 GIS 원천 처리 대상",
+      "source": ""
+    },
+    {
+      "indicator": "R3",
+      "label": "녹지율",
+      "status": "not_available",
+      "scope": "sigun",
+      "reason": "기준 출처가 토지피복도 녹지 면적 산식으로, KOSIS/SGIS 통계 API가 아닌 GIS 원천 처리 대상",
+      "source": ""
+    }
+  ]
+}

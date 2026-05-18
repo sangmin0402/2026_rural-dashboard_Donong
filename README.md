@@ -11,7 +11,7 @@
 1. [프로젝트 개요](#1-프로젝트-개요)
 2. [주요 기능](#2-주요-기능)
 3. [지표 체계](#3-지표-체계)
-4. [데이터 현황](#4-데이터-현황)
+4. [데이터 현황](#4-데이터-현황) · [4-1. 0427 확정 데이터·현장조사 (2026-05)](#4-1-0427-확정-데이터현장조사-2026-05)
 5. [5대 권역 분류](#5-5대-권역-분류)
 6. [파일 구조](#6-파일-구조)
 7. [로컬 실행](#7-로컬-실행)
@@ -129,7 +129,7 @@
 | L5 | 귀촌인 증감률 | 삶터 | % | 2023 | |
 | L6 | 3년 귀촌 규모 유지율 | 삶터 | % | 2023 | |
 | W5 | 농업 세대교체 수준 | 일터 | % | 2022 | |
-| W6 | 청년 귀농 유입 비율 | 일터 | % | 2023 | |
+| W6 | 청년 귀농 유입 비율(20~39세) | 일터 | % | 2024 | |
 | W7 | 친환경 인증 농가 비율 | 일터 | % | 2023 | |
 | R4 | 인구 1천명당 체험 프로그램 | 쉼터 | 건/천명 | 2024 | |
 | R5 | 양호수질 하천 비율 | 쉼터 | % | 2023 | |
@@ -163,6 +163,8 @@
 | **W8 서비스판매 종사자 (15개 시군)** | SGIS — 도매소매(G) + 숙박음식(I) 종사자 합 | 2024 | computed (산식) |
 | **농가·임가·어가 (15개 시군)** | SGIS — 농림어가 통계 | 2020 | raw |
 | **평균나이·인구밀도·총주택·종사자** | SGIS — 총조사 주요지표 + 사업체통계 | 2024 | raw |
+| **읍면동 단위 SGIS raw** | SGIS — `fetch_sgis.py` 읍면 루프 | 2024/2020 | `dong` 레이어 raw |
+| **0427 로컬 확정값** | 수업용 `0427_데이터` + 기준 엑셀 (`import_0427_data.py`) | 자료별 | `source: local0427:*` 및 일부 `computed` |
 | GeoJSON 행정경계 | 국토교통부 | 2024~2025 | 시군·읍면·행정리 3단계 |
 | 5대 권역 분류 | 보고서 표 2-36 | — | 경기도형 농촌공간 유형화 |
 | 지표 정의·단위·방향 | 보고서 기반 | — | higherBetter 포함 |
@@ -181,11 +183,19 @@
 상세 매핑: [`docs/DATA-SOURCES.md`](docs/DATA-SOURCES.md)  
 스크립트 사용법: [`scripts/README.md`](scripts/README.md)
 
+### 4-1. 0427 확정 데이터·현장조사 (2026-05)
+
+- **기준 정의**: 상위 폴더의 `공통지표_확정안+남양주 자율지표_0427.xlsx` → `dat/indicator-reference.json` (지표 메타·엑셀 ID ↔ 앱 키 alias 포함).
+- **현장조사**: 동일 엑셀 `7_현장조사` 시트 → `dat/field-survey-meta.json` (KOSIS/SGIS 통계와 분리). 남양주시 패널에 **「현장조사 입력/관리」** 블록으로 표시.
+- **로컬 수치 반영**: `0427_데이터` 폴더를 읽어 `scripts/import_0427_data.py`가 `region-meta.json`에 병합 (`local0427:*`). `fetch_kosis.py` / `fetch_sgis.py` 실행 뒤 **같은 스크립트를 한 번 더** 돌리면 API 수집값을 유지한 채 로컬 확정값을 다시 덮어씀.
+- **갭 리포트**: `dat/data-gap-report.json` — API/로컬 파싱 한계·현장조사 필요 여부 요약 (저장소에 포함; **API 키는 파일에 넣지 않음**).
+- **엑셀 ↔ 웹 키 주의**: 엑셀 자율 번호와 앱 키가 한 칸 어긋난 항목이 있음(예: 엑셀 R4 수질 → 앱 **R5**, 엑셀 R5 공원·면적 → 앱 **R6**, 엑셀 W9 체험 파일명 → 앱 **R4** 등). 상세는 `indicator-reference.json`의 `aliases`/`source_key` 참고.
+- **W6(청년 귀농 유입)**: 확정안 기준 **20~39세** 귀농가구원 ÷ 전체 귀농가구원. `귀농인현황_남양주.xlsx`의 **「30대이하」** 열이 해당 구간(통계 표 연령대 명칭).
+
 ### ⚠️ 현재 가상(Mock) 데이터 항목
 
-`app.js`의 `CITIES` 객체 내 21개 지표 수치는 **대부분 가상 데이터**임.  
-(예외: KOSIS 인구·세대수는 `region-meta.json`을 통해 별도 표시)  
-실제 발표·분석 전 아래 출처에서 수집 후 교체 필요.
+`app.js`의 `CITIES` 객체는 여전히 **기본 목업**을 담고 있으나, `SCORE_SOURCE_OVERRIDES`에 지정된 키는 `region-meta.json`의 `computed`/`manual`이 있으면 **실측·로컬 확정값으로 덮어씀**(지도·레이더·세부지표 카드와 동일 출처).  
+그 외 지표·남양주 외 시군의 일부 자율지표는 목업 또는 부분 반영일 수 있음. 아래 표는 **아직 수동·별도 원천이 필요한 항목** 요약.
 
 | 지표 | 출처 | 비고 |
 |------|------|------|
@@ -233,10 +243,17 @@ Web/
 │   ├── gyeonggi-sigun.geojson   # 시군 경계
 │   ├── gyeonggi-dong.geojson    # 읍면동 경계 (줌 11+ 표시)
 │   ├── gyeonggi-ri.geojson      # 행정리 경계 (줌 13+ 표시, ~1.4 MB)
-│   └── region-meta.json         # KOSIS 통계 캐시 — 시군 인구·세대수 실제 데이터
+│   ├── region-meta.json         # KOSIS·SGIS·manual·local0427 통합 캐시 (sigun + dong)
+│   ├── indicator-reference.json # 0427 기준 엑셀에서 생성한 지표 정의·alias
+│   ├── field-survey-meta.json   # 7_현장조사 항목 (통계와 분리)
+│   └── data-gap-report.json     # 수집 갭·상태 요약 (import 시 갱신)
 └── scripts/
     ├── process_ri.py            # SHP → GeoJSON 변환
+    ├── process_sigun.py         # 시군구 SHP → gyeonggi-sigun.geojson (SGIS 코드 기준)
+    ├── build_dong_meta.py       # 읍면동 GeoJSON → dong 경계 메타 병합
     ├── fetch_kosis.py           # KOSIS API 호출 → region-meta.json 갱신
+    ├── fetch_sgis.py            # SGIS API 호출 → 시군·읍면 raw 병합
+    ├── import_0427_data.py      # 0427_데이터 + 기준 엑셀 → region-meta·갭 리포트
     ├── requirements.txt         # Python 의존성
     └── README.md                # 스크립트 실행 절차 및 KOSIS API 가이드
 ```
@@ -280,9 +297,13 @@ python fetch_kosis.py
 $env:SGIS_SERVICE_ID = "발급받은_ID"
 $env:SGIS_SECRET_KEY = "발급받은_Key"
 python fetch_sgis.py
+
+# 3) 0427 확정 데이터·기준 엑셀 반영 (상위 폴더에 엑셀·0427_데이터 필요)
+python import_0427_data.py
 ```
 
-두 스크립트는 **독립 실행** — 각자 자기 source raw 만 갱신, 다른 source · manual 보존.  
+1·2번 스크립트는 **독립 실행** — 각자 자기 source raw 만 갱신, 다른 source · manual 보존.  
+3번은 로컬·엑셀 메타를 병합하고 `data-gap-report.json`을 갱신한다.  
 → 상세 절차 및 API 가이드: [`scripts/README.md`](scripts/README.md), [`docs/DATA-SOURCES.md`](docs/DATA-SOURCES.md)
 
 ### B. 농촌다움 19지표 교체 (`app.js` → `CITIES` 객체)
@@ -378,4 +399,4 @@ const name = CITIES[cityId].name;
 
 ---
 
-*최종 갱신: 2026.05 — KOSIS + SGIS 듀얼 API 구조 + L1 자동 계산 + 3-layer 스키마 + R8·W8 등록*
+*최종 갱신: 2026.05 — 0427 로컬·기준 엑셀 파이프라인(`import_0427_data.py`)·현장조사 메타·갭 리포트 + 읍면 SGIS raw + UI 출처 배지*

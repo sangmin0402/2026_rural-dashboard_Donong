@@ -50,7 +50,7 @@ const JAYUL_INDICATORS_POOL = {
   L5: { name: '귀촌인 증감률',          unit: '%',      category: 'samlter', higherBetter: true, spatial: '시군',   year: 2023 },
   L6: { name: '3년 귀촌 규모 유지율',   unit: '%',      category: 'samlter', higherBetter: true, spatial: '시군',   year: 2023 },
   W5: { name: '농업 세대교체 수준',      unit: '%',      category: 'ilter',   higherBetter: true, spatial: '읍면동', year: 2022 },
-  W6: { name: '청년 귀농 유입 비율',     unit: '%',      category: 'ilter',   higherBetter: true, spatial: '시도',   year: 2023 },
+  W6: { name: '청년 귀농 유입 비율(20~39세)', unit: '%', category: 'ilter', higherBetter: true, spatial: '시도', year: 2024 },
   W7: { name: '친환경 인증 농가 비율',   unit: '%',      category: 'ilter',   higherBetter: true, spatial: '시도',   year: 2023 },
   R4: { name: '인구 1천명당 체험 프로그램', unit: '건/천명', category: 'shimter', higherBetter: true, spatial: '읍면', year: 2024 },
   R5: { name: '양호수질 하천 비율',      unit: '%',      category: 'shimter', higherBetter: true, spatial: '읍면',   year: 2023 },
@@ -65,6 +65,29 @@ const CATEGORY_TOTALS = {
   samlter_total: { category: 'samlter', label: '삶터 종합' },
   ilter_total:   { category: 'ilter',   label: '일터 종합' },
   shimter_total:  { category: 'shimter',  label: '쉼터 종합' },
+};
+
+// region-meta.json에서 점수 산정용 CITIES 값으로 실제 반영하는 필드 목록.
+// 여기에 없는 지표는 명시적으로 mock/후보 데이터로 남긴다.
+const SCORE_SOURCE_OVERRIDES = {
+  common: {
+    L1: { layer: 'computed', key: 'L1_pop_growth_rate' },
+    L2: { layer: 'computed', key: 'L2_aging_index' },
+    L3: { layer: 'computed', key: 'L3_net_migration_rate' },
+    W2: { layer: 'computed', key: 'W2_business_count' },
+    W3: { layer: 'manual',   key: 'W3_fiscal_independence' },
+    W4: { layer: 'manual',   key: 'W4_grdp' },
+  },
+  jayul: {
+    W5: { layer: 'computed', key: 'W5_agri_young_manager_ratio' },
+    W6: { layer: 'computed', key: 'W6_young_return_farm_ratio' },
+    W7: { layer: 'computed', key: 'W7_eco_certified_farm_ratio' },
+    R4: { layer: 'computed', key: 'R4_experience_programs_per_1000' },
+    R5: { layer: 'computed', key: 'R5_good_water_rate' },
+    R6: { layer: 'computed', key: 'R6_park_area_per_1000' },
+    W8: { layer: 'computed', key: 'W8_service_sales_workers' },
+    R8: { layer: 'manual',   key: 'R8_heritage_count' },
+  },
 };
 
 // ===================================================================
@@ -142,7 +165,7 @@ const CITIES = {
     },
     jayulIndicators: {
       L5: 12.4, L6: 84.2,
-      W5: 18.3, W6: 22.1, W7: 15.8,
+      W5: 18.3, W6: 38.57, W7: 15.8,
       R4: 3.4,  R5: 78.5, R6: 2840,
       R8: 12,            // 국가유산 (mock — 문화재청 수동 수집 전)
       W8: 67698,         // 서비스판매 종사자 (SGIS 도소매+숙박음식 합산값 동기)
@@ -631,6 +654,9 @@ const geoJsonFeatures = {}; // cityId → GeoJSON layer reference
 let dongLayer = null;       // 행정동 경계 레이어 (줌 11+ 표시)
 let riLayer = null;         // 행정리 경계 레이어 (줌 13+ 표시)
 let regionMeta = null;      // KOSIS 캐시 (region-meta.json)
+let indicatorReference = null; // 0427 기준 지표 정의/alias
+let fieldSurveyMeta = null;    // 현장조사 항목 메타
+let dataGapReport = null;      // API/로컬 데이터 누락 상태
 let labelGroup = null;      // 시군명 라벨 레이어
 let outlineLayer = null;    // 대상지(15개 시군) 합쳐진 외곽선 효과 레이어
 let sigunBorderLayer = null; // 시군 경계선 전용 오버레이 (dong/ri 위에 항상 표시)
@@ -904,66 +930,72 @@ function updateRiVisibility() {
  */
 async function loadRegionMeta() {
   try {
-    const resp = await fetch('./dat/region-meta.json');
-    if (!resp.ok) { regionMeta = {}; return; }
-    regionMeta = await resp.json();
+    const [metaResp, refResp, surveyResp, gapResp] = await Promise.all([
+      fetch('./dat/region-meta.json', { cache: 'no-cache' }),
+      fetch('./dat/indicator-reference.json', { cache: 'no-cache' }),
+      fetch('./dat/field-survey-meta.json', { cache: 'no-cache' }),
+      fetch('./dat/data-gap-report.json', { cache: 'no-cache' }),
+    ]);
+    regionMeta = metaResp.ok ? await metaResp.json() : {};
+    indicatorReference = refResp.ok ? await refResp.json() : null;
+    fieldSurveyMeta = surveyResp.ok ? await surveyResp.json() : null;
+    dataGapReport = gapResp.ok ? await gapResp.json() : null;
   } catch (err) {
     regionMeta = {};
+    indicatorReference = null;
+    fieldSurveyMeta = null;
+    dataGapReport = null;
   }
   // SGIS computed 값으로 CITIES mock 덮어쓰기 (실측 우선)
   applySgisOverridesToCities();
+  if (state.selectedCity) {
+    updateDetailPanel(state.selectedCity);
+    updateRadarChart(state.selectedCity);
+    updateIndicatorList();
+    updateMapColors();
+  }
 }
 
 /**
  * region-meta.json 의 computed/raw 값으로 CITIES mock 값을 덮어씀.
  *
  * SGIS·KOSIS 실측이 있는 지표는 mock 값 대신 실측 사용 → 표·차트·지도 색상
- * 모두 같은 출처로 일관됨. 실측이 없는 지표(예: W3 재정자립도)는 mock 유지.
+ * 모두 같은 출처로 일관됨. SCORE_SOURCE_OVERRIDES에 없는 지표는 mock 유지.
  *
- * 매핑 (computed key → CITIES 의 어떤 위치):
- *   L1_pop_growth_rate        → city.indicators.L1
- *   L2_aging_index            → city.indicators.L2
- *   L3_net_migration_rate     → city.indicators.L3
- *   W2_business_count         → city.indicators.W2
- *   W8_service_sales_workers  → city.jayulIndicators.W8
- *
- * 또한 raw 의 일부 SGIS 필드도 보조 매핑 가능 (corp_cnt 등) — 추후 확장.
+ * 매핑 목록은 파일 상단 SCORE_SOURCE_OVERRIDES에서 고정한다.
  */
 function applySgisOverridesToCities() {
   if (!regionMeta || !regionMeta.sigun || typeof CITIES === 'undefined') return;
   let overriddenCount = 0;
 
-  const COMMON_MAP = {
-    L1: 'L1_pop_growth_rate',
-    L2: 'L2_aging_index',
-    L3: 'L3_net_migration_rate',
-    W2: 'W2_business_count',
+  const readOverrideValue = (meta, cfg) => {
+    if (!meta || !cfg) return undefined;
+    const layer = meta[cfg.layer] || {};
+    const rec = layer[cfg.key];
+    return rec && rec.value != null ? rec.value : undefined;
   };
-  const JAYUL_MAP = {
-    W8: 'W8_service_sales_workers',
-  };
+  const normalizeScoreValue = (value) => (
+    typeof value === 'number' ? Math.round(value * 100) / 100 : value
+  );
 
   Object.entries(regionMeta.sigun).forEach(([cid, data]) => {
     const city = CITIES[cid];
     if (!city || !data) return;
-    const computed = data.computed || {};
 
     // 공통지표 (indicators) 덮어쓰기
-    Object.entries(COMMON_MAP).forEach(([indKey, compKey]) => {
-      const rec = computed[compKey];
-      if (rec && rec.value != null && city.indicators) {
-        city.indicators[indKey] = (typeof rec.value === 'number')
-          ? Math.round(rec.value * 100) / 100   // 소수점 2자리
-          : rec.value;
+    Object.entries(SCORE_SOURCE_OVERRIDES.common).forEach(([indKey, cfg]) => {
+      const value = readOverrideValue(data, cfg);
+      if (value !== undefined && city.indicators) {
+        city.indicators[indKey] = normalizeScoreValue(value);
         overriddenCount++;
       }
     });
 
     // 자율지표 (jayulIndicators) 덮어쓰기
-    Object.entries(JAYUL_MAP).forEach(([indKey, compKey]) => {
-      const rec = computed[compKey];
-      if (rec && rec.value != null && city.jayulIndicators) {
-        city.jayulIndicators[indKey] = rec.value;
+    Object.entries(SCORE_SOURCE_OVERRIDES.jayul).forEach(([indKey, cfg]) => {
+      const value = readOverrideValue(data, cfg);
+      if (value !== undefined && city.jayulIndicators) {
+        city.jayulIndicators[indKey] = normalizeScoreValue(value);
         overriddenCount++;
       }
     });
@@ -971,8 +1003,69 @@ function applySgisOverridesToCities() {
 
   // 캐시된 5분위 quantile 등이 있으면 무효화 가능 — 이번엔 별도 캐시 없음
   if (overriddenCount > 0) {
-    console.log(`[CITIES override] SGIS computed 값으로 ${overriddenCount}개 필드 덮어씀`);
+    const mappedKeys = [
+      ...Object.keys(SCORE_SOURCE_OVERRIDES.common),
+      ...Object.keys(SCORE_SOURCE_OVERRIDES.jayul),
+    ].join(', ');
+    console.log(`[CITIES override] 실제/수동 데이터로 ${overriddenCount}개 필드 덮어씀 (${mappedKeys})`);
   }
+}
+
+function readRegionRecord(level, regionId, layer, key) {
+  const meta = regionMeta && regionMeta[level] && regionMeta[level][regionId];
+  if (!meta || !meta[layer]) return null;
+  return meta[layer][key] || null;
+}
+
+function getIndicatorOverrideConfig(key) {
+  if (SCORE_SOURCE_OVERRIDES.common[key]) return SCORE_SOURCE_OVERRIDES.common[key];
+  if (SCORE_SOURCE_OVERRIDES.jayul[key]) return SCORE_SOURCE_OVERRIDES.jayul[key];
+  return null;
+}
+
+function getGapItem(key) {
+  const items = (dataGapReport && dataGapReport.items) || [];
+  return items.find(item => item.indicator === key) || null;
+}
+
+function getIndicatorDataStatus(cityId, key) {
+  const cfg = getIndicatorOverrideConfig(key);
+  if (cfg) {
+    const rec = readRegionRecord('sigun', cityId, cfg.layer, cfg.key);
+    if (rec && rec.value != null) {
+      const source = String(rec.source || '');
+      if (source.startsWith('local0427:')) return { label: '0427 확정', cls: 'status-local' };
+      if (source.startsWith('kosis:')) return { label: 'KOSIS', cls: 'status-kosis' };
+      if (source.startsWith('sgis:')) return { label: 'SGIS', cls: 'status-sgis' };
+      if (cfg.layer === 'computed') return { label: '계산', cls: 'status-computed' };
+      if (cfg.layer === 'manual') return { label: '수동', cls: 'status-manual' };
+    }
+  }
+
+  const gap = getGapItem(key);
+  if (gap) {
+    const labelMap = {
+      field_survey: '현장조사 필요',
+      local_parse_failed: '원천 재확인',
+      not_available: 'API 미제공',
+      not_collected: '미수집',
+      local_only: '로컬 원천',
+      partial: '일부 확보',
+    };
+    return {
+      label: labelMap[gap.status] || gap.status || '미수집',
+      cls: `status-${gap.status || 'missing'}`,
+      title: gap.reason || '',
+    };
+  }
+
+  return { label: '예시값', cls: 'status-mock' };
+}
+
+function renderStatusBadge(status) {
+  if (!status) return '';
+  const title = status.title ? ` title="${status.title}"` : '';
+  return `<span class="data-status-badge ${status.cls}"${title}>${status.label}</span>`;
 }
 
 /**
@@ -1046,7 +1139,7 @@ async function initGeoJSONLayer() {
   const GEOJSON_URL = './dat/gyeonggi-sigun.geojson';
 
   try {
-    const resp = await fetch(GEOJSON_URL);
+    const resp = await fetch(GEOJSON_URL, { cache: 'no-cache' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const allData = await resp.json();
 
@@ -1506,63 +1599,104 @@ function updateDetailPanel(cityId) {
 
   // KOSIS 시군 기본 통계 섹션
   renderKosisSigunStats(cityId);
+
+  // 현장조사 입력/관리 섹션
+  renderFieldSurveySection(cityId);
 }
 
 /**
- * KOSIS 시군 기본 통계 섹션 렌더 (3-layer 스키마)
- *
- * region-meta.json 구조:
- *   sigun[cityId].raw[field]      = { value, year, source: 'kosis:DT_...' }
- *   sigun[cityId].computed[field] = { value, unit, formula, inputs }
- *   sigun[cityId].manual[field]   = { value, year, source, updated_by, updated_at }
- *
- * 카드 표시 우선순위: computed > raw > manual (앞쪽 층 값이 있으면 그것을, 없으면 다음 층)
- * 데이터가 전혀 없는 항목은 카드 자체가 렌더되지 않음 (graceful hide).
- *
+ * 시군 기본 통계 섹션 렌더 (호환 래퍼)
  * @param {string} cityId
  */
 function renderKosisSigunStats(cityId) {
+  const city = CITIES[cityId];
+  renderRegionBasicStats('sigun', cityId, city ? `${city.name} 전체` : cityId);
+}
+
+/**
+ * 시군/읍면 기본 통계 섹션 렌더 (3-layer 스키마)
+ *
+ * region-meta.json 구조:
+ *   [level][id].raw[field]      = { value, year, source: 'kosis:*'|'sgis:*'|'boundary:*' }
+ *   [level][id].computed[field] = { value, unit, formula, inputs }
+ *   [level][id].manual[field]   = { value, year, source, updated_by, updated_at }
+ *
+ * 카드 표시 우선순위: computed > raw > manual. 데이터가 전혀 없는 항목은 숨긴다.
+ *
+ * @param {'sigun'|'dong'|'ri'} level
+ * @param {string} regionId
+ * @param {string} regionLabel
+ */
+function renderRegionBasicStats(level, regionId, regionLabel) {
   const section = document.getElementById('kosis-sigun-stats');
   const grid    = document.getElementById('kosis-stats-grid');
   const noteEl  = document.getElementById('kosis-source-note');
+  const btn     = document.getElementById('kosis-toggle-btn');
+  const titleEl = section && section.querySelector('.kosis-section-title');
+  const labelEl = btn && btn.querySelector('.kosis-toggle-label');
   if (!section || !grid) return;
 
-  const meta = regionMeta && regionMeta.sigun && regionMeta.sigun[cityId];
+  if (level === 'ri') {
+    section.classList.add('hidden');
+    if (btn) btn.classList.add('hidden');
+    return;
+  }
+
+  const meta = regionMeta && regionMeta[level] && regionMeta[level][regionId];
   if (!meta || (!meta.raw && !meta.computed && !meta.manual)) {
     section.classList.add('hidden');
+    if (btn) btn.classList.add('hidden');
     return;
   }
 
   // 3-layer 통합 조회 함수 — 어느 층에 있든 값과 메타 반환
-  function readField(key) {
-    if (meta.computed && meta.computed[key]) return { ...meta.computed[key], _layer: 'computed' };
-    if (meta.raw      && meta.raw[key])      return { ...meta.raw[key],      _layer: 'raw'      };
-    if (meta.manual   && meta.manual[key])   return { ...meta.manual[key],   _layer: 'manual'   };
+  function readField(keys) {
+    const keyList = Array.isArray(keys) ? keys : [keys];
+    for (const key of keyList) {
+      if (meta.computed && meta.computed[key]) return { ...meta.computed[key], _layer: 'computed', _key: key };
+      if (meta.raw      && meta.raw[key])      return { ...meta.raw[key],      _layer: 'raw',      _key: key };
+      if (meta.manual   && meta.manual[key])   return { ...meta.manual[key],   _layer: 'manual',   _key: key };
+    }
     return null;
   }
 
   // 카드 정의 — 어떤 키든 readField()로 어느 층이든 표시 가능
   // 데이터 미수집 항목은 readField()가 null 반환 → 카드 자동 숨김
   const STAT_DEFS = [
-    // ── 기본 (KOSIS) ──
-    { key: 'population',           label: '총인구',         emoji: '👥', fmt: v => v.toLocaleString() + ' 명' },
-    { key: 'households',           label: '세대 수',        emoji: '🏠', fmt: v => v.toLocaleString() + ' 가구' },
+    // ── 기본 ──
+    { key: ['adm_nm'],             label: '읍면명',         emoji: '📍', fmt: v => String(v), levels: ['dong'] },
+    { key: ['population', 'tot_ppltn'], label: '총인구',    emoji: '👥', fmt: v => Number(v).toLocaleString() + ' 명' },
+    { key: ['households', 'tot_family'], label: '세대·가구 수', emoji: '🏠', fmt: v => Number(v).toLocaleString() + ' 가구' },
+    { key: 'area',                 label: '면적',           emoji: '🗺️', fmt: v => Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' km²' },
 
     // ── computed (산식 계산값 — 핵심 농촌다움 지표) ──
     { key: 'L1_pop_growth_rate',   label: '인구증가율 (L1)', emoji: '📈', fmt: v => (v >= 0 ? '+' : '') + v.toFixed(2) + ' %' },
     { key: 'L2_aging_index',       label: '노령화지수 (L2)', emoji: '👴', fmt: v => v.toFixed(1) },
     { key: 'L3_net_migration_rate',label: '인구순이동률 (L3)', emoji: '🚚', fmt: v => (v >= 0 ? '+' : '') + v.toFixed(2) + ' ‰' },
-    { key: 'W2_business_count',    label: '사업체 수 (W2)',  emoji: '🏢', fmt: v => v.toLocaleString() + ' 개' },
-    { key: 'W8_service_sales_workers', label: '서비스판매 종사자 (W8)', emoji: '🛍️', fmt: v => v.toLocaleString() + ' 명' },
+    { key: ['W2_business_count', 'corp_cnt', 'all_corp_cnt'], label: '사업체 수 (W2)', emoji: '🏢', fmt: v => Number(v).toLocaleString() + ' 개' },
+    { key: 'W8_service_sales_workers', label: '서비스판매 종사자 (W8)', emoji: '🛍️', fmt: v => Number(v).toLocaleString() + ' 명' },
+    { key: 'W5_agri_young_manager_ratio', label: '농업 세대교체 (W5)', emoji: '🌱', fmt: v => Number(v).toFixed(2) + ' %' },
+    { key: 'W6_young_return_farm_ratio', label: '청년 귀농 유입 (W6)', emoji: '🧑‍🌾', fmt: v => Number(v).toFixed(2) + ' %' },
+    { key: 'W7_eco_certified_farm_ratio', label: '친환경 인증 농가 (W7)', emoji: '✅', fmt: v => Number(v).toFixed(2) + ' %' },
+    { key: 'R4_experience_programs_per_1000', label: '농촌체험 프로그램 (R4)', emoji: '🎒', fmt: v => Number(v).toFixed(3) + ' 건/천명' },
+    { key: 'R5_good_water_rate', label: '양호수질 하천 (R5)', emoji: '💧', fmt: v => Number(v).toFixed(2) + ' %' },
+    { key: 'R6_park_area_per_1000', label: '수변·생태쉼터 (R6)', emoji: '🏞️', fmt: v => Number(v).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' ㎡/천명' },
 
     // ── SGIS raw (보조 지표) ──
     { key: 'avg_age',              label: '평균 나이',      emoji: '🎂', fmt: v => v.toFixed(1) + ' 세' },
-    { key: 'ppltn_dnsty',          label: '인구밀도',       emoji: '🌆', fmt: v => v.toLocaleString() + ' 명/㎢' },
-    { key: 'all_tot_worker',       label: '전산업 종사자',  emoji: '👷', fmt: v => v.toLocaleString() + ' 명' },
-    { key: 'farm_cnt',             label: '농가 수',        emoji: '🌾', fmt: v => v.toLocaleString() + ' 농가' },
-    { key: 'forestry_cnt',         label: '임가 수',        emoji: '🌲', fmt: v => v.toLocaleString() + ' 임가' },
-    { key: 'fishery_cnt',          label: '어가 수',        emoji: '🐟', fmt: v => v.toLocaleString() + ' 어가' },
-    { key: 'tot_house',            label: '총 주택',        emoji: '🏘️', fmt: v => v.toLocaleString() + ' 호' },
+    { key: 'ppltn_dnsty',          label: '인구밀도',       emoji: '🌆', fmt: v => Number(v).toLocaleString() + ' 명/㎢' },
+    { key: 'all_tot_worker',       label: '전산업 종사자',  emoji: '👷', fmt: v => Number(v).toLocaleString() + ' 명' },
+    { key: 'farm_cnt',             label: '농가 수',        emoji: '🌾', fmt: v => Number(v).toLocaleString() + ' 농가' },
+    { key: 'forestry_cnt',         label: '임가 수',        emoji: '🌲', fmt: v => Number(v).toLocaleString() + ' 임가' },
+    { key: 'fishery_cnt',          label: '어가 수',        emoji: '🐟', fmt: v => Number(v).toLocaleString() + ' 어가' },
+    { key: ['tot_house', 'house_cnt'], label: '총 주택',     emoji: '🏘️', fmt: v => Number(v).toLocaleString() + ' 호' },
+    { key: 'housing_supply_rate',   label: '주택보급률',      emoji: '🏡', fmt: v => Number(v).toFixed(1) + ' %' },
+    { key: 'medical_facility_count', label: '의료시설 수',    emoji: '🏥', fmt: v => Number(v).toLocaleString() + ' 개' },
+    { key: 'rural_experience_farm_count', label: '체험농장 수', emoji: '🌿', fmt: v => Number(v).toLocaleString() + ' 개' },
+    { key: 'urban_park_count',      label: '도시공원 수',     emoji: '🌳', fmt: v => Number(v).toLocaleString() + ' 개' },
+    { key: 'urban_park_area',       label: '도시공원 면적',   emoji: '🟩', fmt: v => Number(v).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' ㎡' },
+    { key: 'center_lat',           label: '대표 위도',      emoji: '↕️', fmt: v => Number(v).toFixed(5), levels: ['dong'] },
+    { key: 'center_lng',           label: '대표 경도',      emoji: '↔️', fmt: v => Number(v).toFixed(5), levels: ['dong'] },
 
     // ── manual (수동 입력 — 있을 때만 표시) ──
     { key: 'W3_fiscal_independence', label: '재정자립도 (W3)', emoji: '💼', fmt: v => v.toFixed(1) + ' %' },
@@ -1580,25 +1714,42 @@ function renderKosisSigunStats(cityId) {
   };
 
   // 층별 배지 클래스/라벨
-  const LAYER_BADGE = {
-    raw:      { cls: 'kosis-badge-kosis',    label: 'KOSIS' },
-    computed: { cls: 'kosis-badge-computed', label: '계산' },
-    manual:   { cls: 'kosis-badge-manual',   label: '수동' },
+  const getBadge = (rec) => {
+    const source = String(rec.source || '');
+    if (source.startsWith('local0427:')) return { cls: 'kosis-badge-local', label: '0427' };
+    if (source.startsWith('sgis:')) return { cls: 'kosis-badge-sgis', label: 'SGIS' };
+    if (source.startsWith('boundary:')) return { cls: 'kosis-badge-boundary', label: '경계' };
+    if (source.startsWith('kosis:')) return { cls: 'kosis-badge-kosis', label: 'KOSIS' };
+    if (rec._layer === 'computed') return { cls: 'kosis-badge-computed', label: '계산' };
+    if (rec._layer === 'manual') return { cls: 'kosis-badge-manual', label: '수동' };
+    return { cls: 'kosis-badge-kosis', label: '원천' };
+  };
+
+  const getSourceLabel = (rec) => {
+    const source = String(rec.source || '');
+    if (source.startsWith('local0427:')) return '0427 확정 로컬 데이터';
+    if (source.startsWith('kosis:')) return 'KOSIS Open API';
+    if (source.startsWith('sgis:')) return 'SGIS Open API';
+    if (source.startsWith('boundary:')) return '읍면 경계 파일';
+    if (rec._layer === 'computed') return '산식 자동 계산';
+    if (rec._layer === 'manual') return '수동 입력';
+    return source || rec._layer || '원천 데이터';
   };
 
   const cards = [];
   const sources = new Set();
 
   STAT_DEFS.forEach(def => {
+    if (def.levels && !def.levels.includes(level)) return;
     const rec = readField(def.key);
     if (!rec || rec.value == null) return;
     const period = fmtPeriod(rec.year || '');
-    const badge  = LAYER_BADGE[rec._layer] || LAYER_BADGE.raw;
+    const badge  = getBadge(rec);
     const tooltip = rec.formula
       ? `${def.label} = ${rec.formula}`
       : (rec.source || '');
 
-    sources.add(rec._layer);
+    sources.add(getSourceLabel(rec));
 
     cards.push(`
       <div class="kosis-stat-card" title="${tooltip}">
@@ -1614,20 +1765,25 @@ function renderKosisSigunStats(cityId) {
 
   if (cards.length === 0) {
     section.classList.add('hidden');
+    if (btn) btn.classList.add('hidden');
     return;
   }
   grid.innerHTML = cards.join('');
 
+  if (titleEl) titleEl.textContent = `📊 ${regionLabel || '지역'} 기본 통계`;
+  if (labelEl) {
+    labelEl.textContent = level === 'dong'
+      ? '📊 읍면 기본 통계 (SGIS · 경계)'
+      : '📊 시군 기본 통계 (KOSIS · SGIS)';
+  }
+
   // 출처 노트
   if (noteEl) {
-    const parts = [];
-    if (sources.has('raw'))      parts.push('KOSIS Open API (주민등록인구통계)');
-    if (sources.has('computed')) parts.push('산식 자동 계산');
-    if (sources.has('manual'))   parts.push('수동 입력');
-    noteEl.textContent = '출처: ' + parts.join(' · ');
+    noteEl.textContent = '출처: ' + [...sources].join(' · ');
   }
 
   section.classList.remove('hidden');
+  if (btn) btn.classList.remove('hidden');
   // 'is-collapsed' 는 사용자 토글로만 변경 — 여기서는 건드리지 않음 (기본 접힘 상태 유지)
 }
 
@@ -1646,6 +1802,59 @@ function initKosisToggle() {
     if (icon) icon.textContent = isCollapsed ? '▶' : '▼';
     if (hint) hint.textContent = isCollapsed ? '클릭하여 펼치기' : '클릭하여 접기';
   });
+}
+
+function renderFieldSurveySection(cityId) {
+  const old = document.getElementById('field-survey-section');
+  if (old) old.remove();
+
+  const cityDetail = document.getElementById('city-detail');
+  if (!cityDetail || cityId !== 'namyangju') return;
+
+  const items = ((fieldSurveyMeta && fieldSurveyMeta.items) || [])
+    .filter(item => !item.city_id || item.city_id === cityId);
+  if (items.length === 0) return;
+
+  const section = document.createElement('section');
+  section.id = 'field-survey-section';
+  section.className = 'field-survey-section';
+  section.innerHTML = `
+    <div class="field-survey-head">
+      <div>
+        <h3>현장조사 입력/관리</h3>
+        <p>남양주시 자율지표 중 기존 통계가 아니라 담당자·현장 인터뷰로 채워야 하는 항목입니다.</p>
+      </div>
+      <span class="field-survey-count">${items.length}개 항목</span>
+    </div>
+    <div class="field-survey-grid">
+      ${items.map(item => `
+        <article class="field-survey-card">
+          <div class="field-survey-card-top">
+            <span class="field-survey-category">${item.category_label || '자율'}</span>
+            <span class="data-status-badge status-field_survey">현장조사</span>
+          </div>
+          <h4>${item.indicator_name || '-'}</h4>
+          <dl>
+            <dt>목적</dt><dd>${item.purpose || '-'}</dd>
+            <dt>대상</dt><dd>${item.target || '-'}</dd>
+            <dt>규모</dt><dd>${item.sample_size || '-'}</dd>
+            <dt>방법</dt><dd>${item.method || '-'}</dd>
+          </dl>
+          <details>
+            <summary>조사 문항 보기</summary>
+            <p>${(item.questions || '-').replace(/\n/g, '<br>')}</p>
+          </details>
+        </article>
+      `).join('')}
+    </div>
+  `;
+
+  const anchor = document.getElementById('kosis-toggle-btn') || document.getElementById('add-comparison-wrapper');
+  if (anchor) {
+    cityDetail.insertBefore(section, anchor);
+  } else {
+    cityDetail.appendChild(section);
+  }
 }
 
 /**
@@ -1744,6 +1953,7 @@ function updateJayulSection(cityId) {
       ${Object.entries(JAYUL_INDICATORS_POOL).map(([key, ind]) => {
         const value     = city.jayulIndicators[key];
         const isSelected = selectedSet.has(key);
+        const status = getIndicatorDataStatus(cityId, key);
         const catColors = { samlter: '#3498db', ilter: '#e67e22', shimter: '#27ae60' };
         const catColor  = catColors[ind.category] || '#666';
         const stateClass = isSelected ? 'is-selected' : 'is-candidate';
@@ -1758,6 +1968,7 @@ function updateJayulSection(cityId) {
             </div>
             <div class="jayul-ind-name">${ind.name}</div>
             <div class="jayul-ind-value">${formatValue(value, ind.unit)}</div>
+            <div class="jayul-ind-source">${renderStatusBadge(status)}</div>
             <div class="jayul-ind-meta">${ind.spatial} · ${ind.year}년</div>
           </div>
         `;
@@ -1813,6 +2024,7 @@ function updateIndicatorList() {
   container.innerHTML = keys.map(key => {
     const ind   = INDICATORS[key];
     const value = city.indicators[key];
+    const status = getIndicatorDataStatus(cityId, key);
     const rank  = calcRank(cityId, key);
     const { min, max } = getIndicatorRange(key);
     const normalized = Math.max(0, Math.min(1, (value - min) / (max - min + 1e-9)));
@@ -1837,7 +2049,10 @@ function updateIndicatorList() {
         <div class="indicator-bar-bg">
           <div class="indicator-bar-fill" style="width:${barPct.toFixed(1)}%;background:${barColor};"></div>
         </div>
-        <div class="indicator-meta">${ind.spatial} · ${ind.year}년 · ${ind.formula}</div>
+        <div class="indicator-meta">
+          ${renderStatusBadge(status)}
+          <span>${ind.spatial} · ${ind.year}년 · ${ind.formula}</span>
+        </div>
       </div>
     `;
   }).join('');
@@ -2819,8 +3034,29 @@ const DONG_INFO_CACHE = {};
 function getDongInfo(admCd, admNm, cityId) {
   if (DONG_INFO_CACHE[admCd]) return DONG_INFO_CACHE[admCd];
 
-  // KOSIS 캐시 우선 사용
-  const kosis = regionMeta && regionMeta.dong && regionMeta.dong[admCd];
+  // region-meta.dong 3-layer 캐시 우선 사용
+  const meta = regionMeta && regionMeta.dong && regionMeta.dong[admCd];
+  const readDongValue = (keys) => {
+    if (!meta) return undefined;
+    const keyList = Array.isArray(keys) ? keys : [keys];
+    for (const key of keyList) {
+      const rec = (meta.computed && meta.computed[key]) ||
+                  (meta.raw && meta.raw[key]) ||
+                  (meta.manual && meta.manual[key]);
+      if (rec && rec.value != null) return rec.value;
+    }
+    return undefined;
+  };
+  const readDongSource = () => {
+    if (!meta || !meta.raw) return 'mock';
+    const sources = Object.values(meta.raw)
+      .map(rec => rec && rec.source)
+      .filter(Boolean);
+    if (sources.some(src => String(src).startsWith('sgis:'))) return 'sgis';
+    if (sources.some(src => String(src).startsWith('kosis:'))) return 'kosis';
+    if (sources.some(src => String(src).startsWith('boundary:'))) return 'boundary';
+    return sources.length ? 'mixed' : 'mock';
+  };
   const seed = parseInt(String(admCd).slice(-4), 10) || 0;
   const rng = (mod) => Math.abs(((seed * 9301 + 49297) % 233280)) % mod;
   const rng2 = (mod) => Math.abs((((seed + 17) * 1103515245 + 12345) % 2147483648)) % mod;
@@ -2835,17 +3071,23 @@ function getDongInfo(admCd, admNm, cityId) {
     '전통 농촌, 고령 인구 비중 높음',
     '하천 인접, 수변 자원 보유',
   ];
+  const hasMeta = !!meta;
+  const metaName = readDongValue('adm_nm');
+  const metaCityId = readDongValue('city_id');
+  const resolvedCityId = metaCityId || cityId;
+  const resolvedCity = CITIES[resolvedCityId] || city;
   const info = {
-    admCd, admNm, cityId,
-    cityName: (city && city.name) || cityId,
-    cityType: (city && city.type) || '',
-    population:  (kosis && kosis.population) || (2000 + rng(18000)),
-    area:        (kosis && kosis.area) || (5 + (rng2(85) / 10)).toFixed(1),
-    households:  (kosis && kosis.households) || (800 + rng3(7200)),
-    landMix:     (kosis && kosis.landMix) || landMixes[rng(landMixes.length)],
-    character:   (kosis && kosis.character) || characters[rng2(characters.length)],
-    // 데이터 출처 표기 — 모든 필드 KOSIS면 'kosis', 일부라도 mock 섞이면 'mixed'
-    _source:     (kosis && Object.keys(kosis).length >= 3) ? 'kosis' : 'mock',
+    admCd,
+    admNm: metaName || admNm,
+    cityId: resolvedCityId,
+    cityName: (resolvedCity && resolvedCity.name) || resolvedCityId,
+    cityType: (resolvedCity && resolvedCity.type) || '',
+    population:  readDongValue(['population', 'tot_ppltn']) || (hasMeta ? null : 2000 + rng(18000)),
+    area:        readDongValue('area') || (hasMeta ? null : (5 + (rng2(85) / 10)).toFixed(1)),
+    households:  readDongValue(['households', 'tot_family']) || (hasMeta ? null : 800 + rng3(7200)),
+    landMix:     readDongValue('landMix') || landMixes[rng(landMixes.length)],
+    character:   readDongValue('character') || characters[rng2(characters.length)],
+    _source:     readDongSource(),
   };
   DONG_INFO_CACHE[admCd] = info;
   return info;
@@ -2878,6 +3120,7 @@ function selectDong(admCd, admNm, cityId) {
   }
 
   showDongDetailPanel(admCd, admNm, cityId);
+  renderRegionBasicStats('dong', admCd, `${CITIES[cityId] ? CITIES[cityId].name : cityId} ${admNm}`);
   renderRegionBreadcrumb();
   highlightSelectedDongOnMap(admCd);
   showMapSelectToast('📍', admNm, '읍면');
@@ -2984,27 +3227,38 @@ function showDongDetailPanel(admCd, admNm, cityId) {
   nameEl.textContent = `${info.cityName} ${info.admNm}`;
   // 데이터 출처 배지
   if (sourceEl) {
-    sourceEl.classList.remove('is-source-kosis', 'is-source-mock');
-    if (info._source === 'kosis') {
+    sourceEl.classList.remove('is-source-kosis', 'is-source-sgis', 'is-source-boundary', 'is-source-mock');
+    if (info._source === 'sgis') {
+      sourceEl.textContent = 'SGIS 데이터';
+      sourceEl.classList.add('is-source-sgis');
+    } else if (info._source === 'kosis') {
       sourceEl.textContent = 'KOSIS 데이터';
       sourceEl.classList.add('is-source-kosis');
+    } else if (info._source === 'boundary') {
+      sourceEl.textContent = '경계 데이터';
+      sourceEl.classList.add('is-source-boundary');
     } else {
       sourceEl.textContent = '예시 데이터';
       sourceEl.classList.add('is-source-mock');
     }
   }
+  const fmtMaybeNumber = (value, suffix = '') => (
+    value == null || value === ''
+      ? '-'
+      : `${Number(value).toLocaleString()}${suffix}`
+  );
   gridEl.innerHTML = `
     <div class="dong-info-card">
       <div class="dong-info-label">인구</div>
-      <div class="dong-info-value">${info.population.toLocaleString()} 명</div>
+      <div class="dong-info-value">${fmtMaybeNumber(info.population, ' 명')}</div>
     </div>
     <div class="dong-info-card">
       <div class="dong-info-label">면적</div>
-      <div class="dong-info-value">${info.area} km²</div>
+      <div class="dong-info-value">${fmtMaybeNumber(info.area, ' km²')}</div>
     </div>
     <div class="dong-info-card">
       <div class="dong-info-label">가구 수</div>
-      <div class="dong-info-value">${info.households.toLocaleString()} 가구</div>
+      <div class="dong-info-value">${fmtMaybeNumber(info.households, ' 가구')}</div>
     </div>
     <div class="dong-info-card">
       <div class="dong-info-label">토지 이용</div>
@@ -3094,6 +3348,16 @@ function selectRi(riCd, riNm, dongCd, cityId, leafletLayer) {
   // 상위 단위도 동기화
   if (CITIES[cityId]) state.selectedCity = cityId;
   state.selectedDong = dongCd;
+  if (dongCd && !DONG_INFO_CACHE[dongCd]) {
+    let dongNm = '';
+    if (dongLayer) {
+      dongLayer.eachLayer(l => {
+        const p = l.feature && l.feature.properties;
+        if (p && p.adm_cd === dongCd) dongNm = p.adm_nm || '';
+      });
+    }
+    getDongInfo(dongCd, dongNm, cityId);
+  }
 
   // 시군 패널 표시 보장
   const noMsg = document.getElementById('no-selection-msg');
@@ -3112,6 +3376,13 @@ function clearRiSelection(opts = {}) {
   state.selectedRi = null;
   hideRiDetailPanel();
   highlightSelectedRiOnMap(null);
+  if (state.selectedDong) {
+    const dongInfo = DONG_INFO_CACHE[state.selectedDong];
+    if (dongInfo) {
+      showDongDetailPanel(dongInfo.admCd, dongInfo.admNm, dongInfo.cityId);
+      renderRegionBasicStats('dong', dongInfo.admCd, `${dongInfo.cityName} ${dongInfo.admNm}`);
+    }
+  }
   if (!opts.skipBreadcrumb) renderRegionBreadcrumb();
 }
 
@@ -3150,6 +3421,7 @@ function showRiDetailPanel(riCd, riNm, dongCd, cityId, leafletLayer) {
   `;
   cityDetail.classList.add('is-ri-mode');
   detail.classList.remove('hidden');
+  renderRegionBasicStats('ri', riCd, info.riNm);
 }
 
 function hideRiDetailPanel() {
@@ -4158,6 +4430,7 @@ function renderExploreDetail(key) {
     L2: '65세이상 인구 ÷ 0–14세 인구 × 100 <em>(SGIS aged_child_idx 직접 제공)</em>',
     L3: '(전입 − 전출) ÷ 총인구 × 1000',
     W2: 'SGIS company.json — corp_cnt (전산업 합계)',
+    W6: '20~39세 귀농가구원수 ÷ 전체 귀농가구원수 × 100 <em>(KOSIS·귀농어귀촌인통계 표의 「30대이하」 열 = 본 확정안의 20~39세 구간)</em>',
     W8: '도소매(G) 종사자 + 숙박음식(I) 종사자',
   })[key] || (isJayul
     ? '(현재 mock — 시군이 자율적으로 선정·실측 입력하는 지표)'
@@ -4167,6 +4440,7 @@ function renderExploreDetail(key) {
     L2: 'SGIS · 인구주택총조사 주요지표',
     L3: 'KOSIS · 국내인구이동통계',
     W2: 'SGIS · 전국사업체조사 (전산업 합계)',
+    W6: '남양주: `0427_데이터/일터/귀농인현황_남양주.xlsx` → `import_0427_data.py`가 `region-meta`에 병합. 타 시군은 목업·수동 입력 예정.',
     W8: 'SGIS · 사업체조사 산업분류별 (도매소매 + 숙박음식)',
   })[key] || (isJayul
     ? '향후 시군별 실측 또는 외부 출처 (수동 입력)'
