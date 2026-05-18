@@ -8,7 +8,8 @@
   load_full_meta()           : 기존 region-meta.json 전체 로드 (raw/computed/manual 모두)
   save_meta(data)            : region-meta.json 저장
   compute_indicators(raw)    : raw 데이터로부터 산식 기반 지표 계산
-  merge_raw_by_source(...)   : 새 raw 필드 병합 (다른 source 의 raw는 보존)
+  merge_raw_by_source(...)   : 시군 raw 필드 병합 (다른 source 의 raw는 보존)
+  merge_dong_raw_by_source(...): 읍면 raw 필드 병합
   empty_sigun_layer()        : 시군 1개의 빈 3-layer 구조
 
 == 핵심 상수 ==
@@ -69,6 +70,7 @@ for cid, codes in SGIS_SIGUN_CODES.items():
 # ─── 경로 ─────────────────────────────────────────────────────────────────
 
 OUT_PATH = Path(__file__).parent / '..' / 'dat' / 'region-meta.json'
+DONG_GEOJSON_PATH = Path(__file__).parent / '..' / 'dat' / 'gyeonggi-dong.geojson'
 
 
 # ─── 값 변환 헬퍼 ─────────────────────────────────────────────────────────
@@ -94,9 +96,17 @@ def to_number(v):
 
 # ─── 3-layer 빈 구조 ──────────────────────────────────────────────────────
 
+def empty_region_layer():
+    """지역 1개의 빈 3-layer 구조."""
+    return {'raw': {}, 'computed': {}, 'manual': {}}
+
 def empty_sigun_layer():
     """시군 1개의 빈 3-layer 구조."""
-    return {'raw': {}, 'computed': {}, 'manual': {}}
+    return empty_region_layer()
+
+def empty_dong_layer():
+    """읍면 1개의 빈 3-layer 구조."""
+    return empty_region_layer()
 
 def empty_full_meta(source_label='placeholder'):
     """전체 region-meta.json 빈 구조."""
@@ -111,6 +121,31 @@ def empty_full_meta(source_label='placeholder'):
         'sigun': {cid: empty_sigun_layer() for cid in SIGUN_CODES},
         'dong':  {},
     }
+
+def ensure_region_layer(value: dict) -> dict:
+    """기존 평탄/부분 구조를 raw/computed/manual 3-layer 구조로 정규화."""
+    if not isinstance(value, dict):
+        return empty_region_layer()
+    if any(k in value for k in ('raw', 'computed', 'manual')):
+        value.setdefault('raw', {})
+        value.setdefault('computed', {})
+        value.setdefault('manual', {})
+        return value
+
+    # 예전 평탄 구조({population: {value...}, area: ...})는 raw 층으로 이관.
+    layer = empty_region_layer()
+    for key, rec in value.items():
+        if key.startswith('_'):
+            continue
+        if isinstance(rec, dict) and 'value' in rec:
+            layer['raw'][key] = rec
+        else:
+            layer['raw'][key] = {
+                'value': rec,
+                'year': '',
+                'source': 'legacy:flat',
+            }
+    return layer
 
 
 # ─── 로드 / 저장 ──────────────────────────────────────────────────────────
@@ -129,12 +164,10 @@ def load_full_meta() -> dict:
                 data['sigun'][cid] = empty_sigun_layer()
             else:
                 s = data['sigun'][cid]
-                if not isinstance(s, dict): s = empty_sigun_layer()
-                s.setdefault('raw', {})
-                s.setdefault('computed', {})
-                s.setdefault('manual', {})
-                data['sigun'][cid] = s
+                data['sigun'][cid] = ensure_region_layer(s)
         if 'dong' not in data: data['dong'] = {}
+        for adm_cd, dong in list(data.get('dong', {}).items()):
+            data['dong'][adm_cd] = ensure_region_layer(dong)
         return data
     except Exception as e:
         print(f"[WARN] region-meta.json 로딩 실패: {e} — 빈 구조로 시작")
@@ -151,34 +184,49 @@ def save_meta(data: dict) -> None:
 
 # ─── source-별 raw 병합 (협업 핵심) ───────────────────────────────────────
 
-def merge_raw_by_source(existing: dict, new_raw_by_city: dict, source_prefix: str) -> dict:
+def _merge_layer_raw_by_source(existing: dict, layer_name: str, region_ids, new_raw_by_id: dict,
+                               source_prefix: str) -> dict:
     """
-    existing region-meta 의 raw 층에 new_raw 를 source-별로 병합.
+    existing region-meta 의 특정 layer raw 층에 new_raw 를 source-별로 병합.
 
     파라미터:
       existing        : load_full_meta()로 받은 전체 dict
-      new_raw_by_city : {city_id: {field: {value, year, source}}} (이미 raw 형태)
+      layer_name      : 'sigun' 또는 'dong'
+      region_ids      : 보장할 지역 id 목록. None이면 new_raw_by_id의 key만 보장
+      new_raw_by_id   : {region_id: {field: {value, year, source}}} (이미 raw 형태)
       source_prefix   : 'kosis' 또는 'sgis' — 이 prefix 로 시작하는 기존 raw 만 덮어씀
 
     동작:
-      1. existing.sigun[cid].raw 중 source 가 source_prefix 로 시작하는 필드만 제거
+      1. existing[layer][id].raw 중 source 가 source_prefix 로 시작하는 필드만 제거
       2. new_raw 의 필드 추가
       → 다른 source 의 raw 필드는 그대로 보존됨
     """
-    for cid in SIGUN_CODES:
-        if cid not in existing['sigun']:
-            existing['sigun'][cid] = empty_sigun_layer()
-        raw = existing['sigun'][cid].setdefault('raw', {})
+    existing.setdefault(layer_name, {})
+    ids = list(region_ids) if region_ids is not None else list(new_raw_by_id.keys())
+    for rid in ids:
+        if rid not in existing[layer_name]:
+            existing[layer_name][rid] = empty_region_layer()
+        else:
+            existing[layer_name][rid] = ensure_region_layer(existing[layer_name][rid])
+        raw = existing[layer_name][rid].setdefault('raw', {})
         # 1) 이전 같은 source raw 제거
         to_remove = [k for k, v in raw.items()
                      if isinstance(v, dict) and str(v.get('source', '')).startswith(f'{source_prefix}:')]
         for k in to_remove:
             del raw[k]
         # 2) 새 raw 병합
-        if cid in new_raw_by_city:
-            for k, rec in new_raw_by_city[cid].items():
+        if rid in new_raw_by_id:
+            for k, rec in new_raw_by_id[rid].items():
                 raw[k] = rec
     return existing
+
+def merge_raw_by_source(existing: dict, new_raw_by_city: dict, source_prefix: str) -> dict:
+    """시군 raw 층에 new_raw 를 source-별로 병합."""
+    return _merge_layer_raw_by_source(existing, 'sigun', SIGUN_CODES, new_raw_by_city, source_prefix)
+
+def merge_dong_raw_by_source(existing: dict, new_raw_by_dong: dict, source_prefix: str) -> dict:
+    """읍면 raw 층에 new_raw 를 source-별로 병합."""
+    return _merge_layer_raw_by_source(existing, 'dong', new_raw_by_dong.keys(), new_raw_by_dong, source_prefix)
 
 
 # ─── 산식 계산 (computed 층) ──────────────────────────────────────────────

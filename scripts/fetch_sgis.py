@@ -36,9 +36,10 @@ from datetime import datetime
 sys.path.insert(0, str(Path(__file__).parent))
 from lib_meta import (
     SIGUN_CODES, CODE_TO_CITY,
-    SGIS_PROV_CODE, SGIS_CODE_TO_CITY,
+    SGIS_PROV_CODE, SGIS_SIGUN_CODES, SGIS_CODE_TO_CITY,
     to_number,
-    load_full_meta, save_meta, recompute_all, merge_raw_by_source,
+    load_full_meta, save_meta, recompute_all,
+    merge_raw_by_source, merge_dong_raw_by_source,
 )
 
 if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
@@ -133,6 +134,15 @@ SGIS_TABLES = {
         'field_prefix': 'farm_',                       # → farm_avg_family_member_cnt
     },
 }
+
+# 읍면 기본 통계는 UI의 "지역 기본 통계"에 필요한 핵심 항목만 수집한다.
+# 시군 15개 × 표 수만큼 호출하므로 전체 사업체 세부 분류는 제외한다.
+DONG_SGIS_TABLE_KEYS = (
+    'main_stats',
+    'company_all',
+    'farm',
+    'house',
+)
 
 
 # ─── SGIS 클라이언트 (인증 루프 포함) ─────────────────────────────────────
@@ -269,6 +279,49 @@ def parse_sgis_rows(rows: list, cfg: dict, source_id: str, year: int) -> dict:
     return out
 
 
+def parse_sgis_dong_rows(rows: list, cfg: dict, source_id: str, year: int,
+                         city_id: str) -> dict:
+    """
+    SGIS 응답 행 → {adm_cd: {field: {value, year, source}}}
+
+    읍면동 코드는 gyeonggi-dong.geojson 의 adm_cd(예: 31070110)와 같은 SGIS 내부
+    코드를 사용한다. city_id와 adm_nm도 raw에 저장해 프론트에서 이름·소속을
+    안정적으로 구분한다.
+    """
+    prefix   = cfg.get('field_prefix', '')
+    fields   = cfg.get('fields', [])
+    source   = f"sgis:{source_id}"
+    year_str = str(year)
+    out = {}
+
+    for r in rows:
+        adm_cd = str(r.get('adm_cd', '')).strip()
+        if len(adm_cd) < 8:
+            continue
+        rec = out.setdefault(adm_cd, {
+            'city_id': {
+                'value': city_id,
+                'year': year_str,
+                'source': source,
+            },
+            'adm_nm': {
+                'value': str(r.get('adm_nm') or r.get('adm_nm_full') or '').strip(),
+                'year': year_str,
+                'source': source,
+            },
+        })
+        for field in fields:
+            num = to_number(r.get(field))
+            if num is None:
+                continue
+            rec[f'{prefix}{field}'] = {
+                'value': num,
+                'year': year_str,
+                'source': source,
+            }
+    return out
+
+
 # ─── 메인 ─────────────────────────────────────────────────────────────────
 
 def fetch_all(existing_data: dict) -> dict:
@@ -287,6 +340,7 @@ def fetch_all(existing_data: dict) -> dict:
     print()
 
     new_raw_by_city = {}
+    new_raw_by_dong = {}
     tables_status = {}
 
     for key, cfg in SGIS_TABLES.items():
@@ -318,8 +372,45 @@ def fetch_all(existing_data: dict) -> dict:
                 'errCd':    err_cd,
             }
 
+    print('\n=== SGIS 읍면 기본 통계 수집 시작 ===\n')
+    for cid, sigun_codes in SGIS_SIGUN_CODES.items():
+        for sgis_code in sigun_codes:
+            for key in DONG_SGIS_TABLE_KEYS:
+                cfg = SGIS_TABLES[key]
+                year = cfg.get('year', 2024)
+                extra_str = ' '.join(f'{k}={v}' for k, v in cfg.get('extra', {}).items())
+                print(f"  [{cid:12s} {sgis_code} {key:12s}] {cfg['desc']} year={year} {extra_str}", end=' ', flush=True)
+                body = client.call(cfg, year=year, adm_cd=sgis_code, low_search='1')
+                err_cd = body.get('errCd')
+                rows = body.get('result', [])
+                status_key = f'sgis_dong_{key}'
+
+                if err_cd in (0, '0', None) and isinstance(rows, list) and rows:
+                    parsed = parse_sgis_dong_rows(rows, cfg, source_id=f'dong_{key}', year=year, city_id=cid)
+                    print(f"성공 ({len(rows)}행 → {len(parsed)} 읍면)")
+                    for adm_cd, fields in parsed.items():
+                        new_raw_by_dong.setdefault(adm_cd, {}).update(fields)
+                    prev = tables_status.get(status_key, {
+                        'endpoint': cfg['endpoint'].replace('.json', ''),
+                        'year': year,
+                        'count': 0,
+                        'status': 'ok',
+                    })
+                    prev['count'] = prev.get('count', 0) + len(parsed)
+                    tables_status[status_key] = prev
+                else:
+                    print(f"실패 (errCd={err_cd}, msg={(body.get('errMsg') or '')[:50]})")
+                    tables_status.setdefault(status_key, {
+                        'endpoint': cfg['endpoint'].replace('.json', ''),
+                        'year': year,
+                        'count': 0,
+                        'status': 'partial',
+                        'errCd': err_cd,
+                    })
+
     # source-aware 병합 — SGIS raw 만 덮어씀
     merge_raw_by_source(existing_data, new_raw_by_city, 'sgis')
+    merge_dong_raw_by_source(existing_data, new_raw_by_dong, 'sgis')
 
     # _meta.tables 의 SGIS 항목 갱신
     existing_data['_meta'].setdefault('tables', {})
@@ -340,7 +431,11 @@ def fetch_all(existing_data: dict) -> dict:
     n_sgis = sum(1 for cid in SIGUN_CODES
                  for v in existing_data['sigun'].get(cid, {}).get('raw', {}).values()
                  if isinstance(v, dict) and str(v.get('source','')).startswith('sgis:'))
+    n_dong_sgis = sum(1 for adm_cd in existing_data.get('dong', {})
+                      for v in existing_data['dong'].get(adm_cd, {}).get('raw', {}).values()
+                      if isinstance(v, dict) and str(v.get('source','')).startswith('sgis:'))
     print(f"\n  📊 SGIS raw 필드 총 {n_sgis}개 (15시군 × 평균 {n_sgis//15 if n_sgis else 0}개)")
+    print(f"  📍 SGIS 읍면 raw 필드 총 {n_dong_sgis}개 ({len(existing_data.get('dong', {}))}개 읍면)")
     print(f"  🔄 토큰 발급 {client.refresh_count}회\n")
     return existing_data
 

@@ -1518,10 +1518,60 @@ a:focus-visible {
 .shimter-fill { background: var(--shimter); }
 
 .indicator-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
   font-size: 10px;
   color: var(--text-muted);
   letter-spacing: 0.01em;
   line-height: 1.5;
+}
+
+.data-status-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.status-local {
+  background: rgba(45, 95, 63, 0.12);
+  color: var(--primary);
+}
+.status-kosis,
+.status-sgis {
+  background: rgba(74, 144, 217, 0.14);
+  color: var(--samlter);
+}
+.status-computed {
+  background: rgba(82, 168, 102, 0.16);
+  color: var(--shimter);
+}
+.status-manual,
+.status-partial,
+.status-local_only {
+  background: rgba(232, 164, 74, 0.18);
+  color: var(--ilter);
+}
+.status-mock,
+.status-not_collected,
+.status-local_parse_failed {
+  background: rgba(120, 120, 120, 0.13);
+  color: var(--text-muted);
+}
+.status-field_survey {
+  background: rgba(132, 80, 185, 0.14);
+  color: #6c3aa0;
+}
+.status-not_available {
+  background: rgba(180, 70, 70, 0.13);
+  color: #a33f3f;
 }
 
 
@@ -2298,11 +2348,124 @@ a:focus-visible {
   font-variant-numeric: tabular-nums;
   line-height: 1.2;
 }
+.jayul-ind-source {
+  display: flex;
+  margin-top: 6px;
+}
 .jayul-ind-meta {
   font-size: 10px;
   color: var(--text-muted);
   margin-top: 4px;
   letter-spacing: 0.01em;
+}
+
+.field-survey-section {
+  margin: var(--space-5) var(--space-6);
+  padding: var(--space-4);
+  border: 1px solid rgba(132, 80, 185, 0.16);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, rgba(132, 80, 185, 0.06), rgba(255, 255, 255, 0.92));
+}
+
+.field-survey-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.field-survey-head h3 {
+  margin: 0 0 4px 0;
+  font-family: 'Noto Serif KR', serif;
+  font-size: var(--fs-md);
+  color: var(--primary);
+}
+
+.field-survey-head p {
+  margin: 0;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.field-survey-count {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  background: rgba(132, 80, 185, 0.12);
+  color: #6c3aa0;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.field-survey-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-3);
+}
+
+.field-survey-card {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: #fff;
+  border: 1px solid rgba(132, 80, 185, 0.10);
+  box-shadow: var(--shadow-xs);
+}
+
+.field-survey-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 6px;
+}
+
+.field-survey-category {
+  font-size: 10px;
+  font-weight: 700;
+  color: #6c3aa0;
+}
+
+.field-survey-card h4 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--fs-sm);
+  color: var(--text-primary);
+}
+
+.field-survey-card dl {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  gap: 4px 8px;
+  margin: 0 0 var(--space-2) 0;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.field-survey-card dt {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.field-survey-card dd {
+  margin: 0;
+  color: var(--text-body);
+}
+
+.field-survey-card details {
+  font-size: 11px;
+  color: var(--text-body);
+}
+
+.field-survey-card summary {
+  cursor: pointer;
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.field-survey-card details p {
+  margin: var(--space-2) 0 0;
+  line-height: 1.55;
 }
 
 
@@ -5354,6 +5517,16 @@ a:focus-visible {
   background: rgba(82, 168, 102, 0.12);
   border: 1px solid rgba(82, 168, 102, 0.45);
 }
+.dong-detail-source.is-source-sgis {
+  color: #275E8E;
+  background: rgba(74, 144, 217, 0.14);
+  border: 1px solid rgba(74, 144, 217, 0.40);
+}
+.dong-detail-source.is-source-boundary {
+  color: #5B6B45;
+  background: rgba(139, 166, 92, 0.14);
+  border: 1px solid rgba(139, 166, 92, 0.40);
+}
 
 /* 행정리 상세 — dong-detail 스타일 변형 */
 .ri-detail {
@@ -5753,6 +5926,18 @@ a:focus-visible {
 .kosis-badge-kosis {
   background: rgba(74, 144, 217, 0.14);
   color: var(--samlter);
+}
+.kosis-badge-sgis {
+  background: rgba(74, 144, 217, 0.14);
+  color: var(--samlter);
+}
+.kosis-badge-local {
+  background: rgba(45, 95, 63, 0.12);
+  color: var(--primary);
+}
+.kosis-badge-boundary {
+  background: rgba(139, 166, 92, 0.14);
+  color: #5B6B45;
 }
 .kosis-badge-computed {
   background: rgba(82, 168, 102, 0.16);
