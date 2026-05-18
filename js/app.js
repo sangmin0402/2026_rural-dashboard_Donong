@@ -4052,17 +4052,19 @@ function getQuantileClass(rank, total) {
 /**
  * 탐색 페이지 열기 — 메인 진입점
  */
-function showExplorePage(indicatorKey = null) {
+function showExplorePage(indicatorKey = null, pinCityId = null) {
   if (!exploreState.initialized) initExploreScreen();
   exploreState.activeKey = indicatorKey || exploreState.activeKey || null;
   exploreState.hoverCity = null;
-  exploreState.pinnedCity = null;
+  // 시군 패널에서 진입한 경우 그 시군을 pin (우측 aside 카드 즉시 표시)
+  exploreState.pinnedCity = pinCityId || null;
   renderExploreSidebar();
-  renderExploreAside();
   const hash = indicatorKey ? `#explore/${indicatorKey}` : '#explore';
   showOverlayScreen('explore-screen', hash);
   if (exploreState.activeKey) {
     renderExploreDetail(exploreState.activeKey);
+  } else {
+    renderExploreAside();
   }
 }
 
@@ -4161,13 +4163,14 @@ function renderExploreDetail(key) {
     ? '(현재 mock — 시군이 자율적으로 선정·실측 입력하는 지표)'
     : '<em>(공통지표 — 현재 mock 데이터, 실측 교체 예정)</em>');
   const sourceText = ({
-    L1: 'KOSIS Open API · DT_1B040A3 (자동 계산)',
-    L2: 'SGIS Open API · 총조사 주요지표 (population.json)',
-    W2: 'SGIS Open API · 사업체통계 (company.json)',
-    W8: 'SGIS Open API · 도소매·숙박음식 종사자 합산',
+    L1: 'KOSIS · 주민등록인구통계 (행정안전부, 월간 갱신) — 자동 계산',
+    L2: 'SGIS · 인구주택총조사 주요지표',
+    L3: 'KOSIS · 국내인구이동통계',
+    W2: 'SGIS · 전국사업체조사 (전산업 합계)',
+    W8: 'SGIS · 사업체조사 산업분류별 (도매소매 + 숙박음식)',
   })[key] || (isJayul
-    ? '향후 시군별 실측 또는 외부 출처 (manual 입력)'
-    : '향후 KOSIS·외부 출처에서 수집 예정 (현재 mock)');
+    ? '향후 시군별 실측 또는 외부 출처 (수동 입력)'
+    : '향후 통계 출처에서 수집 예정 (현재 예시값)');
 
   // 시군별 데이터 수집
   const rows = Object.keys(CITIES).map(cid => {
@@ -4220,7 +4223,7 @@ function renderExploreDetail(key) {
     <div class="explore-map-wrap">
       <div id="explore-map-area" aria-label="${meta.name} 코로플레스 지도"></div>
       <div class="explore-legend">
-        <span class="legend-title">5분위 등급</span>
+        <span class="legend-title">5분위 등급 <span class="legend-method">동일 개수 분위 (Quintile)</span></span>
         <div class="legend-bar">
           <span class="legend-tier" style="background:${QUANTILE_COLORS[0]}">1</span>
           <span class="legend-tier" style="background:${QUANTILE_COLORS[1]}">2</span>
@@ -4228,15 +4231,16 @@ function renderExploreDetail(key) {
           <span class="legend-tier" style="background:${QUANTILE_COLORS[3]}">4</span>
           <span class="legend-tier" style="background:${QUANTILE_COLORS[4]}">5</span>
         </div>
-        <span class="legend-hint">${meta.higherBetter ? '값↑ = 좋음' : '값↓ = 좋음'}</span>
+        <span class="legend-hint">${meta.higherBetter ? '값↑ = 좋음' : '값↓ = 좋음'} · 15시군을 값 기준 정렬 후 5등분 (각 등급 3개)</span>
       </div>
     </div>
 
     <details class="explore-formula-collapsible">
-      <summary>📐 산식 / 출처 보기</summary>
+      <summary>📐 산식 · 출처 · 등급 산정 방식 보기</summary>
       <div class="explore-formula-body">
         <p><strong>산식</strong> ${formula}</p>
         <p><strong>출처</strong> ${sourceText}</p>
+        <p><strong>등급 산정</strong> 동일 개수 5분위 (Quintile) — 15개 시군을 값 기준으로 정렬한 후 등급별 3개씩 분배. <em>네추럴 브레이크(Jenks)가 아닌 단순 순위 분위입니다.</em></p>
       </div>
     </details>
 
@@ -4528,27 +4532,36 @@ async function renderExploreMainMap(key, rows) {
     };
 
     const svgParts = [`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" role="img">`];
-    // 폴리곤
+    // 폴리곤 — 대상 15시군은 색상, 비대상은 매우 흐린 회색 (배경 컨텍스트만)
     geo.features.forEach(f => {
       const cid = f.properties.id;
       const c = f.geometry;
       if (!c || !c.coordinates) return;
       const d = pathFromCoords(c.coordinates, c.type);
       const v = valById[cid];
-      const fill = colorFor(cid);
+      const isTarget = !!CITIES[cid];
+      const fill = isTarget ? colorFor(cid) : '#e8ece4';
+      const stroke = isTarget ? '#fff' : '#d6dccd';
+      const strokeWidth = isTarget ? '1' : '0.5';
+      const opacity = isTarget ? '1' : '0.5';
+      const cityName = CITIES[cid]?.name || '';
       const valStr = v == null ? '-' : v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      const titleText = isTarget
+        ? `${cityName}: ${valStr}${meta?.unit ? ' ' + meta.unit : ''}`
+        : '(대상 외 시군)';
       svgParts.push(
-        `<path d="${d}" fill="${fill}" stroke="#fff" stroke-width="1" data-city-id="${cid}"><title>${CITIES[cid]?.name || cid}: ${valStr}${meta?.unit ? ' ' + meta.unit : ''}</title></path>`
+        `<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}" data-city-id="${cid}" data-target="${isTarget}"><title>${titleText}</title></path>`
       );
     });
-    // 라벨 (시군명 + 값) — 별도 layer
+    // 라벨 — 대상 15시군만, 비대상은 라벨 X
     geo.features.forEach(f => {
       const cid = f.properties.id;
       const c = f.geometry;
       if (!c || !c.coordinates) return;
+      if (!CITIES[cid]) return;  // 비대상 시군은 라벨 X
       const v = valById[cid];
       const [cx, cy] = polyCentroid(c.coordinates, c.type);
-      const cityName = CITIES[cid]?.name || cid;
+      const cityName = CITIES[cid].name;
       const valStr = v == null ? '' : v.toLocaleString(undefined, { maximumFractionDigits: 1 });
       svgParts.push(
         `<g pointer-events="none" class="explore-map-label">` +
@@ -4560,8 +4573,8 @@ async function renderExploreMainMap(key, rows) {
     svgParts.push('</svg>');
     host.innerHTML = svgParts.join('');
 
-    // 호버/클릭 이벤트
-    host.querySelectorAll('path[data-city-id]').forEach(p => {
+    // 호버/클릭 이벤트 — 대상 15시군만
+    host.querySelectorAll('path[data-target="true"]').forEach(p => {
       const cid = p.dataset.cityId;
       p.style.cursor = 'pointer';
       p.style.transition = 'opacity 0.15s';
@@ -4579,6 +4592,11 @@ async function renderExploreMainMap(key, rows) {
         exploreState.pinnedCity = cid;
         renderExploreAside();
       });
+    });
+    // 비대상 시군은 클릭/호버 비활성
+    host.querySelectorAll('path[data-target="false"]').forEach(p => {
+      p.style.cursor = 'default';
+      p.style.pointerEvents = 'none';
     });
   } catch (e) {
     host.innerHTML = `<p style="font-size:12px;color:var(--text-muted);padding:var(--space-3)">지도 로드 실패: ${e.message}</p>`;
@@ -4893,6 +4911,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const cityDetailEl = document.getElementById('city-detail');
   if (cityDetailEl) {
     cityDetailEl.addEventListener('click', (e) => {
+      // 현재 선택된 시군 — pin 으로 전달해 탐색 페이지에서 미리 강조
+      const pinCity = state.selectedCity || null;
       // 공통지표 카드 (HTML 정적 .indicator-card + JS 동적 .indicator-item 모두)
       const common = e.target.closest('.indicator-card, .indicator-item');
       if (common) {
@@ -4900,7 +4920,7 @@ document.addEventListener('DOMContentLoaded', () => {
                  || common.dataset.key
                  || common.querySelector('.indicator-id')?.textContent.trim();
         if (key && (INDICATORS[key] || JAYUL_INDICATORS_POOL[key])) {
-          showExplorePage(key);
+          showExplorePage(key, pinCity);
           return;
         }
       }
@@ -4910,7 +4930,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const key = jayul.dataset.key
                  || jayul.querySelector('.jayul-ind-key')?.textContent.trim();
         if (key && (INDICATORS[key] || JAYUL_INDICATORS_POOL[key])) {
-          showExplorePage(key);
+          showExplorePage(key, pinCity);
         }
       }
     });

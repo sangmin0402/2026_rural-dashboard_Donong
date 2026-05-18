@@ -5792,6 +5792,37 @@ a:focus-visible {
    35. 지표 탐색 페이지 v2 (#explore-screen) — SGIS 통계주제도 패턴
    ============================================================================ */
 
+/* ── 풀페이지 전환: 짙은 녹색 overlay → 라이트 톤 사이트 화면 ── */
+#explore-screen {
+  background: #f4f6f1;
+}
+#explore-screen .overlay-header {
+  background: #fff;
+  border-bottom: 1px solid rgba(45, 95, 63, 0.14);
+  padding: 10px 24px;
+  backdrop-filter: none;
+}
+#explore-screen .overlay-brand,
+#explore-screen .overlay-brand-text {
+  color: var(--primary);
+}
+#explore-screen .overlay-close {
+  color: var(--primary);
+  background: rgba(45, 95, 63, 0.08);
+  border: 1px solid rgba(45, 95, 63, 0.18);
+}
+#explore-screen .overlay-close:hover {
+  background: rgba(45, 95, 63, 0.16);
+}
+/* overlay-main 의 디폴트 padding/scroll 제거 → grid가 풀 영역 차지 */
+#explore-screen .overlay-main.explore-main {
+  padding: 0;
+  overflow: hidden;            /* 외부 스크롤 X — 각 column 내부 스크롤 */
+  max-width: none;
+  margin: 0;
+  min-height: 0;               /* flex 자식 height 계산 안정 */
+}
+
 /* ── 3-Column 레이아웃 ── */
 .explore-main {
   display: grid;
@@ -5808,10 +5839,21 @@ a:focus-visible {
   border-right: 1px solid rgba(45, 95, 63, 0.18);
   padding: var(--space-5) var(--space-4);
   overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  min-height: 0;       /* grid item — 부모 높이 초과 시 스크롤 */
+  max-height: 100%;
 }
+/* 스크롤바 시각 — 가는 회녹색 */
+.explore-sidebar::-webkit-scrollbar { width: 8px; }
+.explore-sidebar::-webkit-scrollbar-track { background: transparent; }
+.explore-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(45, 95, 63, 0.18);
+  border-radius: 4px;
+}
+.explore-sidebar::-webkit-scrollbar-thumb:hover { background: rgba(45, 95, 63, 0.32); }
 .explore-h2 {
   font-family: 'Noto Serif KR', serif;
   font-size: var(--fs-lg);
@@ -6078,6 +6120,16 @@ a:focus-visible {
   letter-spacing: 0.05em;
   color: var(--primary);
   text-transform: uppercase;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.legend-method {
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: var(--text-muted);
+  text-transform: none;
 }
 .legend-bar {
   display: flex;
