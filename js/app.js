@@ -2299,14 +2299,15 @@ function renderFieldSurveySection(cityId) {
 // ===================================================================
 
 const DONG_COMPARE_INDICATORS = [
-  { key: 'L1_pop_growth',       label: '인구증가율',          unit: '%',         higherBetter: true  },
-  { key: 'L4_living_soc',       label: '생활SOC 충족지수',    unit: '',          higherBetter: true  },
-  { key: 'W6_young_return',     label: '청년 귀농 유입',      unit: '%',         higherBetter: true  },
-  { key: 'W7_eco_farm',         label: '친환경 인증 농가',    unit: '%',         higherBetter: true  },
-  { key: 'R3_green_ratio',      label: '녹지율',              unit: '%',         higherBetter: true  },
-  { key: 'R4_experience_prog',  label: '농촌체험 프로그램',   unit: '건/천명',   higherBetter: true  },
-  { key: 'R5_water_quality',    label: '양호수질 하천',       unit: '%',         higherBetter: true  },
-  { key: 'R6_park_per_capita',  label: '수변·생태쉼터',       unit: '㎡/천명',   higherBetter: true  },
+  { key: 'L1_pop_growth',       label: '인구증가율',          unit: '%',         higherBetter: true,  zeroBaseline: false },
+  { key: 'L4_living_soc',       label: '생활SOC 충족지수',    unit: '',          higherBetter: true,  zeroBaseline: true  },
+  { key: 'W2_business_density', label: '사업체 밀도',         unit: '개/㎢',     higherBetter: true,  zeroBaseline: true  },
+  { key: 'W6_young_return',     label: '청년 귀농 유입',      unit: '%',         higherBetter: true,  zeroBaseline: true  },
+  { key: 'W7_eco_farm',         label: '친환경 인증 농가',    unit: '%',         higherBetter: true,  zeroBaseline: true  },
+  { key: 'R3_green_ratio',      label: '녹지율',              unit: '%',         higherBetter: true,  zeroBaseline: true  },
+  { key: 'R4_experience_prog',  label: '농촌체험 프로그램',   unit: '건/천명',   higherBetter: true,  zeroBaseline: true  },
+  { key: 'R5_water_quality',    label: '양호수질 하천',       unit: '%',         higherBetter: true,  zeroBaseline: true  },
+  { key: 'R6_park_per_capita',  label: '수변·생태쉼터',       unit: '㎡/천명',   higherBetter: true,  zeroBaseline: true  },
 ];
 
 const CLUSTER_LABELS = {
@@ -2415,7 +2416,7 @@ function renderDongComparison(cityId) {
     </div>
 
     <details class="dong-compare-table-wrap">
-      <summary>전체 표로 보기 (모든 지표 · 16개 읍면)</summary>
+      <summary>전체 표로 보기 (${DONG_COMPARE_INDICATORS.length}개 지표 · ${dongs.length}개 읍면)</summary>
       <div class="dong-compare-table-scroll">
         <table class="dong-compare-table">
           <thead><tr>
@@ -2576,7 +2577,8 @@ function drawDongCompareChart(dongs) {
       scales: {
         x: { ticks: { font: { size: 11 } } },
         y: {
-          beginAtZero: false,
+          // 영점 기준선: 인구증가율(L1)은 음수 가능 → false, 나머지(% / 밀도 / 비율)는 true
+          beginAtZero: indicator.zeroBaseline !== false,
           ticks: { font: { size: 11 } },
           title: { display: !!indicator.unit, text: indicator.unit || '', font: { size: 11 } },
         },
