@@ -11,7 +11,7 @@
 1. [프로젝트 개요](#1-프로젝트-개요)
 2. [주요 기능](#2-주요-기능)
 3. [지표 체계](#3-지표-체계)
-4. [데이터 현황](#4-데이터-현황) · [4-1. 0427 확정 데이터·현장조사 (2026-05)](#4-1-0427-확정-데이터현장조사-2026-05)
+4. [데이터 현황](#4-데이터-현황) · [4-1. 0427 확정 데이터·현장조사 (2026-05)](#4-1-0427-확정-데이터현장조사-2026-05) · [4-2. 5/18 피드백 반영 (2026-05)](#4-2-518-피드백-반영-2026-05-featfeedback-0518-브랜치)
 5. [5대 권역 분류](#5-5대-권역-분류)
 6. [파일 구조](#6-파일-구조)
 7. [로컬 실행](#7-로컬-실행)
@@ -192,6 +192,25 @@
 - **엑셀 ↔ 웹 키 주의**: 엑셀 자율 번호와 앱 키가 한 칸 어긋난 항목이 있음(예: 엑셀 R4 수질 → 앱 **R5**, 엑셀 R5 공원·면적 → 앱 **R6**, 엑셀 W9 체험 파일명 → 앱 **R4** 등). 상세는 `indicator-reference.json`의 `aliases`/`source_key` 참고.
 - **W6(청년 귀농 유입)**: 확정안 기준 **20~39세** 귀농가구원 ÷ 전체 귀농가구원. `귀농인현황_남양주.xlsx`의 **「30대이하」** 열이 해당 구간(통계 표 연령대 명칭).
 
+### 4-2. 5/18 피드백 반영 (2026-05, `feat/feedback-0518` 브랜치)
+
+5/18 회의에서 받은 7개 피드백을 8단계 commit으로 반영. 진행 중 의도 부합도를 별도 review agent(`superpowers:code-reviewer`)가 commit마다 검증.
+
+| # | 피드백 | 반영 commit | 결과물 |
+|---|--------|------------|--------|
+| #1 | UI 재검토 + 유사 포털 사례 | Commit 1·2 | impeccable 디자인 진단 + side-tab 통일 + 헤딩 위계 정리. 사례조사: `docs/UX-BENCHMARK.md` |
+| #2 | 읍면 단위 비교 강화 (남양주) | Commit 6 | 남양주 시군 패널 안에 **"📍 남양주 16개 읍면 비교"** 섹션 (클러스터 칩 + 차트 + 표) |
+| #3 | 시사점 도출 ("그래서 어떻게?") | Commit 3 | 시군 패널 **"이 시군의 시사점" 카드** — 등급별(high/mid/low) 텍스트 |
+| #4 | 남양주 비전 적합도 점수화 | **보류** | 비전 정의 자료 수집 후 별도 PR |
+| #5 | AI 해석·분석 기능 | Commit 7 | `dat/ai-interpretations.json` (15시군 × 강점·약점·정책) + **"💡 AI 해석" 카드**. 정적 텍스트 (LLM 실시간 호출 X) |
+| #6 | 사용자 유형별 화면 분리 | Commit 4 | 헤더 **일반/관리자 토글** + 시군 패널 안에 manual 층 편집 폼 (localStorage 저장) |
+| #7 | 현장 데이터는 가상 데이터로 먼저 테스트 | Commit 5 | `scripts/generate_mock_dong.py` + `dat/simulation/namyangju-dong-mock.json` (16개 읍면 × 9지표 결정론적 mock, urban/transit/rural 3-cluster) |
+
+**참고 문서**:
+- `docs/UX-BENCHMARK.md` — 유사 포털·대시보드 사례조사 (SGIS / KOSIS / UPIS / 농촌진흥청)
+- `docs/IMPECCABLE-AUDIT.md` — 디자인 진단 결과 (29개 안티패턴 룰)
+- `docs/AI-INTERPRETATIONS.md` — AI 해석 텍스트 관리 가이드
+
 ### ⚠️ 현재 가상(Mock) 데이터 항목
 
 `app.js`의 `CITIES` 객체는 여전히 **기본 목업**을 담고 있으나, `SCORE_SOURCE_OVERRIDES`에 지정된 키는 `region-meta.json`의 `computed`/`manual`이 있으면 **실측·로컬 확정값으로 덮어씀**(지도·레이더·세부지표 카드와 동일 출처).  
@@ -246,7 +265,16 @@ Web/
 │   ├── region-meta.json         # KOSIS·SGIS·manual·local0427 통합 캐시 (sigun + dong)
 │   ├── indicator-reference.json # 0427 기준 엑셀에서 생성한 지표 정의·alias
 │   ├── field-survey-meta.json   # 7_현장조사 항목 (통계와 분리)
-│   └── data-gap-report.json     # 수집 갭·상태 요약 (import 시 갱신)
+│   ├── data-gap-report.json     # 수집 갭·상태 요약 (import 시 갱신)
+│   ├── indicator-insights.json  # 🆕 지표×등급별 시사점 텍스트 (피드백 #3)
+│   ├── ai-interpretations.json  # 🆕 시군×AI 해석 텍스트 (피드백 #5)
+│   └── simulation/
+│       └── namyangju-dong-mock.json  # 🆕 남양주 16읍면 × 9지표 결정론적 mock (피드백 #7)
+├── docs/
+│   ├── DATA-SOURCES.md
+│   ├── UX-BENCHMARK.md          # 🆕 유사 포털 사례조사 (피드백 #1)
+│   ├── IMPECCABLE-AUDIT.md      # 🆕 디자인 진단 결과 (피드백 #1)
+│   └── AI-INTERPRETATIONS.md    # 🆕 AI 해석 텍스트 관리 가이드 (피드백 #5)
 └── scripts/
     ├── process_ri.py            # SHP → GeoJSON 변환
     ├── process_sigun.py         # 시군구 SHP → gyeonggi-sigun.geojson (SGIS 코드 기준)
@@ -254,6 +282,7 @@ Web/
     ├── fetch_kosis.py           # KOSIS API 호출 → region-meta.json 갱신
     ├── fetch_sgis.py            # SGIS API 호출 → 시군·읍면 raw 병합
     ├── import_0427_data.py      # 0427_데이터 + 기준 엑셀 → region-meta·갭 리포트
+    ├── generate_mock_dong.py    # 🆕 남양주 16읍면 가상 데이터 생성기 (피드백 #7)
     ├── requirements.txt         # Python 의존성
     └── README.md                # 스크립트 실행 절차 및 KOSIS API 가이드
 ```

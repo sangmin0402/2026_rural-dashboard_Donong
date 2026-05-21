@@ -1043,6 +1043,7 @@ async function loadRegionMeta() {
     indicatorReference = null;
     fieldSurveyMeta = null;
     dataGapReport = null;
+    indicatorInsights = null;
     simulationData = null;
     aiInterpretations = null;
   }
