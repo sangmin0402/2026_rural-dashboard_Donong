@@ -1,4 +1,4 @@
-﻿@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css');
 
 /* ============================================================================
    寃쎄린???띿큿?ㅼ? 吏???뚮옯????Rural Data Intelligence Design System
@@ -6753,3 +6753,150 @@ a:focus-visible {
   .explore-main-panel { padding: var(--space-4); }
 }
 
+
+/* ============================================================================
+   36. 시사점·정책 카드 (#sigun-insight-card) — 피드백 #3 #5
+   ============================================================================ */
+
+.insight-card {
+  margin: var(--space-4) var(--space-6);
+  padding: var(--space-5);
+  background: linear-gradient(180deg, #FBFCFA 0%, #F5F8F2 100%);
+  border: 1px solid rgba(45, 95, 63, 0.13);
+  border-radius: var(--radius-lg);
+  position: relative;
+}
+.insight-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 64px; height: 3px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 3px 0 3px 0;
+}
+
+.insight-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid rgba(45, 95, 63, 0.08);
+}
+.insight-emoji {
+  font-size: 26px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.insight-header-text { flex: 1; min-width: 0; }
+.insight-header-text h3 {
+  font-family: 'Noto Serif KR', serif;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.01em;
+}
+.insight-zone-label {
+  font-size: 12px;
+  color: var(--text-secondary, #5a665e);
+  line-height: 1.55;
+  margin: 0;
+}
+.insight-zone-label strong {
+  color: var(--accent-dark);
+  font-weight: 700;
+}
+
+.insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.insight-item {
+  background: #fff;
+  border: 1px solid rgba(45, 95, 63, 0.08);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.insight-item:hover {
+  box-shadow: 0 2px 6px rgba(45, 95, 63, 0.08);
+  border-color: rgba(45, 95, 63, 0.18);
+}
+.insight-item.insight-tier-high { background: rgba(82, 168, 102, 0.05); }
+.insight-item.insight-tier-low  { background: rgba(232, 156, 90, 0.06); }
+
+.insight-item-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+.insight-item-key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  background: rgba(45, 95, 63, 0.10);
+  color: var(--primary);
+  border-radius: var(--radius-pill);
+}
+.insight-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+}
+.insight-item-tier {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(120, 120, 120, 0.12);
+  color: var(--text-muted);
+}
+.insight-tier-high .insight-item-tier {
+  background: rgba(82, 168, 102, 0.18);
+  color: var(--shimter-dark);
+}
+.insight-tier-low .insight-item-tier {
+  background: rgba(232, 156, 90, 0.18);
+  color: var(--ilter-dark);
+}
+.insight-item-text {
+  font-size: 12.5px;
+  color: var(--text-primary);
+  line-height: 1.65;
+  margin: 0;
+  letter-spacing: -0.005em;
+}
+
+.insight-empty-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: var(--space-3);
+  margin: 0;
+  font-style: italic;
+}
+
+.insight-card-footer {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px dashed rgba(45, 95, 63, 0.10);
+}
+.insight-card-footer small {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .insight-card {
+    margin: var(--space-3) var(--space-4);
+    padding: var(--space-4);
+  }
+}

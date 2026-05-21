@@ -60,6 +60,64 @@ const JAYUL_INDICATORS_POOL = {
   W8: { name: '서비스판매 종사자',       unit: '명',      category: 'ilter',   higherBetter: true, spatial: '시군',   year: 2023, source: 'KOSIS 전국사업체조사', pending: true },
 };
 
+// ===================================================================
+// === 지표 시사점·정책 제안 (피드백 #3 #5) ===
+// ===================================================================
+//   indicator-insights.json 의 텍스트를 시군별 등급에 맞춰 골라내는 헬퍼.
+//   각 지표가 "단순 수치"를 넘어 "그래서 어떻게?" 까지 답변하도록.
+
+/**
+ * 시군의 어떤 지표 점수가 5분위 중 어디(high/mid/low)에 해당하는지 판정.
+ * 정렬은 항상 값 기준 내림차순. 1~5 등급 → high(1~2), mid(3), low(4~5).
+ */
+function classifyIndicatorTier(cityId, indicatorKey) {
+  const myVal = (typeof getCityIndicatorValue === 'function')
+    ? getCityIndicatorValue(cityId, indicatorKey)
+    : (CITIES[cityId]?.indicators?.[indicatorKey] ?? CITIES[cityId]?.jayulIndicators?.[indicatorKey]);
+  if (myVal == null) return null;
+  const allVals = Object.keys(CITIES).map(cid => {
+    const v = CITIES[cid]?.indicators?.[indicatorKey];
+    if (v != null) return v;
+    return CITIES[cid]?.jayulIndicators?.[indicatorKey];
+  }).filter(v => v != null);
+  if (allVals.length < 3) return null;
+  const sorted = [...allVals].sort((a, b) => b - a);  // 큰 값 먼저
+  const idx = sorted.findIndex(v => v === myVal) + 1;
+  const tier = Math.ceil((idx / sorted.length) * 5);
+  const meta = INDICATORS[indicatorKey] || JAYUL_INDICATORS_POOL[indicatorKey];
+  // higherBetter=false 면 등급 반전 (낮은 값이 좋은 등급)
+  const adjustedTier = meta?.higherBetter === false ? (6 - tier) : tier;
+  if (adjustedTier <= 2) return 'high';
+  if (adjustedTier >= 4) return 'low';
+  return 'mid';
+}
+
+/**
+ * 특정 시군·지표에 맞는 시사점 텍스트 반환.
+ * @returns {{ interpretation, tierText, tier } | null}
+ */
+function getIndicatorInsight(cityId, indicatorKey) {
+  if (!indicatorInsights || !indicatorInsights.indicators) return null;
+  const block = indicatorInsights.indicators[indicatorKey];
+  if (!block) return null;
+  const tier = classifyIndicatorTier(cityId, indicatorKey);
+  const tierText = (tier && block[tier]) || null;
+  return {
+    interpretation: block.interpretation,
+    tierText,
+    tier,
+  };
+}
+
+/**
+ * 시군의 권역 요약 텍스트.
+ */
+function getZoneInsight(cityId) {
+  if (!indicatorInsights || !indicatorInsights.by_zone) return null;
+  const zone = (typeof CITY_ZONE !== 'undefined') ? CITY_ZONE[cityId] : null;
+  return zone ? indicatorInsights.by_zone[zone] : null;
+}
+
 // 카테고리 종합 가상 지표 키 매핑
 const CATEGORY_TOTALS = {
   samlter_total: { category: 'samlter', label: '삶터 종합' },
@@ -657,6 +715,7 @@ let regionMeta = null;      // KOSIS 캐시 (region-meta.json)
 let indicatorReference = null; // 0427 기준 지표 정의/alias
 let fieldSurveyMeta = null;    // 현장조사 항목 메타
 let dataGapReport = null;      // API/로컬 데이터 누락 상태
+let indicatorInsights = null;  // 지표별 시사점·정책 사전 작성 텍스트 (피드백 #3 #5)
 let labelGroup = null;      // 시군명 라벨 레이어
 let outlineLayer = null;    // 대상지(15개 시군) 합쳐진 외곽선 효과 레이어
 let sigunBorderLayer = null; // 시군 경계선 전용 오버레이 (dong/ri 위에 항상 표시)
@@ -930,16 +989,18 @@ function updateRiVisibility() {
  */
 async function loadRegionMeta() {
   try {
-    const [metaResp, refResp, surveyResp, gapResp] = await Promise.all([
+    const [metaResp, refResp, surveyResp, gapResp, insightsResp] = await Promise.all([
       fetch('./dat/region-meta.json', { cache: 'no-cache' }),
       fetch('./dat/indicator-reference.json', { cache: 'no-cache' }),
       fetch('./dat/field-survey-meta.json', { cache: 'no-cache' }),
       fetch('./dat/data-gap-report.json', { cache: 'no-cache' }),
+      fetch('./dat/indicator-insights.json', { cache: 'no-cache' }),
     ]);
     regionMeta = metaResp.ok ? await metaResp.json() : {};
     indicatorReference = refResp.ok ? await refResp.json() : null;
     fieldSurveyMeta = surveyResp.ok ? await surveyResp.json() : null;
     dataGapReport = gapResp.ok ? await gapResp.json() : null;
+    indicatorInsights = insightsResp.ok ? await insightsResp.json() : null;
   } catch (err) {
     regionMeta = {};
     indicatorReference = null;
@@ -1592,6 +1653,9 @@ function updateDetailPanel(cityId) {
   // 점수 카드 업데이트
   updateScoreCards(cityId);
 
+  // 시사점·정책 제안 섹션 (피드백 #3 #5)
+  renderInsightCard(cityId);
+
   // 비교 추가 버튼
   updateComparisonButton(cityId);
 
@@ -1603,6 +1667,86 @@ function updateDetailPanel(cityId) {
 
   // 현장조사 입력/관리 섹션
   renderFieldSurveySection(cityId);
+}
+
+/**
+ * 시군별 시사점 카드 렌더 — "그래서 어떻게?" 답변 (피드백 #3 #5)
+ * - 권역 요약 (도농전환형 등)
+ * - 선정된 자율지표 중 등급별 시사점 (high/mid/low 자동 매칭)
+ */
+function renderInsightCard(cityId) {
+  // 기존 카드 제거 (시군 전환 시 재렌더)
+  const existing = document.getElementById('sigun-insight-card');
+  if (existing) existing.remove();
+
+  if (!indicatorInsights) return;
+  const city = CITIES[cityId];
+  if (!city) return;
+
+  const zoneInsight = getZoneInsight(cityId);
+
+  // 시군의 선정 자율지표 중 인사이트가 있는 것 모음 (최대 3개 — 정보 과부하 방지)
+  const selectedKeys = (city.selectedJayulKeys || []).filter(k => indicatorInsights.indicators[k]);
+  const insightsForCity = selectedKeys.slice(0, 3).map(key => {
+    const meta = JAYUL_INDICATORS_POOL[key] || INDICATORS[key];
+    const insight = getIndicatorInsight(cityId, key);
+    return { key, name: meta?.name || key, insight };
+  }).filter(x => x.insight && x.insight.tierText);
+
+  // 카드 구성
+  const card = document.createElement('section');
+  card.id = 'sigun-insight-card';
+  card.className = 'insight-card';
+  card.setAttribute('aria-label', `${city.name} 시사점 및 정책 제안`);
+
+  let html = '';
+  if (zoneInsight) {
+    html += `
+      <header class="insight-card-header">
+        <span class="insight-emoji" aria-hidden="true">💡</span>
+        <div class="insight-header-text">
+          <h3>${city.name}의 농촌다움 시사점</h3>
+          <p class="insight-zone-label"><strong>${zoneInsight.label}</strong> · ${zoneInsight.summary}</p>
+        </div>
+      </header>`;
+  }
+
+  if (insightsForCity.length > 0) {
+    html += '<div class="insight-list">';
+    insightsForCity.forEach(item => {
+      const tierClass = item.insight.tier ? `insight-tier-${item.insight.tier}` : '';
+      const tierLabel = { high: '강점', mid: '평균', low: '보강 필요' }[item.insight.tier] || '';
+      html += `
+        <article class="insight-item ${tierClass}" data-key="${item.key}">
+          <header class="insight-item-header">
+            <span class="insight-item-key">${item.key}</span>
+            <span class="insight-item-name">${item.name}</span>
+            ${tierLabel ? `<span class="insight-item-tier">${tierLabel}</span>` : ''}
+          </header>
+          <p class="insight-item-text">${item.insight.tierText}</p>
+        </article>`;
+    });
+    html += '</div>';
+  } else {
+    html += `<p class="insight-empty-note">자율지표 선정·등급 산정이 완료되면 여기에 정책 제언이 표시됩니다.</p>`;
+  }
+
+  // 안내 푸터
+  html += `
+    <footer class="insight-card-footer">
+      <small>💬 해석 텍스트는 보고서 기반의 사전 작성 가이드입니다. 향후 LLM 동적 분석으로 확장 예정.</small>
+    </footer>`;
+
+  card.innerHTML = html;
+
+  // 점수 카드 다음에 삽입
+  const scoreCards = document.getElementById('score-cards');
+  const cityDetail = document.getElementById('city-detail');
+  if (scoreCards && scoreCards.parentNode) {
+    scoreCards.parentNode.insertBefore(card, scoreCards.nextSibling);
+  } else if (cityDetail) {
+    cityDetail.appendChild(card);
+  }
 }
 
 /**
