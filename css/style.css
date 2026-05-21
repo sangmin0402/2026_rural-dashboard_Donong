@@ -7200,3 +7200,304 @@ body.view-admin .admin-only-inline {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* ============================================================================
+   38. 남양주 읍면 비교 섹션 (#dong-comparison-section) — 피드백 #2 #7
+   ============================================================================ */
+
+.dong-compare-section {
+  margin: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: #fff;
+  border: 1px solid rgba(45, 95, 63, 0.18);
+  border-radius: var(--radius-lg);
+}
+
+.dong-compare-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--space-3);
+}
+
+.dong-compare-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dong-compare-title h3 {
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.dong-compare-subtitle {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* 시뮬레이션 배지 — 가상 데이터임을 명확히 표시 */
+.data-status-badge.status-simulation {
+  background: rgba(232, 156, 90, 0.16);
+  color: #b6691d;
+  border: 1px solid rgba(232, 156, 90, 0.42);
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* 툴바: 지표 드롭다운 + 상태 + 초기화 */
+.dong-compare-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  flex-wrap: wrap;
+}
+
+.dong-compare-indicator-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.dong-compare-select {
+  font-family: inherit;
+  font-size: 12.5px;
+  padding: 5px 8px;
+  border: 1px solid rgba(45, 95, 63, 0.22);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+}
+
+.dong-compare-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.18);
+}
+
+.dong-compare-status {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.dong-compare-mini-btn {
+  font-family: inherit;
+  font-size: 11.5px;
+  padding: 4px 10px;
+  background: transparent;
+  border: 1px solid rgba(45, 95, 63, 0.22);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.dong-compare-mini-btn:hover {
+  background: rgba(45, 95, 63, 0.05);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* 칩 그룹: 클러스터별 fieldset */
+.dong-compare-chips {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+.dong-compare-cluster {
+  border: 1px solid color-mix(in oklab, var(--cluster-color) 30%, transparent);
+  border-radius: var(--radius-md);
+  padding: 4px var(--space-3) var(--space-2);
+  background: color-mix(in oklab, var(--cluster-color) 4%, transparent);
+}
+
+.dong-compare-cluster legend {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--cluster-color);
+  padding: 0 6px;
+  letter-spacing: 0.02em;
+}
+
+.dong-compare-cluster-n {
+  font-weight: 400;
+  font-size: 10.5px;
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+
+.dong-compare-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 4px;
+}
+
+.dong-compare-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px 3px 6px;
+  background: #fff;
+  border: 1px solid color-mix(in oklab, var(--cluster-color, #888) 35%, transparent);
+  border-radius: var(--radius-pill);
+  font-size: 11.5px;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.dong-compare-chip:hover {
+  background: color-mix(in oklab, var(--cluster-color, #888) 7%, white);
+}
+
+.dong-compare-chip.is-selected {
+  background: var(--cluster-color, #4A90D9);
+  border-color: var(--cluster-color, #4A90D9);
+  color: #fff;
+}
+
+.dong-compare-chip input[type="checkbox"] {
+  margin: 0;
+  width: 11px;
+  height: 11px;
+  accent-color: var(--cluster-color, #4A90D9);
+}
+
+.dong-compare-chip.is-selected input[type="checkbox"] {
+  accent-color: #fff;
+}
+
+.dong-compare-chip-name {
+  white-space: nowrap;
+}
+
+/* 차트 영역 */
+.dong-compare-chart-wrap {
+  position: relative;
+  height: 240px;
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  background: #fafaf7;
+  border: 1px solid rgba(45, 95, 63, 0.08);
+  border-radius: var(--radius-md);
+}
+
+/* 표 (접힘) */
+.dong-compare-table-wrap {
+  margin-top: var(--space-3);
+}
+
+.dong-compare-table-wrap summary {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 4px 0;
+  user-select: none;
+}
+
+.dong-compare-table-wrap summary:hover {
+  color: var(--primary-light);
+}
+
+.dong-compare-table-scroll {
+  margin-top: var(--space-2);
+  overflow-x: auto;
+  border: 1px solid rgba(45, 95, 63, 0.10);
+  border-radius: var(--radius-sm);
+}
+
+.dong-compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+  background: #fff;
+}
+
+.dong-compare-table th,
+.dong-compare-table td {
+  padding: 5px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(45, 95, 63, 0.06);
+  white-space: nowrap;
+}
+
+.dong-compare-table th {
+  background: #f5f4ef;
+  font-weight: 600;
+  color: var(--primary);
+  position: sticky;
+  top: 0;
+}
+
+.dong-compare-tbl-name {
+  font-weight: 600;
+}
+
+.dong-compare-tbl-val {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.dong-compare-table tr.is-selected {
+  background: rgba(212, 165, 116, 0.12);
+}
+
+.dong-compare-table tr.is-selected td {
+  font-weight: 600;
+}
+
+.cluster-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--radius-pill);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.dong-compare-footnote {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px dashed rgba(45, 95, 63, 0.08);
+}
+
+.dong-compare-footnote small {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+  .dong-compare-section {
+    margin: var(--space-3) var(--space-4);
+    padding: var(--space-3);
+  }
+  .dong-compare-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .dong-compare-status {
+    margin-left: 0;
+    text-align: right;
+  }
+  .dong-compare-chart-wrap {
+    height: 200px;
+  }
+}

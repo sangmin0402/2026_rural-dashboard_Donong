@@ -1671,6 +1671,9 @@ function updateDetailPanel(cityId) {
   // 남양주 자율지표 섹션
   updateJayulSection(cityId);
 
+  // 남양주 읍면 비교 섹션 (피드백 #2 #7) — namyangju 만 표시
+  renderDongComparison(cityId);
+
   // KOSIS 시군 기본 통계 섹션
   renderKosisSigunStats(cityId);
 
@@ -2289,6 +2292,297 @@ function renderFieldSurveySection(cityId) {
   } else {
     cityDetail.appendChild(section);
   }
+}
+
+// ===================================================================
+// === 남양주 읍면 비교 섹션 (피드백 #2 — 시군보다 읍면 단위 비교 강화)
+// ===================================================================
+
+const DONG_COMPARE_INDICATORS = [
+  { key: 'L1_pop_growth',       label: '인구증가율',          unit: '%',         higherBetter: true  },
+  { key: 'L4_living_soc',       label: '생활SOC 충족지수',    unit: '',          higherBetter: true  },
+  { key: 'W6_young_return',     label: '청년 귀농 유입',      unit: '%',         higherBetter: true  },
+  { key: 'W7_eco_farm',         label: '친환경 인증 농가',    unit: '%',         higherBetter: true  },
+  { key: 'R3_green_ratio',      label: '녹지율',              unit: '%',         higherBetter: true  },
+  { key: 'R4_experience_prog',  label: '농촌체험 프로그램',   unit: '건/천명',   higherBetter: true  },
+  { key: 'R5_water_quality',    label: '양호수질 하천',       unit: '%',         higherBetter: true  },
+  { key: 'R6_park_per_capita',  label: '수변·생태쉼터',       unit: '㎡/천명',   higherBetter: true  },
+];
+
+const CLUSTER_LABELS = {
+  urban:   { ko: '도심형', color: '#4A90D9' },
+  transit: { ko: '전이형', color: '#E8A44A' },
+  rural:   { ko: '농촌형', color: '#52A866' },
+};
+
+const DONG_COMPARE_MAX_SELECT = 5;
+
+// 남양주 읍면 비교 상태 (시군 전환 시 초기화됨)
+let dongCompareSelection = []; // [admCd, ...]
+let dongCompareIndicator = 'L1_pop_growth'; // 현재 보고 있는 지표
+let dongCompareChart = null;
+
+/**
+ * 남양주 시군 패널 안에 읍면 비교 섹션을 렌더한다.
+ * 시뮬레이션 데이터가 로드되어 있고 cityId === 'namyangju' 일 때만 표시.
+ * @param {string} cityId
+ */
+function renderDongComparison(cityId) {
+  const old = document.getElementById('dong-comparison-section');
+  if (old) old.remove();
+
+  if (cityId !== 'namyangju') return;
+  const dongs = listSimulationDongs();
+  if (!dongs.length) return;
+
+  const cityDetail = document.getElementById('city-detail');
+  if (!cityDetail) return;
+
+  // 기본 선정 — 클러스터별 대표 (urban 1 + transit 1 + rural 1)
+  if (dongCompareSelection.length === 0) {
+    const pick = (cluster) => dongs.find(d => d.cluster === cluster);
+    dongCompareSelection = [pick('urban'), pick('transit'), pick('rural')]
+      .filter(Boolean)
+      .map(d => d.admCd);
+  }
+
+  const section = document.createElement('section');
+  section.id = 'dong-comparison-section';
+  section.className = 'dong-compare-section';
+  section.setAttribute('aria-label', '남양주 읍면 비교');
+
+  const meta = simulationData && simulationData._meta;
+  const versionTag = meta ? ` (${meta.version})` : '';
+
+  let html = `
+    <header class="dong-compare-head">
+      <div class="dong-compare-title">
+        <span aria-hidden="true">📍</span>
+        <h3>남양주 ${dongs.length}개 읍면 비교</h3>
+      </div>
+      <p class="dong-compare-subtitle">
+        <span class="data-status-badge status-simulation">시뮬레이션</span>
+        가상 데이터${versionTag} · 클러스터: 도심형 ${meta?.cluster_counts?.urban||0} · 전이형 ${meta?.cluster_counts?.transit||0} · 농촌형 ${meta?.cluster_counts?.rural||0}
+      </p>
+    </header>
+
+    <div class="dong-compare-toolbar">
+      <label class="dong-compare-indicator-label" for="dong-compare-indicator-select">지표 선택</label>
+      <select id="dong-compare-indicator-select" class="dong-compare-select" aria-label="비교 지표 선택">
+  `;
+  DONG_COMPARE_INDICATORS.forEach(ind => {
+    const sel = ind.key === dongCompareIndicator ? 'selected' : '';
+    html += `<option value="${ind.key}" ${sel}>${ind.label}${ind.unit ? ` (${ind.unit})` : ''}</option>`;
+  });
+  html += `
+      </select>
+      <span class="dong-compare-status" id="dong-compare-status" aria-live="polite">
+        선택 ${dongCompareSelection.length}/${DONG_COMPARE_MAX_SELECT}
+      </span>
+      <button type="button" id="dong-compare-clear" class="dong-compare-mini-btn" aria-label="선택 초기화">↺ 초기화</button>
+    </div>
+
+    <div class="dong-compare-chips" role="group" aria-label="읍면 선택">
+  `;
+  // 클러스터별 그룹화
+  ['urban', 'transit', 'rural'].forEach(cluster => {
+    const cl = CLUSTER_LABELS[cluster];
+    const items = dongs.filter(d => d.cluster === cluster);
+    if (!items.length) return;
+    html += `
+      <fieldset class="dong-compare-cluster" style="--cluster-color: ${cl.color}">
+        <legend>${cl.ko} <span class="dong-compare-cluster-n">${items.length}개</span></legend>
+        <div class="dong-compare-chip-list">
+    `;
+    items.forEach(d => {
+      const isSel = dongCompareSelection.includes(d.admCd);
+      html += `
+        <label class="dong-compare-chip ${isSel ? 'is-selected' : ''}">
+          <input type="checkbox"
+                 data-adm-cd="${d.admCd}"
+                 ${isSel ? 'checked' : ''}
+                 aria-label="${d.adm_nm} 비교 토글">
+          <span class="dong-compare-chip-name">${d.adm_nm}</span>
+        </label>`;
+    });
+    html += `</div></fieldset>`;
+  });
+  html += `
+    </div>
+
+    <div class="dong-compare-chart-wrap">
+      <canvas id="dong-compare-chart" height="220" aria-label="읍면 비교 막대 차트"></canvas>
+    </div>
+
+    <details class="dong-compare-table-wrap">
+      <summary>전체 표로 보기 (모든 지표 · 16개 읍면)</summary>
+      <div class="dong-compare-table-scroll">
+        <table class="dong-compare-table">
+          <thead><tr>
+            <th>읍면</th>
+            <th>클러스터</th>
+            ${DONG_COMPARE_INDICATORS.map(i => `<th title="${i.label}">${i.key.split('_')[0]}</th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${dongs.map(d => {
+              const isSel = dongCompareSelection.includes(d.admCd);
+              const cl = CLUSTER_LABELS[d.cluster];
+              return `
+                <tr class="${isSel ? 'is-selected' : ''}">
+                  <td class="dong-compare-tbl-name">${d.adm_nm}</td>
+                  <td><span class="cluster-tag" style="background:${cl.color}">${cl.ko}</span></td>
+                  ${DONG_COMPARE_INDICATORS.map(i => {
+                    const v = d.indicators[i.key]?.value;
+                    return `<td class="dong-compare-tbl-val">${v == null ? '-' : v}</td>`;
+                  }).join('')}
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <footer class="dong-compare-footnote">
+      <small>💡 클러스터별 대표 1개씩 자동 선택되어 있어요. 다른 읍면을 비교하려면 칩을 클릭하세요 (최대 ${DONG_COMPARE_MAX_SELECT}개).</small>
+    </footer>
+  `;
+  section.innerHTML = html;
+
+  // 자율지표 카드 다음, KOSIS 토글 앞에 삽입
+  const anchor = document.getElementById('kosis-toggle-btn')
+              || document.getElementById('add-comparison-wrapper');
+  if (anchor) cityDetail.insertBefore(section, anchor);
+  else cityDetail.appendChild(section);
+
+  // 이벤트 바인딩
+  bindDongCompareInteractions(section, dongs);
+
+  // 첫 차트 그리기
+  drawDongCompareChart(dongs);
+}
+
+/**
+ * 비교 섹션의 칩·드롭다운·초기화 버튼 이벤트 바인딩
+ */
+function bindDongCompareInteractions(container, dongs) {
+  // 칩 클릭 (체크박스)
+  container.querySelectorAll('input[data-adm-cd]').forEach(input => {
+    input.addEventListener('change', () => {
+      const admCd = input.dataset.admCd;
+      if (input.checked) {
+        if (dongCompareSelection.length >= DONG_COMPARE_MAX_SELECT) {
+          input.checked = false;
+          showInlineToast(`읍면은 최대 ${DONG_COMPARE_MAX_SELECT}개까지 비교할 수 있어요.`);
+          return;
+        }
+        if (!dongCompareSelection.includes(admCd)) dongCompareSelection.push(admCd);
+      } else {
+        dongCompareSelection = dongCompareSelection.filter(c => c !== admCd);
+      }
+      input.closest('.dong-compare-chip')?.classList.toggle('is-selected', input.checked);
+      const status = container.querySelector('#dong-compare-status');
+      if (status) status.textContent = `선택 ${dongCompareSelection.length}/${DONG_COMPARE_MAX_SELECT}`;
+      // 표 행 강조 갱신
+      container.querySelectorAll('.dong-compare-table tbody tr').forEach((tr, idx) => {
+        tr.classList.toggle('is-selected', dongCompareSelection.includes(dongs[idx].admCd));
+      });
+      drawDongCompareChart(dongs);
+    });
+  });
+
+  // 지표 드롭다운
+  const sel = container.querySelector('#dong-compare-indicator-select');
+  if (sel) {
+    sel.addEventListener('change', () => {
+      dongCompareIndicator = sel.value;
+      drawDongCompareChart(dongs);
+    });
+  }
+
+  // 초기화
+  const clearBtn = container.querySelector('#dong-compare-clear');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      dongCompareSelection = [];
+      renderDongComparison('namyangju'); // 섹션 재렌더 (디폴트 선정 다시 채워짐)
+    });
+  }
+}
+
+/**
+ * 현재 선택된 읍면들의 막대 차트를 (재)렌더한다.
+ * 색상은 클러스터별, 값 라벨은 위에 표시.
+ */
+function drawDongCompareChart(dongs) {
+  const canvas = document.getElementById('dong-compare-chart');
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  // 기존 차트 폐기
+  if (dongCompareChart) {
+    try { dongCompareChart.destroy(); } catch (err) { /* ignore */ }
+    dongCompareChart = null;
+  }
+
+  const indicator = DONG_COMPARE_INDICATORS.find(i => i.key === dongCompareIndicator) || DONG_COMPARE_INDICATORS[0];
+  const selectedSet = new Set(dongCompareSelection);
+  const rows = dongs
+    .filter(d => selectedSet.has(d.admCd))
+    .map(d => ({
+      label: d.adm_nm,
+      cluster: d.cluster,
+      value: d.indicators[indicator.key]?.value ?? 0,
+    }));
+
+  if (rows.length === 0) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = '13px "Noto Sans KR", sans-serif';
+    ctx.fillStyle = '#888';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('비교할 읍면을 1개 이상 선택하세요.', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  dongCompareChart = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.label),
+      datasets: [{
+        label: `${indicator.label}${indicator.unit ? ' (' + indicator.unit + ')' : ''}`,
+        data: rows.map(r => r.value),
+        backgroundColor: rows.map(r => CLUSTER_LABELS[r.cluster]?.color || '#999'),
+        borderColor: rows.map(r => CLUSTER_LABELS[r.cluster]?.color || '#999'),
+        borderWidth: 1.5,
+        borderRadius: 4,
+        maxBarThickness: 48,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.parsed.y} ${indicator.unit || ''}`.trim(),
+            afterLabel: (ctx) => {
+              const cluster = rows[ctx.dataIndex]?.cluster;
+              return cluster ? `클러스터: ${CLUSTER_LABELS[cluster].ko}` : '';
+            },
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { font: { size: 11 } } },
+        y: {
+          beginAtZero: false,
+          ticks: { font: { size: 11 } },
+          title: { display: !!indicator.unit, text: indicator.unit || '', font: { size: 11 } },
+        },
+      },
+    },
+  });
 }
 
 /**
