@@ -7501,3 +7501,160 @@ body.view-admin .admin-only-inline {
     height: 200px;
   }
 }
+
+/* ============================================================================
+   39. AI 해석 카드 (#ai-interpretation-card) — 피드백 #5
+   ============================================================================ */
+
+.ai-card {
+  margin: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: linear-gradient(135deg, #f4f9f6 0%, #ffffff 60%);
+  border: 1px solid rgba(45, 95, 63, 0.18);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--primary) 0%, var(--accent) 100%);
+}
+
+.ai-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.ai-card-emoji {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ai-card-titles {
+  flex: 1;
+}
+
+.ai-card-titles h3 {
+  margin: 0 0 4px 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.01em;
+}
+
+.ai-card-headline {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.ai-card-badge {
+  flex-shrink: 0;
+  background: rgba(45, 95, 63, 0.10);
+  color: var(--primary);
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  letter-spacing: 0.02em;
+}
+
+/* 강점·약점 2-column */
+.ai-card-pros-cons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.ai-card-side {
+  background: #fff;
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  border: 1px solid rgba(45, 95, 63, 0.08);
+}
+
+.ai-card-side h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.ai-card-strengths h4 { color: #348153; }
+.ai-card-weaknesses h4 { color: #b6691d; }
+
+.ai-card-side ul {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+
+.ai-card-side li {
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.ai-card-side li:last-child {
+  margin-bottom: 0;
+}
+
+/* 정책 권고 박스 */
+.ai-card-policy {
+  background: rgba(212, 165, 116, 0.10);
+  border: 1px solid rgba(212, 165, 116, 0.32);
+  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.ai-card-policy h4 {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.02em;
+}
+
+.ai-card-policy p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+.ai-card-footer {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px dashed rgba(45, 95, 63, 0.10);
+}
+
+.ai-card-footer small {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .ai-card {
+    margin: var(--space-3) var(--space-4);
+    padding: var(--space-3);
+  }
+  .ai-card-pros-cons {
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+  }
+}

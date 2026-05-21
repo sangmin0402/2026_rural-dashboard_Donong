@@ -118,6 +118,35 @@ function getZoneInsight(cityId) {
   return zone ? indicatorInsights.by_zone[zone] : null;
 }
 
+/**
+ * AI 해석 데이터 조회 — 시군별 / 권역별 / 지표×등급별 (피드백 #5)
+ * 본 데이터는 정적 사전 작성 텍스트로, 향후 LLM 동적 분석으로 대체될 예정.
+ *
+ * @param {string} cityId 시군 ID (예: 'namyangju')
+ * @param {string} [indicatorKey] 선택: 특정 지표 키 (L1/L2/.../R6) — 등급별 해석 추가
+ * @returns {{ city: object|null, zone: object|null, indicatorTier: string|null }}
+ */
+function getAiInterpretation(cityId, indicatorKey) {
+  if (!aiInterpretations) return { city: null, zone: null, indicatorTier: null };
+  const zoneKey = (typeof CITY_ZONE !== 'undefined') ? CITY_ZONE[cityId] : null;
+  let indicatorTier = null;
+  if (indicatorKey) {
+    const tier = (typeof classifyIndicatorTier === 'function')
+      ? classifyIndicatorTier(cityId, indicatorKey)
+      : null;
+    if (tier) {
+      const baseKey = indicatorKey.split('_')[0]; // L1_pop_growth → L1
+      const tk = `${baseKey}_${tier}`;
+      indicatorTier = (aiInterpretations.by_indicator_tier && aiInterpretations.by_indicator_tier[tk]) || null;
+    }
+  }
+  return {
+    city: (aiInterpretations.by_city && aiInterpretations.by_city[cityId]) || null,
+    zone: (zoneKey && aiInterpretations.by_zone && aiInterpretations.by_zone[zoneKey]) || null,
+    indicatorTier,
+  };
+}
+
 // 카테고리 종합 가상 지표 키 매핑
 const CATEGORY_TOTALS = {
   samlter_total: { category: 'samlter', label: '삶터 종합' },
@@ -719,6 +748,7 @@ let fieldSurveyMeta = null;    // 현장조사 항목 메타
 let dataGapReport = null;      // API/로컬 데이터 누락 상태
 let indicatorInsights = null;  // 지표별 시사점·정책 사전 작성 텍스트 (피드백 #3 #5)
 let simulationData = null;     // 시뮬레이션 마이크로데이터 (피드백 #7 — namyangju 읍면 mock)
+let aiInterpretations = null;  // AI 해석용 사전 작성 텍스트 (피드백 #5 — 정적 텍스트)
 let labelGroup = null;      // 시군명 라벨 레이어
 let outlineLayer = null;    // 대상지(15개 시군) 합쳐진 외곽선 효과 레이어
 let sigunBorderLayer = null; // 시군 경계선 전용 오버레이 (dong/ri 위에 항상 표시)
@@ -992,13 +1022,14 @@ function updateRiVisibility() {
  */
 async function loadRegionMeta() {
   try {
-    const [metaResp, refResp, surveyResp, gapResp, insightsResp, simResp] = await Promise.all([
+    const [metaResp, refResp, surveyResp, gapResp, insightsResp, simResp, aiResp] = await Promise.all([
       fetch('./dat/region-meta.json', { cache: 'no-cache' }),
       fetch('./dat/indicator-reference.json', { cache: 'no-cache' }),
       fetch('./dat/field-survey-meta.json', { cache: 'no-cache' }),
       fetch('./dat/data-gap-report.json', { cache: 'no-cache' }),
       fetch('./dat/indicator-insights.json', { cache: 'no-cache' }),
       fetch('./dat/simulation/namyangju-dong-mock.json', { cache: 'no-cache' }),
+      fetch('./dat/ai-interpretations.json', { cache: 'no-cache' }),
     ]);
     regionMeta = metaResp.ok ? await metaResp.json() : {};
     indicatorReference = refResp.ok ? await refResp.json() : null;
@@ -1006,12 +1037,14 @@ async function loadRegionMeta() {
     dataGapReport = gapResp.ok ? await gapResp.json() : null;
     indicatorInsights = insightsResp.ok ? await insightsResp.json() : null;
     simulationData = simResp.ok ? await simResp.json() : null;
+    aiInterpretations = aiResp.ok ? await aiResp.json() : null;
   } catch (err) {
     regionMeta = {};
     indicatorReference = null;
     fieldSurveyMeta = null;
     dataGapReport = null;
     simulationData = null;
+    aiInterpretations = null;
   }
   // SGIS computed 값으로 CITIES mock 덮어쓰기 (실측 우선)
   applySgisOverridesToCities();
@@ -1662,6 +1695,9 @@ function updateDetailPanel(cityId) {
   // 시사점·정책 제안 섹션 (피드백 #3 #5)
   renderInsightCard(cityId);
 
+  // AI 해석 카드 (피드백 #5) — 시군 단위 사전 작성 텍스트
+  renderAiInterpretationCard(cityId);
+
   // 관리자 편집 패널 (피드백 #6) — view-admin 모드일 때만 표시
   renderAdminEditPanel(cityId);
 
@@ -1758,6 +1794,100 @@ function renderInsightCard(cityId) {
     scoreCards.parentNode.insertBefore(card, scoreCards.nextSibling);
   } else if (cityDetail) {
     cityDetail.appendChild(card);
+  }
+}
+
+/**
+ * AI 해석 카드 렌더 — 시군별 강점·약점·정책 권고 (피드백 #5)
+ * 본 텍스트는 사전 작성된 가이드입니다. 향후 LLM 동적 분석으로 대체 예정.
+ *
+ * 위치: 시사점 카드(`#sigun-insight-card`) 다음에 삽입.
+ *      시사점 카드가 없으면 score-cards 다음, 그것도 없으면 city-detail 끝.
+ */
+function renderAiInterpretationCard(cityId) {
+  const existing = document.getElementById('ai-interpretation-card');
+  if (existing) existing.remove();
+
+  if (!aiInterpretations) return;
+  const data = getAiInterpretation(cityId);
+  if (!data.city && !data.zone) return; // 둘 다 없으면 카드 자체 생략
+
+  const city = data.city;
+  const zone = data.zone;
+
+  const card = document.createElement('section');
+  card.id = 'ai-interpretation-card';
+  card.className = 'ai-card';
+  card.setAttribute('aria-label', `${city?.name || cityId} AI 해석`);
+
+  // 헤드라인
+  let html = `
+    <header class="ai-card-header">
+      <span class="ai-card-emoji" aria-hidden="true">💡</span>
+      <div class="ai-card-titles">
+        <h3>AI 해석 · ${city?.name || cityId}</h3>
+        ${city?.headline
+          ? `<p class="ai-card-headline">${city.headline}</p>`
+          : (zone?.summary ? `<p class="ai-card-headline">${zone.summary}</p>` : '')}
+      </div>
+      <span class="ai-card-badge">사전 작성</span>
+    </header>
+  `;
+
+  // 강점·약점
+  if (city && (city.strengths?.length || city.weaknesses?.length)) {
+    html += '<div class="ai-card-pros-cons">';
+    if (city.strengths?.length) {
+      html += `
+        <div class="ai-card-side ai-card-strengths">
+          <h4>강점</h4>
+          <ul>${city.strengths.map(s => `<li>${s}</li>`).join('')}</ul>
+        </div>`;
+    }
+    if (city.weaknesses?.length) {
+      html += `
+        <div class="ai-card-side ai-card-weaknesses">
+          <h4>약점</h4>
+          <ul>${city.weaknesses.map(w => `<li>${w}</li>`).join('')}</ul>
+        </div>`;
+    }
+    html += '</div>';
+  }
+
+  // 정책 권고
+  if (city?.policy_recommendation) {
+    html += `
+      <div class="ai-card-policy">
+        <h4>정책 권고 방향</h4>
+        <p>${city.policy_recommendation}</p>
+      </div>`;
+  } else if (zone?.policy_direction) {
+    html += `
+      <div class="ai-card-policy">
+        <h4>권역 권고 방향</h4>
+        <p>${zone.policy_direction}</p>
+      </div>`;
+  }
+
+  // 푸터 — 데이터 출처·향후 계획
+  html += `
+    <footer class="ai-card-footer">
+      <small>
+        💬 본 해석은 보고서·인터뷰 기반 사전 작성 텍스트입니다 (LLM 실시간 분석 아님).
+        ${aiInterpretations._meta?.future_work ? `<br>→ 향후 계획: ${aiInterpretations._meta.future_work}` : ''}
+      </small>
+    </footer>`;
+
+  card.innerHTML = html;
+
+  // 시사점 카드 다음, 없으면 score-cards 다음, 그것도 없으면 city-detail 끝
+  const anchor = document.getElementById('sigun-insight-card')
+              || document.getElementById('score-cards');
+  if (anchor && anchor.parentNode) {
+    anchor.parentNode.insertBefore(card, anchor.nextSibling);
+  } else {
+    const cityDetail = document.getElementById('city-detail');
+    if (cityDetail) cityDetail.appendChild(card);
   }
 }
 
