@@ -405,6 +405,69 @@ a:focus-visible {
   flex-shrink: 0;
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* ---- View mode toggle (Feedback #6: 일반 / 관리자) ---- */
+.view-mode-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 2px;
+}
+
+.view-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius-sm) - 2px);
+  color: rgba(255, 255, 255, 0.72);
+  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    color var(--transition);
+}
+
+.view-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.view-mode-btn.is-active {
+  background: rgba(212, 165, 116, 0.92);
+  color: #1f1108;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.view-mode-btn.is-active:hover {
+  background: rgba(212, 165, 116, 1);
+  color: #1f1108;
+}
+
+/* Admin-only: 기본은 숨김, body.view-admin 일 때만 표시 */
+.admin-only {
+  display: none;
+}
+
+body.view-admin .admin-only {
+  display: block;
+}
+
+body.view-admin .admin-only-inline {
+  display: inline-flex;
 }
 
 /* ---- Search input ---- */
@@ -6898,5 +6961,242 @@ a:focus-visible {
   .insight-card {
     margin: var(--space-3) var(--space-4);
     padding: var(--space-4);
+  }
+}
+
+/* ============================================================================
+   37. 관리자 편집 패널 (#admin-edit-panel) — 피드백 #6
+   ============================================================================ */
+
+.admin-edit-panel {
+  margin: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--space-5);
+  background: linear-gradient(180deg, #fffaf2 0%, #ffffff 60%);
+  border: 1px solid rgba(212, 165, 116, 0.42);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: hidden;
+}
+
+.admin-edit-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #d4a574 0%, #b88a4d 100%);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.admin-edit-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.admin-edit-emoji {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.admin-edit-head h3 {
+  margin: 0 0 2px 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: -0.01em;
+}
+
+.admin-edit-hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.admin-edit-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.admin-edit-panel fieldset {
+  border: 1px solid rgba(45, 95, 63, 0.14);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  background: #fff;
+}
+
+.admin-edit-panel legend {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--primary);
+  padding: 0 var(--space-2);
+  letter-spacing: 0.02em;
+}
+
+/* 자율지표 선정 그리드 (10개 후보) */
+.admin-jayul-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 6px;
+  margin-top: var(--space-2);
+}
+
+.admin-jayul-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #f7f5ef;
+  border: 1px solid rgba(45, 95, 63, 0.10);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.admin-jayul-item:hover {
+  background: #f0ece2;
+  border-color: rgba(212, 165, 116, 0.45);
+}
+
+.admin-jayul-item.is-checked {
+  background: rgba(212, 165, 116, 0.14);
+  border-color: rgba(212, 165, 116, 0.65);
+}
+
+.admin-jayul-item input[type="checkbox"] {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.admin-jayul-key {
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.admin-jayul-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-jayul-status {
+  margin: var(--space-2) 0 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* 수동 입력 행 */
+.admin-manual-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--space-2);
+}
+
+.admin-manual-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.admin-manual-input {
+  font-family: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+  border: 1px solid rgba(45, 95, 63, 0.18);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  resize: vertical;
+}
+
+.admin-manual-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.18);
+}
+
+/* 액션 버튼 */
+.admin-edit-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-top: var(--space-1);
+}
+
+.admin-btn {
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.admin-btn-primary {
+  background: var(--primary);
+  color: #fff;
+}
+
+.admin-btn-primary:hover {
+  background: var(--primary-light);
+}
+
+.admin-btn-ghost {
+  background: transparent;
+  color: var(--primary);
+  border-color: rgba(45, 95, 63, 0.30);
+}
+
+.admin-btn-ghost:hover {
+  background: rgba(45, 95, 63, 0.05);
+  border-color: var(--primary);
+}
+
+/* 인라인 토스트 (저장 결과 안내) */
+.admin-inline-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(31, 17, 8, 0.92);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms, transform 220ms;
+  z-index: 9999;
+}
+
+.admin-inline-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (max-width: 768px) {
+  .admin-edit-panel {
+    margin: var(--space-3) var(--space-4);
+    padding: var(--space-3);
+  }
+  .admin-jayul-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }

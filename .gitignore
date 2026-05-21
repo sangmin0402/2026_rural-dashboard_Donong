@@ -26,3 +26,4 @@ scripts/__pycache__/
 .github/copilot/
 .codex/
 .antigravity/
+skills-lock.json

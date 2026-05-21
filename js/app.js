@@ -476,6 +476,8 @@ const state = {
   activeTab: 'overview',
   activeIndicator: 'total',
   scenarioValues: {},
+  viewMode: 'public',   // 'public' | 'admin' — 피드백 #6: 사용자 유형 토글
+  manualOverrides: {},  // { [cityId]: { [key]: value } } — 관리자 수동 편집값 (localStorage 동기화)
   charts: {
     radar: null,
     comparison: null,
@@ -1656,6 +1658,9 @@ function updateDetailPanel(cityId) {
   // 시사점·정책 제안 섹션 (피드백 #3 #5)
   renderInsightCard(cityId);
 
+  // 관리자 편집 패널 (피드백 #6) — view-admin 모드일 때만 표시
+  renderAdminEditPanel(cityId);
+
   // 비교 추가 버튼
   updateComparisonButton(cityId);
 
@@ -1795,9 +1800,14 @@ function renderRegionBasicStats(level, regionId, regionLabel) {
   }
 
   // 3-layer 통합 조회 함수 — 어느 층에 있든 값과 메타 반환
+  // 관리자 수동 편집값(state.manualOverrides) 은 manual 층보다 우선 (사용자 의도가 가장 최신)
+  const adminOverrides = (level === 'sigun'
+      && state.manualOverrides && state.manualOverrides[regionId])
+    || null;
   function readField(keys) {
     const keyList = Array.isArray(keys) ? keys : [keys];
     for (const key of keyList) {
+      if (adminOverrides    && adminOverrides[key])    return { ...adminOverrides[key],    _layer: 'manual', _key: key };
       if (meta.computed && meta.computed[key]) return { ...meta.computed[key], _layer: 'computed', _key: key };
       if (meta.raw      && meta.raw[key])      return { ...meta.raw[key],      _layer: 'raw',      _key: key };
       if (meta.manual   && meta.manual[key])   return { ...meta.manual[key],   _layer: 'manual',   _key: key };
@@ -1947,6 +1957,281 @@ function initKosisToggle() {
     if (icon) icon.textContent = isCollapsed ? '▶' : '▼';
     if (hint) hint.textContent = isCollapsed ? '클릭하여 펼치기' : '클릭하여 접기';
   });
+}
+
+// ===================================================================
+// === 일반/관리자 뷰 토글 (피드백 #6) ===
+// ===================================================================
+
+const VIEW_MODE_STORAGE_KEY = 'rural-dashboard.viewMode';
+const MANUAL_OVERRIDES_STORAGE_KEY = 'rural-dashboard.manualOverrides';
+
+/**
+ * 헤더의 일반/관리자 토글을 초기화하고 저장된 모드를 복원한다.
+ * - localStorage 에 마지막 선택 모드 저장 ('public' | 'admin')
+ * - body 에 'view-admin' 클래스 추가로 .admin-only 요소 표시
+ * - 모드 전환 시 현재 선택 시군 패널 즉시 재렌더
+ */
+function initViewModeToggle() {
+  // localStorage 복원
+  try {
+    const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    if (saved === 'admin' || saved === 'public') state.viewMode = saved;
+    const savedOverrides = localStorage.getItem(MANUAL_OVERRIDES_STORAGE_KEY);
+    if (savedOverrides) state.manualOverrides = JSON.parse(savedOverrides) || {};
+  } catch (err) {
+    console.warn('[viewMode] localStorage 복원 실패:', err);
+  }
+
+  applyViewMode(state.viewMode);
+
+  document.querySelectorAll('.view-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.view === 'admin' ? 'admin' : 'public';
+      if (mode === state.viewMode) return;
+      state.viewMode = mode;
+      try { localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode); } catch (err) { /* ignore */ }
+      applyViewMode(mode);
+      // 현재 시군 패널 갱신 (관리자 카드 표시·숨김)
+      if (state.selectedCity) updateDetailPanel(state.selectedCity);
+    });
+  });
+}
+
+/**
+ * body 클래스와 토글 버튼 활성 상태를 한 번에 적용한다.
+ * @param {'public'|'admin'} mode
+ */
+function applyViewMode(mode) {
+  document.body.classList.toggle('view-admin', mode === 'admin');
+  document.querySelectorAll('.view-mode-btn').forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.view === mode);
+    btn.setAttribute('aria-pressed', String(btn.dataset.view === mode));
+  });
+}
+
+/**
+ * 관리자 모드에서 manual 층 + 자율지표 선정을 편집하는 패널.
+ * 시군 패널 안에서 score-cards 다음 자리에 삽입된다 (인사이트 카드 다음).
+ * @param {string} cityId
+ */
+function renderAdminEditPanel(cityId) {
+  // 기존 카드 제거 (시군 전환·모드 전환 시 재렌더)
+  const existing = document.getElementById('admin-edit-panel');
+  if (existing) existing.remove();
+
+  if (state.viewMode !== 'admin') return;
+  const city = CITIES[cityId];
+  if (!city) return;
+
+  const section = document.createElement('section');
+  section.id = 'admin-edit-panel';
+  section.className = 'admin-edit-panel admin-only';
+  section.setAttribute('aria-label', `${city.name} 관리자 편집`);
+
+  // 자율지표 풀 — 모든 후보 표시, 선정된 것은 체크 (최대 4개 제한)
+  const allJayulKeys = Object.keys(JAYUL_INDICATORS_POOL || {});
+  const selected = new Set(city.selectedJayulKeys || []);
+  const MAX_SELECTED = 4;
+
+  // manual 층 편집 — 현재 region-meta.json 의 raw/computed 와 겹치지 않는 추가 메모성 항목 + 자주 쓰는 W3 재정자립도
+  const overrides = (state.manualOverrides && state.manualOverrides[cityId]) || {};
+  const MANUAL_FIELDS = [
+    { key: 'W3_fiscal_independence', label: '재정자립도 (W3) 수동값', unit: '%', step: '0.1', placeholder: '예: 32.5' },
+    { key: 'note', label: '관리자 메모', type: 'textarea', placeholder: '시군별 보강 사항을 기록하세요.' },
+  ];
+
+  let html = `
+    <header class="admin-edit-head">
+      <span class="admin-edit-emoji" aria-hidden="true">✏️</span>
+      <div>
+        <h3>${city.name} 관리자 편집</h3>
+        <p class="admin-edit-hint">변경 사항은 이 브라우저에만 저장됩니다 (localStorage). 서버 저장은 별도 백엔드 필요.</p>
+      </div>
+    </header>
+    <div class="admin-edit-body">
+      <fieldset class="admin-jayul-fieldset">
+        <legend>자율지표 선정 (최대 ${MAX_SELECTED}개)</legend>
+        <div class="admin-jayul-grid">
+  `;
+  allJayulKeys.forEach(key => {
+    const meta = JAYUL_INDICATORS_POOL[key] || {};
+    const isChecked = selected.has(key);
+    html += `
+      <label class="admin-jayul-item ${isChecked ? 'is-checked' : ''}">
+        <input type="checkbox"
+               data-jayul-key="${key}"
+               ${isChecked ? 'checked' : ''}
+               aria-label="${meta.name || key} 선정 토글">
+        <span class="admin-jayul-key">${key}</span>
+        <span class="admin-jayul-name">${meta.name || key}</span>
+      </label>`;
+  });
+  html += `
+        </div>
+        <p class="admin-jayul-status" id="admin-jayul-status" aria-live="polite">선정 ${selected.size}/${MAX_SELECTED}개</p>
+      </fieldset>
+
+      <fieldset class="admin-manual-fieldset">
+        <legend>수동 입력 데이터</legend>
+  `;
+  MANUAL_FIELDS.forEach(field => {
+    const val = overrides[field.key];
+    const valueAttr = (val && val.value != null) ? String(val.value) : '';
+    if (field.type === 'textarea') {
+      html += `
+        <label class="admin-manual-row">
+          <span class="admin-manual-label">${field.label}</span>
+          <textarea data-manual-key="${field.key}"
+                    rows="2"
+                    placeholder="${field.placeholder || ''}"
+                    class="admin-manual-input">${valueAttr.replace(/</g, '&lt;')}</textarea>
+        </label>`;
+    } else {
+      html += `
+        <label class="admin-manual-row">
+          <span class="admin-manual-label">${field.label}${field.unit ? ` (${field.unit})` : ''}</span>
+          <input type="number"
+                 data-manual-key="${field.key}"
+                 step="${field.step || 'any'}"
+                 value="${valueAttr}"
+                 placeholder="${field.placeholder || ''}"
+                 class="admin-manual-input">
+        </label>`;
+    }
+  });
+  html += `
+      </fieldset>
+
+      <div class="admin-edit-actions">
+        <button type="button" class="admin-btn admin-btn-primary" id="admin-save-btn">💾 저장</button>
+        <button type="button" class="admin-btn admin-btn-ghost" id="admin-reset-btn">↺ 초기화</button>
+      </div>
+    </div>
+  `;
+  section.innerHTML = html;
+
+  // 인사이트 카드 다음에 삽입 (없으면 score-cards 다음)
+  const anchor = document.getElementById('sigun-insight-card') || document.getElementById('score-cards');
+  if (anchor && anchor.parentNode) {
+    anchor.parentNode.insertBefore(section, anchor.nextSibling);
+  } else {
+    const cityDetail = document.getElementById('city-detail');
+    if (cityDetail) cityDetail.appendChild(section);
+  }
+
+  // 체크박스: 선정 4개 제한 + UI 즉시 반영
+  section.querySelectorAll('input[data-jayul-key]').forEach(input => {
+    input.addEventListener('change', () => {
+      const checked = section.querySelectorAll('input[data-jayul-key]:checked');
+      if (checked.length > MAX_SELECTED) {
+        input.checked = false;
+        showInlineToast(`자율지표는 최대 ${MAX_SELECTED}개까지 선정할 수 있어요.`);
+        return;
+      }
+      input.closest('.admin-jayul-item')?.classList.toggle('is-checked', input.checked);
+      const status = section.querySelector('#admin-jayul-status');
+      if (status) status.textContent = `선정 ${checked.length}/${MAX_SELECTED}개`;
+    });
+  });
+
+  // 저장 버튼
+  const saveBtn = section.querySelector('#admin-save-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => saveAdminEdits(cityId, section));
+  }
+  const resetBtn = section.querySelector('#admin-reset-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => resetAdminEdits(cityId));
+  }
+}
+
+/**
+ * 관리자 편집을 저장: 자율지표 선정은 CITIES[cityId].selectedJayulKeys 에 반영,
+ * 수동 입력은 state.manualOverrides + localStorage 에 누적 저장.
+ */
+function saveAdminEdits(cityId, container) {
+  const city = CITIES[cityId];
+  if (!city) return;
+
+  // 자율지표 선정
+  const newSelected = Array.from(container.querySelectorAll('input[data-jayul-key]:checked'))
+    .map(i => i.dataset.jayulKey);
+  city.selectedJayulKeys = newSelected;
+
+  // 수동 입력
+  const overrides = state.manualOverrides[cityId] || {};
+  container.querySelectorAll('[data-manual-key]').forEach(field => {
+    const key = field.dataset.manualKey;
+    const raw = field.value?.trim();
+    if (!raw) {
+      delete overrides[key];
+      return;
+    }
+    const isNumber = field.tagName === 'INPUT' && field.type === 'number';
+    overrides[key] = {
+      value: isNumber ? Number(raw) : raw,
+      year: new Date().getFullYear(),
+      source: 'manual:admin-ui',
+      updated_by: 'admin',
+      updated_at: new Date().toISOString(),
+    };
+  });
+  state.manualOverrides[cityId] = overrides;
+
+  try {
+    localStorage.setItem(MANUAL_OVERRIDES_STORAGE_KEY, JSON.stringify(state.manualOverrides));
+  } catch (err) {
+    console.warn('[admin] manualOverrides 저장 실패:', err);
+  }
+
+  showInlineToast('저장됨 · 패널을 갱신합니다.');
+  // 패널 전체 재렌더 → 자율지표 카드·인사이트 카드 갱신
+  updateDetailPanel(cityId);
+}
+
+/**
+ * 현재 시군의 관리자 편집(자율지표 선정·수동 입력)을 권역 기본값으로 되돌린다.
+ */
+function resetAdminEdits(cityId) {
+  const city = CITIES[cityId];
+  if (!city) return;
+  // 자율지표 — 권역 추천값으로 복원 (CITY_ZONE[cityId] 매핑 사용)
+  const zone = typeof CITY_ZONE === 'object' ? CITY_ZONE[cityId] : null;
+  if (zone && typeof RECOMMENDED_JAYUL_BY_ZONE === 'object' && RECOMMENDED_JAYUL_BY_ZONE[zone]) {
+    city.selectedJayulKeys = [...RECOMMENDED_JAYUL_BY_ZONE[zone]];
+  }
+  // 수동 입력 — 이 시군 항목만 제거
+  if (state.manualOverrides[cityId]) {
+    delete state.manualOverrides[cityId];
+    try {
+      localStorage.setItem(MANUAL_OVERRIDES_STORAGE_KEY, JSON.stringify(state.manualOverrides));
+    } catch (err) { /* ignore */ }
+  }
+  showInlineToast('권역 기본값으로 초기화했습니다.');
+  updateDetailPanel(cityId);
+}
+
+/**
+ * 시군 패널 안에 짧은 토스트 (편집 결과 확인용).
+ * 기존 landing-toast 와 겹치지 않게 별도 인스턴스 사용.
+ */
+function showInlineToast(message) {
+  let toast = document.getElementById('admin-inline-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'admin-inline-toast';
+    toast.className = 'admin-inline-toast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add('is-visible');
+  clearTimeout(showInlineToast._timer);
+  showInlineToast._timer = setTimeout(() => {
+    toast.classList.remove('is-visible');
+  }, 2400);
 }
 
 function renderFieldSurveySection(cityId) {
@@ -5343,6 +5628,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // KOSIS 기본 통계 토글 (시군 패널 맨 아래 접힘 섹션)
   initKosisToggle();
+
+  // 일반/관리자 뷰 토글 (피드백 #6)
+  initViewModeToggle();
 
   // 우측 패널 지표 카드 / 자율지표 카드 클릭 → 지표 탐색 페이지 열기 (이벤트 위임)
   const cityDetailEl = document.getElementById('city-detail');

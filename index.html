@@ -552,6 +552,17 @@
         </div>
       </button>
       <div class="header-right">
+        <!-- 일반/관리자 뷰 토글 (피드백 #6) -->
+        <div class="view-mode-toggle" role="group" aria-label="화면 모드 전환">
+          <button class="view-mode-btn is-active" data-view="public" type="button" title="일반 사용자 화면 (읽기 전용)">
+            <span aria-hidden="true">👁️</span>
+            <span>일반</span>
+          </button>
+          <button class="view-mode-btn" data-view="admin" type="button" title="관리자 화면 (데이터 편집 가능)">
+            <span aria-hidden="true">✏️</span>
+            <span>관리자</span>
+          </button>
+        </div>
         <div class="search-wrapper">
           <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
