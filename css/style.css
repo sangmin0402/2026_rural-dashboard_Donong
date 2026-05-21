@@ -1696,7 +1696,7 @@ a:focus-visible {
   padding: var(--space-3) var(--space-4);
   background: var(--primary-soft);
   border: 1px solid rgba(45, 95, 63, 0.15);
-  border-left: 3px solid var(--primary);
+  border-left: 1px solid var(--primary);
   border-radius: var(--radius);
 }
 
@@ -2162,7 +2162,7 @@ a:focus-visible {
   background: var(--surface-card);
   border-radius: var(--radius-sm);
   padding: var(--space-3) var(--space-4);
-  border-left-width: 3px;
+  border-left-width: 1px;
   border-left-style: solid;
   box-shadow: var(--shadow-xs);
   transition: transform var(--transition), box-shadow var(--transition);
@@ -2271,7 +2271,7 @@ a:focus-visible {
   background: var(--surface-card);
   border-radius: var(--radius-sm);
   padding: var(--space-3) var(--space-4);
-  border-left: 3px solid var(--cat-color);
+  border-left: 1px solid var(--cat-color);
   box-shadow: var(--shadow-xs);
   transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
   position: relative;
@@ -4022,7 +4022,7 @@ a:focus-visible {
   padding: 6px 10px;
   background: rgba(212, 165, 116, 0.08);
   border-radius: 6px;
-  border-left: 2px solid rgba(212, 165, 116, 0.4);
+  border-left: 1px solid rgba(212, 165, 116, 0.35);
 }
 .zone-desc {
   font-size: 12.5px;
@@ -4983,7 +4983,7 @@ a:focus-visible {
   background: rgba(0, 0, 0, 0.22);
   padding: 8px 10px;
   border-radius: 6px;
-  border-left: 2px solid var(--accent);
+  border-left: 1px solid var(--accent);
   margin-top: 4px;
   word-break: keep-all;
   line-height: 1.5;
@@ -5155,7 +5155,7 @@ a:focus-visible {
   padding: 8px 10px;
   background: rgba(255, 255, 255, 0.7);
   border-radius: 8px;
-  border-left: 3px solid var(--accent, #D4A574);
+  border-left: 1px solid var(--accent, #D4A574);
 }
 .analysis-axis-info li b {
   color: var(--primary, #2D5F3F);
@@ -5226,7 +5226,7 @@ a:focus-visible {
   display: flex !important;
   align-items: center;
   gap: 8px;
-  border-left-width: 3px !important;
+  border-left-width: 1px !important;
   border-left-style: solid;
 }
 .quad-dot {
@@ -5250,7 +5250,7 @@ a:focus-visible {
   display: flex !important;
   align-items: center;
   gap: 6px;
-  border-left-width: 3px !important;
+  border-left-width: 1px !important;
   border-left-style: solid;
 }
 .axis-info-indicator b {
