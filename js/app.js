@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 경기도 농촌다움 지표 웹 대시보드
  * app.js - 메인 애플리케이션 로직
  *
@@ -718,6 +718,7 @@ let indicatorReference = null; // 0427 기준 지표 정의/alias
 let fieldSurveyMeta = null;    // 현장조사 항목 메타
 let dataGapReport = null;      // API/로컬 데이터 누락 상태
 let indicatorInsights = null;  // 지표별 시사점·정책 사전 작성 텍스트 (피드백 #3 #5)
+let simulationData = null;     // 시뮬레이션 마이크로데이터 (피드백 #7 — namyangju 읍면 mock)
 let labelGroup = null;      // 시군명 라벨 레이어
 let outlineLayer = null;    // 대상지(15개 시군) 합쳐진 외곽선 효과 레이어
 let sigunBorderLayer = null; // 시군 경계선 전용 오버레이 (dong/ri 위에 항상 표시)
@@ -991,23 +992,26 @@ function updateRiVisibility() {
  */
 async function loadRegionMeta() {
   try {
-    const [metaResp, refResp, surveyResp, gapResp, insightsResp] = await Promise.all([
+    const [metaResp, refResp, surveyResp, gapResp, insightsResp, simResp] = await Promise.all([
       fetch('./dat/region-meta.json', { cache: 'no-cache' }),
       fetch('./dat/indicator-reference.json', { cache: 'no-cache' }),
       fetch('./dat/field-survey-meta.json', { cache: 'no-cache' }),
       fetch('./dat/data-gap-report.json', { cache: 'no-cache' }),
       fetch('./dat/indicator-insights.json', { cache: 'no-cache' }),
+      fetch('./dat/simulation/namyangju-dong-mock.json', { cache: 'no-cache' }),
     ]);
     regionMeta = metaResp.ok ? await metaResp.json() : {};
     indicatorReference = refResp.ok ? await refResp.json() : null;
     fieldSurveyMeta = surveyResp.ok ? await surveyResp.json() : null;
     dataGapReport = gapResp.ok ? await gapResp.json() : null;
     indicatorInsights = insightsResp.ok ? await insightsResp.json() : null;
+    simulationData = simResp.ok ? await simResp.json() : null;
   } catch (err) {
     regionMeta = {};
     indicatorReference = null;
     fieldSurveyMeta = null;
     dataGapReport = null;
+    simulationData = null;
   }
   // SGIS computed 값으로 CITIES mock 덮어쓰기 (실측 우선)
   applySgisOverridesToCities();
@@ -3524,6 +3528,8 @@ function getDongInfo(admCd, admNm, cityId) {
   const metaCityId = readDongValue('city_id');
   const resolvedCityId = metaCityId || cityId;
   const resolvedCity = CITIES[resolvedCityId] || city;
+  // 시뮬레이션 마이크로데이터 (피드백 #7) — 현재 namyangju 만 지원
+  const simEntry = (simulationData && simulationData.dongs && simulationData.dongs[admCd]) || null;
   const info = {
     admCd,
     admNm: metaName || admNm,
@@ -3535,10 +3541,35 @@ function getDongInfo(admCd, admNm, cityId) {
     households:  readDongValue(['households', 'tot_family']) || (hasMeta ? null : 800 + rng3(7200)),
     landMix:     readDongValue('landMix') || landMixes[rng(landMixes.length)],
     character:   readDongValue('character') || characters[rng2(characters.length)],
-    _source:     readDongSource(),
+    _source:     simEntry ? 'simulation' : readDongSource(),
+    simulation:  simEntry || null,
   };
   DONG_INFO_CACHE[admCd] = info;
   return info;
+}
+
+/**
+ * 시뮬레이션 데이터에서 특정 dong 의 지표 블록 반환 (피드백 #7)
+ * @param {string} admCd 행정코드
+ * @returns {{adm_nm:string, cluster:string, indicators:Object}|null}
+ */
+function getSimulationDongIndicators(admCd) {
+  if (!simulationData || !simulationData.dongs) return null;
+  return simulationData.dongs[admCd] || null;
+}
+
+/**
+ * 시뮬레이션 데이터의 모든 dong 목록을 배열로 반환 (피드백 #7 — 읍면 비교 UI 기반)
+ * @returns {Array<{admCd:string, adm_nm:string, cluster:string, indicators:Object}>}
+ */
+function listSimulationDongs() {
+  if (!simulationData || !simulationData.dongs) return [];
+  return Object.entries(simulationData.dongs).map(([admCd, entry]) => ({
+    admCd,
+    adm_nm: entry.adm_nm,
+    cluster: entry.cluster,
+    indicators: entry.indicators,
+  }));
 }
 
 /**
