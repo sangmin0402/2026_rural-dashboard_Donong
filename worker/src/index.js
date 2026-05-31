@@ -164,6 +164,7 @@ function buildMessages(scope, regionId, ctx) {
 function buildAskMessages(question, context, history) {
   const sys = '너는 "경기도 농촌다움 지표 대시보드"의 데이터 안내자다. 사용자가 지금 보고 있는 화면과 지표에 대해 질문하면 답한다. ' +
     FACTS_RULE + ' 순위·등급·평균 같은 수치는 이미 계산되어 facts로 제공되니 그대로 인용만 하라(직접 계산·추정 금지). ' +
+    '정책을 묻는 질문에는, facts의 "준비된 정책"·"2035 비전 달성률" 항목을 우선 근거로 활용해 답하라(그 안에 있으면 그대로 인용·요약, 없으면 제공된 지표 수치 범위에서만 신중히 제안). ' +
     'facts에 없는 질문이면 "현재 화면 데이터로는 알 수 없습니다"라고 솔직히 답하라. 한국어로 2~4문장, 친절하지만 간결하게. 마크다운·목록 없이 문장으로.';
 
   const msgs = [{ role: 'system', content: sys }];
@@ -207,6 +208,18 @@ function factsToText(ctx) {
     lines.push(`비전 적합도: ${ctx.vision.overall ?? '-'}/100 (T ${a.T ?? '-'}, H ${a.H ?? '-'}, E ${a.E ?? '-'})`);
   }
   if (Array.isArray(ctx.triggers) && ctx.triggers.length) lines.push(`발화 트리거: ${ctx.triggers.join(', ')}`);
+  if (ctx.vision2035) {
+    const v = ctx.vision2035;
+    lines.push('2035 비전 달성률(도시기본계획 목표 대비):');
+    if (Array.isArray(v.areas) && v.areas.length) lines.push(`· 영역 점수: ${v.areas.join(', ')}`);
+    if (Array.isArray(v.low_rate) && v.low_rate.length) lines.push(`· 미달(60%↓): ${v.low_rate.join(', ')}`);
+    if (Array.isArray(v.high_rate) && v.high_rate.length) lines.push(`· 양호(80%↑): ${v.high_rate.join(', ')}`);
+    if (v.key_insight) lines.push(`· 핵심: ${v.key_insight}`);
+  }
+  if (Array.isArray(ctx.policies) && ctx.policies.length) {
+    lines.push('준비된 정책(프로젝트 작성 — 답변 근거로 우선 활용):');
+    ctx.policies.forEach(p => lines.push(`· ${p}`));
+  }
   if (Array.isArray(ctx.notes)) ctx.notes.forEach(n => lines.push(String(n)));
   return lines.length ? lines.join('\n') : '(facts 없음)';
 }
