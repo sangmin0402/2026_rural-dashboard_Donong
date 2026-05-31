@@ -1,0 +1,8 @@
+name = "rural-dashboard-llm"
+main = "src/index.js"
+compatibility_date = "2026-05-01"
+
+# 비밀키는 여기 두지 않는다.
+#   - 배포:   wrangler secret put MINDLOGIC_API_KEY
+#   - 로컬:   worker/.dev.vars 에 MINDLOGIC_API_KEY=... (gitignore됨)
+# 허용 Origin(ALLOWED_ORIGINS)·모델은 src/index.js 상단 상수로 관리.

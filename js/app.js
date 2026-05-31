@@ -1898,6 +1898,80 @@ function renderAiInterpretationCard(cityId) {
     const cityDetail = document.getElementById('city-detail');
     if (cityDetail) cityDetail.appendChild(card);
   }
+
+  // 실시간 LLM 해석 버튼 (프록시 설정 시에만) — 0531 #5
+  if (llmEnabled()) wireLlmButton(card, 'sigun', cityId);
+}
+
+/**
+ * AI 카드(시군)에 "실시간 AI 해석 생성/재생성" 버튼을 달고, 클릭 시
+ * LLM 결과로 카드 본문(헤드라인·강점·약점·정책)을 교체한다.
+ */
+function wireLlmButton(card, scope, regionId) {
+  const header = card.querySelector('.ai-card-header');
+  if (!header) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ai-llm-btn';
+  btn.textContent = '🤖 실시간 AI 해석';
+  header.appendChild(btn);
+
+  let generated = false;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = '⏳ 생성 중…';
+    const data = await llmInterpret(scope, regionId, null, { force: generated });
+    btn.disabled = false;
+    if (!data) {
+      btn.textContent = '⚠️ 실패 — 재시도';
+      return;
+    }
+    generated = true;
+    applyLlmToSigunCard(card, regionId, data);
+    btn.textContent = '↻ 재생성';
+  });
+}
+
+/** LLM 응답으로 시군 AI 카드 본문을 교체 */
+function applyLlmToSigunCard(card, cityId, d) {
+  const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
+  const li = (xs) => (xs || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+  const head = card.querySelector('.ai-card-titles');
+  if (head) {
+    head.innerHTML = `<h3>AI 해석 · ${name}</h3>${d.headline ? `<p class="ai-card-headline">${escapeHtml(d.headline)}</p>` : ''}`;
+  }
+  const badge = card.querySelector('.ai-card-badge');
+  if (badge) { badge.textContent = '실시간 LLM'; badge.classList.add('is-live'); }
+
+  // 강점·약점 교체(또는 생성)
+  let pc = card.querySelector('.ai-card-pros-cons');
+  if (!pc) {
+    pc = document.createElement('div'); pc.className = 'ai-card-pros-cons';
+    const hdr = card.querySelector('.ai-card-header');
+    if (hdr) hdr.insertAdjacentElement('afterend', pc);
+  }
+  pc.innerHTML =
+    `<div class="ai-card-side ai-card-strengths"><h4>강점</h4><ul>${li(d.strengths)}</ul></div>` +
+    `<div class="ai-card-side ai-card-weaknesses"><h4>약점</h4><ul>${li(d.weaknesses)}</ul></div>`;
+
+  // 정책 권고 교체
+  let pol = card.querySelector('.ai-card-policy');
+  if (!pol) {
+    pol = document.createElement('div'); pol.className = 'ai-card-policy';
+    pc.insertAdjacentElement('afterend', pol);
+  }
+  pol.innerHTML = `<h4>정책 권고 방향</h4><p>${escapeHtml(d.policy_recommendation || '')}</p>`;
+
+  // 푸터 — 실시간 LLM 표기
+  const foot = card.querySelector('.ai-card-footer small');
+  if (foot) foot.innerHTML = `🤖 MindLogic Gateway 실시간 LLM 해석${d._model ? ` · ${d._model}` : ''} · 지표·비전 점수 기반 자동 생성`;
+}
+
+/** 간단 HTML 이스케이프 (LLM 출력 안전 표시) */
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 /**
@@ -4126,6 +4200,108 @@ function getEupAllIndicators(eupName) {
 }
 
 // ===================================================================
+// === 실시간 LLM AI 해석 (#5, MindLogic Gateway via Cloudflare Worker) ===
+// ===================================================================
+// 정적 사이트라 비밀키를 둘 수 없으므로 Worker 프록시(window.LLM_PROXY_URL)가
+// 키를 보관·호출한다. 클라이언트는 키 없이 구조화 컨텍스트만 전송.
+// LLM_PROXY_URL 미설정 시 자동 비활성 → 정적 카드 폴백.
+
+function llmEnabled() {
+  return typeof window !== 'undefined' && typeof window.LLM_PROXY_URL === 'string' && window.LLM_PROXY_URL.trim() !== '';
+}
+
+/** 간단 문자열 해시 (캐시키용, 보안 목적 아님) */
+function _hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return (h >>> 0).toString(36);
+}
+
+/** LLM 컨텍스트 빌더 — 시군/읍면 구조화 데이터 (키·비밀 없음) */
+function buildLlmContext(scope, regionId) {
+  if (scope === 'eup') {
+    const all = getEupAllIndicators(regionId);
+    const keys = ['L1', 'L2', 'L4', 'L6', 'W2', 'W5', 'W6', 'W7', 'W9', 'R3', 'R4', 'R5', 'R6', 'R7'];
+    const indicators = keys.map(k => {
+      const r = getEupIndicator(regionId, k);
+      return r ? { key: k, label: r.label, value: r.value, unit: r.unit, source: r.source } : null;
+    }).filter(Boolean);
+    const vs = (typeof visionScore === 'function') ? visionScore(regionId) : null;
+    const firedIds = (typeof firedTriggerIds === 'function') ? firedTriggerIds(all) : [];
+    const trigNames = (triggerConfig && triggerConfig.triggers)
+      ? triggerConfig.triggers.filter(t => firedIds.includes(t.id)).map(t => t.name) : [];
+    const cards = (typeof buildInsightCards === 'function') ? buildInsightCards(regionId, all, firedIds) : [];
+    return {
+      indicators,
+      vision: vs ? { overall: vs.overall, axes: vs.axes, potentialFelt: vs.potentialFelt } : null,
+      triggers: trigNames,
+      insights: cards.map(c => c.title).filter(Boolean),
+    };
+  }
+  // 시군
+  const c = (typeof CITIES !== 'undefined') && CITIES[regionId];
+  if (!c) return null;
+  const indKeys = Object.keys(c.indicators || {});
+  const indicators = indKeys.map(k => {
+    const meta = (typeof INDICATORS !== 'undefined') && INDICATORS[k];
+    return { key: k, label: (meta && meta.name) || k, value: c.indicators[k], unit: (meta && meta.unit) || '', source: 'sigun' };
+  });
+  const scores = (typeof calcCategoryScore === 'function') ? {
+    samlter: calcCategoryScore(regionId, 'samlter'),
+    ilter: calcCategoryScore(regionId, 'ilter'),
+    shimter: calcCategoryScore(regionId, 'shimter'),
+  } : null;
+  const seed = (typeof getAiInterpretation === 'function') ? getAiInterpretation(regionId) : null;
+  return {
+    type: c.type,
+    indicators,
+    scores,
+    seedStrengths: seed && seed.city ? seed.city.strengths : null,
+    seedWeaknesses: seed && seed.city ? seed.city.weaknesses : null,
+  };
+}
+
+/**
+ * Worker 프록시로 LLM 해석 요청. sessionStorage 캐시 + force 재생성.
+ * @returns {Promise<object|null>} 표준 스키마 또는 null(미설정/실패)
+ */
+async function llmInterpret(scope, regionId, context, opts = {}) {
+  if (!llmEnabled()) return null;
+  const ctx = context || buildLlmContext(scope, regionId);
+  if (!ctx) return null;
+
+  const cacheKey = `llm:${scope}:${regionId}:${_hashStr(JSON.stringify(ctx))}`;
+  if (!opts.force) {
+    try {
+      const hit = sessionStorage.getItem(cacheKey);
+      if (hit) return JSON.parse(hit);
+    } catch (e) { /* ignore */ }
+  }
+
+  const base = window.LLM_PROXY_URL.replace(/\/+$/, '');
+  let resp;
+  try {
+    resp = await fetch(`${base}/interpret`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ scope, regionId, context: ctx }),
+    });
+  } catch (e) {
+    console.warn('[LLM] 프록시 연결 실패:', e);
+    return null;
+  }
+  if (!resp.ok) {
+    console.warn('[LLM] 프록시 오류', resp.status);
+    return null;
+  }
+  let data;
+  try { data = await resp.json(); } catch (e) { return null; }
+  if (data && data.error) { console.warn('[LLM]', data.error, data.detail || ''); return null; }
+  try { sessionStorage.setItem(cacheKey, JSON.stringify(data)); } catch (e) { /* ignore */ }
+  return data;
+}
+
+// ===================================================================
 // === 트리거 엔진 → 시사점 카드 (#3, 0531 — 김선혁 HTML 포팅) ===
 // ===================================================================
 // namyangju-triggers.json 의 15개 트리거 규칙을 읍면 지표에 평가하여
@@ -4608,14 +4784,74 @@ function renderEupAnalysis(eupName, cityId, info) {
       : `<span class="data-status-badge status-simulation">시뮬레이션</span> 이 읍면(도심형)은 현장조사 미수집 — 시뮬레이션·시군 고정값 기반 추정입니다.`;
   }
   renderVisionScoreCard(eupName);
+  renderEupLlmBlock(eupName);
   renderEupTriggerCards(eupName);
 }
 
 /** 읍면 분석 영역 비우기 (시군 복귀·非남양주 시) */
 function clearEupAnalysis() {
-  ['eup-analysis-notice', 'eup-vision-score', 'eup-trigger-grid', 'eup-insight-cards'].forEach(id => {
+  ['eup-analysis-notice', 'eup-vision-score', 'eup-llm-interpret', 'eup-trigger-grid', 'eup-insight-cards'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = '';
+  });
+}
+
+/**
+ * 읍면 실시간 LLM 해석 블록 — 생성/재생성 버튼.
+ * LLM_PROXY_URL 미설정 시 블록을 비워 둔다(정적 시사점 카드로 충분).
+ */
+function renderEupLlmBlock(eupName) {
+  const host = document.getElementById('eup-llm-interpret');
+  if (!host) return;
+  if (!llmEnabled()) { host.innerHTML = ''; return; }
+
+  host.innerHTML = `
+    <div class="nyj-section-label">실시간 AI 해석 <span class="nyj-fired-count" style="background:#5B21B6">LLM</span></div>
+    <div class="eup-llm-card" id="eup-llm-card">
+      <button type="button" class="ai-llm-btn eup-llm-btn" id="eup-llm-btn">🤖 이 읍면 AI 해석 생성</button>
+      <p class="eup-llm-hint">현장조사 지표·비전 적합도·발화 트리거를 근거로 LLM이 맞춤 해석을 생성합니다.</p>
+    </div>`;
+
+  const btn = document.getElementById('eup-llm-btn');
+  let generated = false;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = '⏳ 생성 중…';
+    const d = await llmInterpret('eup', eupName, null, { force: generated });
+    btn.disabled = false;
+    if (!d) { btn.textContent = '⚠️ 실패 — 재시도'; return; }
+    generated = true;
+    renderEupLlmResult(eupName, d);
+  });
+}
+
+/** 읍면 LLM 결과 렌더 */
+function renderEupLlmResult(eupName, d) {
+  const card = document.getElementById('eup-llm-card');
+  if (!card) return;
+  const li = (xs) => (xs || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+  card.innerHTML = `
+    <div class="eup-llm-head">
+      <span class="ai-card-badge is-live">실시간 LLM</span>
+      <button type="button" class="ai-llm-btn eup-llm-btn" id="eup-llm-btn">↻ 재생성</button>
+    </div>
+    ${d.headline ? `<p class="eup-llm-headline">${escapeHtml(d.headline)}</p>` : ''}
+    ${d.vision_comment ? `<p class="eup-llm-vision">🎯 ${escapeHtml(d.vision_comment)}</p>` : ''}
+    <div class="ai-card-pros-cons">
+      <div class="ai-card-side ai-card-strengths"><h4>강점</h4><ul>${li(d.strengths)}</ul></div>
+      <div class="ai-card-side ai-card-weaknesses"><h4>약점</h4><ul>${li(d.weaknesses)}</ul></div>
+    </div>
+    ${d.policy_recommendation ? `<div class="ai-card-policy"><h4>정책 권고 방향</h4><p>${escapeHtml(d.policy_recommendation)}</p></div>` : ''}
+    ${(d.priority_actions && d.priority_actions.length) ? `<div class="ai-card-policy"><h4>우선 조치</h4><ul class="eup-llm-actions">${li(d.priority_actions)}</ul></div>` : ''}
+    <p class="eup-llm-foot">🤖 MindLogic Gateway 실시간 LLM${d._model ? ` · ${d._model}` : ''}</p>`;
+
+  // 재생성 버튼 재바인딩
+  const btn = document.getElementById('eup-llm-btn');
+  if (btn) btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = '⏳ 생성 중…';
+    const nd = await llmInterpret('eup', eupName, null, { force: true });
+    btn.disabled = false;
+    if (nd) renderEupLlmResult(eupName, nd); else btn.textContent = '⚠️ 실패 — 재시도';
   });
 }
 

@@ -276,6 +276,11 @@ const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
 - **#4 비전 적합도**: `VISION_AXES`(T/H/E)·`normIndicator`(읍면 분포 min-max, L2 역방향)·`visionScore`·`renderVisionScoreCard`. docx 반영 '잠재 vs 체감' 분리 막대.
 - **후킹**: `showDongDetailPanel` 끝 `renderEupAnalysis(admNm,cityId,info)` → 남양주 읍면만 표시(urban 동은 시뮬레이션 폴백 안내), `clearEupAnalysis`로 정리. CSS 섹션 40(`nyj-*`). 미반영: #6 읍면담당자/조회자 토글(자료 대기)·R5 GIS(`_pending`).
 
+**🆕 0531 실시간 LLM AI 해석 (#5, MindLogic UOS Gateway)**:
+- ⚠️ 보안: 정적 사이트라 비밀키 클라이언트 금지. **Cloudflare Worker 프록시 `worker/`** 가 키 보관(`wrangler secret`·로컬 `worker/.dev.vars`=gitignore). 클라이언트는 키 없이 컨텍스트만 전송. 게이트웨이 OpenAI 호환 `POST /chat/completions`(⚠️끝 슬래시 없음), 모델 `claude-sonnet-4-6`, `max_tokens 1500`(짧으면 한국어 JSON 잘림).
+- 클라이언트: `js/config.js`의 `window.LLM_PROXY_URL`(공개값, 비밀 아님). 비면 LLM 비활성→정적 폴백. `app.js`: `llmEnabled`/`buildLlmContext`(시군·읍면)/`llmInterpret`(sessionStorage 캐시+force 재생성)/`escapeHtml`. 시군=`renderAiInterpretationCard`에 `wireLlmButton`→`applyLlmToSigunCard`. 읍면=`renderEupLlmBlock`→`renderEupLlmResult`(컨테이너 `#eup-llm-interpret`). CSS 섹션 41.
+- 응답 스키마: `{headline,strengths[],weaknesses[],policy_recommendation,vision_comment,priority_actions[]}`. 배포·로컬 절차: `worker/README.md`.
+
 **🆕 5/18 피드백 반영 (feat/feedback-0518 브랜치, 2026-05)**:
 - **시사점 카드** (`renderInsightCard`): 시군 패널에 등급별 시사점 텍스트 (피드백 #3) — `dat/indicator-insights.json`
 - **AI 해석 카드** (`renderAiInterpretationCard`): 시군별 강점·약점·정책 권고 (피드백 #5) — `dat/ai-interpretations.json` (정적 텍스트, LLM 미사용)

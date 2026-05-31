@@ -1,0 +1,6 @@
+{
+  "name": "rural-dashboard-llm",
+  "private": true,
+  "type": "module",
+  "description": "농촌다움 대시보드 LLM 해석 프록시 (Cloudflare Worker, MindLogic UOS Gateway)"
+}

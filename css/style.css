@@ -7817,3 +7817,52 @@ body.view-admin .admin-only-inline {
   .nyj-icard-body { grid-template-columns: 1fr; }
   .nyj-icard-cell { border-right: none; }
 }
+
+/* ============================================================ */
+/* === 섹션 41: 실시간 LLM AI 해석 (0531 #5) === */
+/* ============================================================ */
+
+.ai-llm-btn {
+  margin-left: auto;
+  align-self: flex-start;
+  padding: 5px 12px;
+  border: 1.5px solid #5B21B6;
+  border-radius: var(--radius-pill);
+  background: #F5F3FF;
+  color: #5B21B6;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.ai-llm-btn:hover:not(:disabled) { background: #5B21B6; color: #fff; }
+.ai-llm-btn:disabled { opacity: .6; cursor: progress; }
+
+/* 실시간 LLM 배지 (기존 .ai-card-badge 변형) */
+.ai-card-badge.is-live {
+  background: #5B21B6;
+  color: #fff;
+  border-color: #5B21B6;
+}
+
+/* 읍면 LLM 카드 */
+.eup-llm-card {
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.eup-llm-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.eup-llm-hint { margin-top: 8px; font-size: 11px; color: #718096; line-height: 1.6; }
+.eup-llm-headline { font-size: 13px; font-weight: 700; color: #1C2B33; line-height: 1.6; margin-bottom: 8px; }
+.eup-llm-vision {
+  font-size: 12px; color: #5B21B6; background: #F5F3FF;
+  border-left: 3px solid #5B21B6; border-radius: 6px;
+  padding: 8px 11px; line-height: 1.65; margin-bottom: 10px;
+}
+.eup-llm-actions { margin: 4px 0 0; padding-left: 18px; }
+.eup-llm-actions li { font-size: 11.5px; color: #4A5568; line-height: 1.7; margin-bottom: 4px; }
+.eup-llm-foot { margin-top: 10px; font-size: 10px; color: #CBD5E0; }

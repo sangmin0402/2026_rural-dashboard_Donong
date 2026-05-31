@@ -249,6 +249,14 @@
 
 **미반영(자료 대기)**: 사용자 유형별 화면(#6 읍면담당자/조회자 토글)은 일반/관리자 토글 골격만 존재 — 박세희 자료 도착 시 보강. **R5 수변·생태쉼터 면적**은 GIS 미수집(`_pending`) — 수집 시 비전 점수에 자동 반영.
 
+### 4-4. 실시간 LLM AI 해석 (#5, `feat/0531-field-survey-vision`)
+
+정적 텍스트였던 AI 해석을 **MindLogic UOS Gateway**(OpenAI 호환) 실시간 LLM으로 확장. 시군·읍면 카드의 **"🤖 실시간 AI 해석" 버튼** 클릭 시, 지표·비전 적합도·발화 트리거를 근거로 LLM이 맞춤 해석(헤드라인·강점·약점·정책권고·우선조치)을 생성한다.
+
+- **보안**: 정적 GitHub Pages엔 비밀키를 둘 수 없어 **Cloudflare Worker 프록시**(`worker/`)가 키를 보관(`wrangler secret`)하고 게이트웨이를 대신 호출. 클라이언트는 키 없이 구조화 컨텍스트만 전송. 배포·로컬 실행은 [`worker/README.md`](worker/README.md).
+- **설정**: `js/config.js`의 `LLM_PROXY_URL`에 배포된 Worker 주소 기입. **비우면 자동으로 사전 작성 텍스트로 폴백**(무중단).
+- **캐시·비용**: sessionStorage 캐시(같은 지역 즉시) + "↻ 재생성" 버튼. 모델 기본 `claude-sonnet-4-6`(Worker 상수). ⚠️ 키는 어떤 커밋 파일에도 없음(`config.js`엔 공개 URL만).
+
 ---
 
 ## 5. 5대 권역 분류
@@ -275,7 +283,8 @@ Web/
 ├── css/
 │   └── style.css            # 전체 스타일 (섹션 1~40)
 ├── js/
-│   └── app.js               # 전체 앱 로직 (Vanilla JS, 프레임워크 없음)
+│   ├── app.js               # 전체 앱 로직 (Vanilla JS, 프레임워크 없음)
+│   └── config.js            # 🆕 LLM_PROXY_URL 설정 (비밀 아님 — Worker 공개 URL)
 ├── dat/
 │   ├── gyeonggi-sigun.geojson   # 시군 경계
 │   ├── gyeonggi-dong.geojson    # 읍면동 경계 (줌 11+ 표시)
@@ -306,6 +315,14 @@ Web/
     ├── build_field_survey.py    # 🆕 현장조사 xlsx → namyangju-field-survey.json (0531, #2)
     ├── requirements.txt         # Python 의존성
     └── README.md                # 스크립트 실행 절차 및 KOSIS API 가이드
+
+~~~ (저장소 루트, GitHub Pages가 서빙하지 않는 별도 배포) ~~~
+worker/                          # 🆕 LLM 해석 프록시 (Cloudflare Worker, 0531 #5)
+├── src/index.js                 #   MindLogic Gateway 호출 + CORS + 프롬프트 조립
+├── wrangler.toml                #   배포 설정 (키는 wrangler secret, 파일에 없음)
+├── package.json                 #   ESM
+├── README.md                    #   배포·로컬 실행 절차
+└── .dev.vars                    #   로컬 키 (gitignore — 커밋 안 됨)
 ```
 
 **주요 의존 라이브러리** (CDN)
