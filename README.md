@@ -255,7 +255,14 @@
 
 - **보안**: 정적 GitHub Pages엔 비밀키를 둘 수 없어 **Cloudflare Worker 프록시**(`worker/`)가 키를 보관(`wrangler secret`)하고 게이트웨이를 대신 호출. 클라이언트는 키 없이 구조화 컨텍스트만 전송. 배포·로컬 실행은 [`worker/README.md`](worker/README.md).
 - **설정**: `js/config.js`의 `LLM_PROXY_URL`에 배포된 Worker 주소 기입. **비우면 자동으로 사전 작성 텍스트로 폴백**(무중단).
-- **캐시·비용**: sessionStorage 캐시(같은 지역 즉시) + "↻ 재생성" 버튼. 모델 기본 `claude-sonnet-4-6`(Worker 상수). ⚠️ 키는 어떤 커밋 파일에도 없음(`config.js`엔 공개 URL만).
+- **캐시·비용**: sessionStorage 캐시(같은 지역 즉시) + "↻ 재생성" 버튼. 모델 `gpt-5.4-nano`(저비용, Worker 상수 1줄로 교체). ⚠️ 키는 어떤 커밋 파일에도 없음(`config.js`엔 공개 URL만).
+
+### 4-5. "AI에게 물어보세요" 대화형 Q&A (#5-2)
+
+화면 우하단 **상시 "🤖 AI에게 물어보세요" 버튼** → 채팅. 지금 보는 화면·지표에 대해 자유 질문("이거 뭐야?", "다른 지역 대비 어때?", "시군 내 몇 등?")하면 답한다.
+- **"팩트는 JS가 계산, LLM은 말로만"**: 순위·등급·평균을 클라이언트(`sigunIndicatorFact`/`eupIndicatorFact`)가 계산해 facts로 넘기고 LLM은 인용만 → **순위 환각 차단**. facts에 없으면 "데이터에 없다"고 답함.
+- 모델 `gpt-5.4-nano`(문답당 ~350토큰), facts-only 프롬프트. Worker `POST /ask`.
+- **정적 해석 블록**(즉시·무료): 지표 탐색 상세에 "해석→평가(등급·순위)→정책" 3줄(`indicator-insights.json` 재사용). LLM 비용 0.
 
 ---
 

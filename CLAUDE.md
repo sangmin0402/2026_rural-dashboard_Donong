@@ -281,6 +281,12 @@ const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
 - 클라이언트: `js/config.js`의 `window.LLM_PROXY_URL`(공개값, 비밀 아님). 비면 LLM 비활성→정적 폴백. `app.js`: `llmEnabled`/`buildLlmContext`(시군·읍면)/`llmInterpret`(sessionStorage 캐시+force 재생성)/`escapeHtml`. 시군=`renderAiInterpretationCard`에 `wireLlmButton`→`applyLlmToSigunCard`. 읍면=`renderEupLlmBlock`→`renderEupLlmResult`(컨테이너 `#eup-llm-interpret`). CSS 섹션 41.
 - 응답 스키마: `{headline,strengths[],weaknesses[],policy_recommendation,vision_comment,priority_actions[]}`. 배포·로컬 절차: `worker/README.md`.
 
+**🆕 0531 "AI에게 물어보세요" 대화형 Q&A + 정적 지표 해석**:
+- 모델 **`gpt-5.4-nano`**로 통일(벤치마크: 카드·챗 모두 정상·최저토큰. haiku=게이트웨이 500, gemini-flash=추론토큰 과다). 교체는 `worker/src/index.js` `MODEL` 1줄.
+- Worker 신규 **`POST /ask`** `{question, context, history}`→`{answer}`. facts-only 시스템 프롬프트(`FACTS_RULE`), temp 0.1, max_tokens 500. `handleAsk`/`buildAskMessages`/`factsToText`.
+- **핵심 원칙: 순위·등급·평균은 JS가 계산해 facts로 전달, LLM은 인용만**(환각 차단). 클라: `sigunIndicatorFact`(15시군 순위)·`eupIndicatorFact`(읍면 순위)·`buildAskContext`(현재 화면 감지: explore/읍면/시군/지도)·`askAi`·`initAskAi`(플로팅 FAB+채팅, `LLM_PROXY_URL` 없으면 숨김)·`sendAskQuestion`(히스토리 6턴).
+- 정적(즉시·무료) **`renderIndicatorVerdict(cityId,key)`** = 해석(`indicator-insights.json`)+평가(등급배지+`sigunIndicatorFact` 순위)+정책(tier text). 지표 탐색 상세(`renderExploreDetail`)에 삽입. CSS 섹션 41(LLM)·42(챗·verdict).
+
 **🆕 5/18 피드백 반영 (feat/feedback-0518 브랜치, 2026-05)**:
 - **시사점 카드** (`renderInsightCard`): 시군 패널에 등급별 시사점 텍스트 (피드백 #3) — `dat/indicator-insights.json`
 - **AI 해석 카드** (`renderAiInterpretationCard`): 시군별 강점·약점·정책 권고 (피드백 #5) — `dat/ai-interpretations.json` (정적 텍스트, LLM 미사용)

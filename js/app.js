@@ -110,6 +110,35 @@ function getIndicatorInsight(cityId, indicatorKey) {
 }
 
 /**
+ * 공용 "해석 → 평가 → 정책" 3줄 블록 HTML (정적·즉시·무료, LLM 아님).
+ * 기존 indicator-insights.json + classifyIndicatorTier + sigunIndicatorFact 재사용.
+ * @param {string} cityId 평가 기준 시군
+ * @param {string} key    지표 키
+ * @returns {string} HTML (데이터 없으면 '')
+ */
+function renderIndicatorVerdict(cityId, key) {
+  const insight = getIndicatorInsight(cityId, key);
+  const fact = (typeof sigunIndicatorFact === 'function') ? sigunIndicatorFact(cityId, key) : null;
+  if (!insight && !fact) return '';
+  const cityName = (CITIES[cityId] && CITIES[cityId].name) || cityId;
+  const tier = insight ? insight.tier : (fact ? (fact.tierLabel.includes('상위') ? 'high' : fact.tierLabel.includes('하위') ? 'low' : 'mid') : 'mid');
+  const tierKo = tier === 'high' ? '강점' : tier === 'low' ? '보강 필요' : '평균';
+  const rows = [];
+  if (insight && insight.interpretation) {
+    rows.push(`<div class="ivd-row"><span class="ivd-label">해석</span><span class="ivd-text">${escapeHtml(insight.interpretation)}</span></div>`);
+  }
+  if (fact) {
+    const dir = fact.higherBetter === false ? ' (낮을수록 좋음)' : '';
+    rows.push(`<div class="ivd-row"><span class="ivd-label">평가</span><span class="ivd-text"><b>${escapeHtml(cityName)}</b> <span class="ivd-badge ivd-${tier}">${tierKo}</span> · ${fact.scopeLabel} ${fact.total}곳 중 <b>${fact.rank}등</b> (값 ${fact.value}${escapeHtml(fact.unit)}, 평균 ${fact.avg}${dir})</span></div>`);
+  }
+  if (insight && insight.tierText) {
+    rows.push(`<div class="ivd-row"><span class="ivd-label">정책</span><span class="ivd-text">${escapeHtml(insight.tierText)}</span></div>`);
+  }
+  if (!rows.length) return '';
+  return `<div class="ind-verdict" aria-label="${escapeHtml(cityName)} ${key} 해석">${rows.join('')}</div>`;
+}
+
+/**
  * 시군의 권역 요약 텍스트.
  */
 function getZoneInsight(cityId) {
@@ -4302,6 +4331,239 @@ async function llmInterpret(scope, regionId, context, opts = {}) {
 }
 
 // ===================================================================
+// === "AI에게 물어보세요" 대화형 Q&A (0531 #5-2) ===
+// ===================================================================
+// 핵심 원칙: "팩트는 JS가 계산, LLM은 말로만". 순위·등급·평균을 여기서 계산해
+// facts로 넘기고 Worker /ask 의 LLM은 그 facts만 근거로 답한다(환각 차단).
+
+let askHistory = []; // [{role:'user'|'assistant', content}] 최근 대화
+
+function indMeta(key) {
+  return (typeof INDICATORS !== 'undefined' && INDICATORS[key])
+      || (typeof JAYUL_INDICATORS_POOL !== 'undefined' && JAYUL_INDICATORS_POOL[key]) || null;
+}
+function round1(x) { return x == null ? null : Math.round(x * 10) / 10; }
+
+/** 시군 단위 지표 fact (값·순위·평균·등급 — JS 계산) */
+function sigunIndicatorFact(cityId, key) {
+  const meta = indMeta(key);
+  const myVal = getCityIndicatorValue(cityId, key);
+  if (myVal == null) return null;
+  const pairs = Object.keys(CITIES)
+    .map(cid => ({ cid, v: getCityIndicatorValue(cid, key) }))
+    .filter(p => p.v != null);
+  if (!pairs.length) return null;
+  const higherBetter = !meta || meta.higherBetter !== false;
+  const sorted = [...pairs].sort((a, b) => higherBetter ? b.v - a.v : a.v - b.v);
+  const rank = sorted.findIndex(p => p.cid === cityId) + 1;
+  const vals = pairs.map(p => p.v);
+  const tier = (typeof classifyIndicatorTier === 'function') ? classifyIndicatorTier(cityId, key) : null;
+  return {
+    key, name: (meta && meta.name) || key, value: round1(myVal), unit: (meta && meta.unit) || '',
+    rank, total: pairs.length, scopeLabel: '경기 15개 시군',
+    tierLabel: tier === 'high' ? '상위(강점)' : tier === 'low' ? '하위(보강필요)' : '중위(평균)',
+    avg: round1(vals.reduce((a, b) => a + b, 0) / vals.length),
+    max: round1(sorted[0].v), maxRegion: CITIES[sorted[0].cid] && CITIES[sorted[0].cid].name,
+    min: round1(sorted[sorted.length - 1].v), minRegion: CITIES[sorted[sorted.length - 1].cid] && CITIES[sorted[sorted.length - 1].cid].name,
+    higherBetter, source: '시군 공공데이터',
+  };
+}
+
+/** 읍면 단위 지표 fact (남양주 — getEupIndicator 기반 순위) */
+function eupIndicatorFact(eupName, canon) {
+  const me = getEupIndicator(eupName, canon);
+  if (!me || me.value == null) return null;
+  const meta = indMeta(canon);
+  const eups = listSimulationDongs();
+  const pairs = eups.map(d => {
+    const r = getEupIndicator(d.adm_nm, canon);
+    return { nm: d.adm_nm, v: r ? r.value : null };
+  }).filter(p => p.v != null);
+  const higherBetter = !meta || meta.higherBetter !== false;
+  const sorted = [...pairs].sort((a, b) => higherBetter ? b.v - a.v : a.v - b.v);
+  const rank = sorted.findIndex(p => p.nm === eupName) + 1;
+  const vals = pairs.map(p => p.v);
+  const third = Math.ceil(pairs.length / 3);
+  const srcKo = me.source === 'field' ? '현장조사' : me.source === 'sim' ? '시뮬레이션' : '시군고정값';
+  return {
+    key: canon, name: me.label || (meta && meta.name) || canon, value: round1(me.value), unit: me.unit || '',
+    rank, total: pairs.length, scopeLabel: '남양주 읍면',
+    tierLabel: rank <= third ? '상위' : rank > pairs.length - third ? '하위' : '중위',
+    avg: round1(vals.reduce((a, b) => a + b, 0) / vals.length),
+    max: round1(sorted[0].v), maxRegion: sorted[0].nm,
+    min: round1(sorted[sorted.length - 1].v), minRegion: sorted[sorted.length - 1].nm,
+    higherBetter, source: srcKo,
+  };
+}
+
+/** 현재 화면 맥락 + 포커스 지표 facts 수집 (Worker로 전송) */
+function buildAskContext() {
+  const ctx = {};
+  const activeKey = (state.activeIndicator && state.activeIndicator !== 'total') ? state.activeIndicator : null;
+  const exploreEl = document.getElementById('explore-screen');
+  const exploreOpen = exploreEl && exploreEl.offsetParent !== null;
+  const exploreKey = (typeof exploreState !== 'undefined' && exploreState) ? exploreState.activeKey : null;
+
+  // 1) 지표 탐색 화면이 열려 있으면 그 지표가 포커스 (시군 비교 관점)
+  if (exploreOpen && exploreKey) {
+    ctx.view = '지표 탐색';
+    const cityId = state.selectedCity || 'namyangju';
+    ctx.region = CITIES[cityId] ? CITIES[cityId].name : '경기도';
+    ctx.focusIndicator = sigunIndicatorFact(cityId, exploreKey);
+    ctx.notes = ['지표 탐색 화면에서 15개 시군을 비교 중'];
+    return ctx;
+  }
+
+  // 2) 읍면 선택 상태
+  const dongCd = state.selectedDong;
+  if (dongCd) {
+    const eupName = (simulationData && simulationData.dongs && simulationData.dongs[dongCd] && simulationData.dongs[dongCd].adm_nm)
+      || (DONG_INFO_CACHE[dongCd] && DONG_INFO_CACHE[dongCd].admNm) || '';
+    const cityId = state.selectedCity || 'namyangju';
+    ctx.view = '읍면 상세';
+    ctx.region = `${CITIES[cityId] ? CITIES[cityId].name : ''} ${eupName}`.trim();
+    const focusKey = activeKey || 'L4';
+    ctx.focusIndicator = eupIndicatorFact(eupName, focusKey);
+    ctx.indicators = ['L4', 'W9', 'R3', 'W7'].filter(k => k !== focusKey)
+      .map(k => eupIndicatorFact(eupName, k)).filter(Boolean).slice(0, 3);
+    if (typeof visionScore === 'function' && triggerConfig) {
+      const vs = visionScore(eupName);
+      ctx.vision = { overall: vs.overall, axes: vs.axes };
+      const all = getEupAllIndicators(eupName);
+      const fired = firedTriggerIds(all);
+      ctx.triggers = (triggerConfig.triggers || []).filter(t => fired.includes(t.id)).map(t => t.name);
+    }
+    return ctx;
+  }
+
+  // 3) 시군 선택 상태
+  const cityId = state.selectedCity;
+  if (cityId) {
+    ctx.view = '시군 상세';
+    ctx.region = CITIES[cityId] ? CITIES[cityId].name : cityId;
+    if (typeof calcCategoryScore === 'function') {
+      ctx.scores = {
+        samlter: Math.round(calcCategoryScore(cityId, 'samlter')),
+        ilter: Math.round(calcCategoryScore(cityId, 'ilter')),
+        shimter: Math.round(calcCategoryScore(cityId, 'shimter')),
+      };
+    }
+    if (activeKey) ctx.focusIndicator = sigunIndicatorFact(cityId, activeKey);
+    return ctx;
+  }
+
+  // 4) 지도만 보는 상태
+  ctx.view = '전체 지도';
+  if (activeKey) {
+    const m = indMeta(activeKey);
+    ctx.notes = [`현재 지도에 표시 중인 지표: ${(m && m.name) || activeKey}`];
+  } else {
+    ctx.notes = ['아직 시군/읍면/지표를 선택하지 않음. 지도에서 지역을 클릭하면 더 구체적으로 답할 수 있음.'];
+  }
+  return ctx;
+}
+
+/** Worker /ask 호출 */
+async function askAi(question) {
+  if (!llmEnabled()) return null;
+  const base = window.LLM_PROXY_URL.replace(/\/+$/, '');
+  const context = buildAskContext();
+  let resp;
+  try {
+    resp = await fetch(`${base}/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ question, context, history: askHistory.slice(-6) }),
+    });
+  } catch (e) { console.warn('[ASK] 연결 실패', e); return null; }
+  if (!resp.ok) { console.warn('[ASK] 오류', resp.status); return null; }
+  let data;
+  try { data = await resp.json(); } catch (e) { return null; }
+  if (!data || data.error) { console.warn('[ASK]', data && data.error); return null; }
+  return data.answer || '';
+}
+
+// ── 플로팅 챗 UI ──────────────────────────────────────────────
+function initAskAi() {
+  if (!llmEnabled()) return;            // 프록시 미설정 시 FAB 숨김(폴백)
+  if (document.getElementById('ai-ask-fab')) return;
+
+  const fab = document.createElement('button');
+  fab.id = 'ai-ask-fab';
+  fab.type = 'button';
+  fab.innerHTML = '<span aria-hidden="true">🤖</span> AI에게 물어보세요';
+  fab.setAttribute('aria-label', 'AI에게 질문하기');
+
+  const panel = document.createElement('div');
+  panel.id = 'ai-ask-panel';
+  panel.className = 'ai-ask-panel is-hidden';
+  panel.innerHTML = `
+    <div class="ai-ask-head">
+      <span class="ai-ask-title">🤖 AI에게 물어보세요</span>
+      <button type="button" class="ai-ask-close" aria-label="닫기">✕</button>
+    </div>
+    <div class="ai-ask-body" id="ai-ask-body">
+      <div class="ai-ask-msg ai-ask-bot">지금 보고 계신 화면·지표에 대해 물어보세요. 데이터에 있는 사실만 답해드려요.</div>
+    </div>
+    <div class="ai-ask-chips" id="ai-ask-chips">
+      <button type="button" class="ai-ask-chip">이거 무슨 지표야?</button>
+      <button type="button" class="ai-ask-chip">다른 지역 대비 어때?</button>
+      <button type="button" class="ai-ask-chip">순위가 몇 등이야?</button>
+    </div>
+    <form class="ai-ask-form" id="ai-ask-form">
+      <input type="text" id="ai-ask-input" class="ai-ask-input" placeholder="질문 입력…" autocomplete="off" />
+      <button type="submit" class="ai-ask-send" aria-label="전송">↑</button>
+    </form>`;
+
+  document.body.appendChild(panel);
+  document.body.appendChild(fab);
+
+  const toggle = (show) => {
+    const open = show == null ? panel.classList.contains('is-hidden') : show;
+    panel.classList.toggle('is-hidden', !open);
+    fab.classList.toggle('is-active', open);
+    if (open) setTimeout(() => { const i = document.getElementById('ai-ask-input'); if (i) i.focus(); }, 50);
+  };
+  fab.addEventListener('click', () => toggle());
+  panel.querySelector('.ai-ask-close').addEventListener('click', () => toggle(false));
+  panel.querySelector('#ai-ask-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const inp = document.getElementById('ai-ask-input');
+    const q = inp.value.trim();
+    if (q) { inp.value = ''; sendAskQuestion(q); }
+  });
+  panel.querySelectorAll('.ai-ask-chip').forEach(chip => {
+    chip.addEventListener('click', () => sendAskQuestion(chip.textContent));
+  });
+}
+
+function appendAskMsg(role, text, opts = {}) {
+  const body = document.getElementById('ai-ask-body');
+  if (!body) return null;
+  const el = document.createElement('div');
+  el.className = `ai-ask-msg ai-ask-${role === 'user' ? 'user' : 'bot'}${opts.typing ? ' is-typing' : ''}`;
+  el.innerHTML = opts.typing ? '<span class="ai-ask-dots">···</span>' : escapeHtml(text);
+  body.appendChild(el);
+  body.scrollTop = body.scrollHeight;
+  return el;
+}
+
+async function sendAskQuestion(question) {
+  appendAskMsg('user', question);
+  askHistory.push({ role: 'user', content: question });
+  const typingEl = appendAskMsg('bot', '', { typing: true });
+  const answer = await askAi(question);
+  if (typingEl) typingEl.remove();
+  if (answer) {
+    appendAskMsg('bot', answer);
+    askHistory.push({ role: 'assistant', content: answer });
+    if (askHistory.length > 12) askHistory = askHistory.slice(-12);
+  } else {
+    appendAskMsg('bot', '⚠️ 답변을 가져오지 못했어요. 잠시 후 다시 시도해 주세요.');
+  }
+}
+
+// ===================================================================
 // === 트리거 엔진 → 시사점 카드 (#3, 0531 — 김선혁 HTML 포팅) ===
 // ===================================================================
 // namyangju-triggers.json 의 15개 트리거 규칙을 읍면 지표에 평가하여
@@ -6007,6 +6269,9 @@ function renderExploreDetail(key) {
   const catLabel = { samlter: '삶터', ilter: '일터', shimter: '쉼터' }[meta.category] || '';
   const dirLabel = meta.higherBetter ? '높을수록 좋음' : '낮을수록 좋음';
   const isJayul = isJayulKey(key);
+  // 공용 해석·평가·정책 블록 기준 시군 (고정 시군 > 선택 시군 > 남양주)
+  const verdictRefCity = exploreState.pinnedCity || state.selectedCity || 'namyangju';
+  const verdictHtml = (typeof renderIndicatorVerdict === 'function') ? renderIndicatorVerdict(verdictRefCity, key) : '';
 
   const formula = ({
     L1: '(현재인구 − 전년인구) ÷ 전년인구 × 100',
@@ -6091,6 +6356,8 @@ function renderExploreDetail(key) {
         <span class="legend-hint">${meta.higherBetter ? '값↑ = 좋음' : '값↓ = 좋음'} · 15시군을 값 기준 정렬 후 5등분 (각 등급 3개)</span>
       </div>
     </div>
+
+    ${verdictHtml}
 
     <details class="explore-formula-collapsible">
       <summary>📐 산식 · 출처 · 등급 산정 방식 보기</summary>
@@ -6728,6 +6995,7 @@ function initPanelResizer() {
 document.addEventListener('DOMContentLoaded', () => {
   initLandingScreen(); // 랜딩 화면 — 가장 먼저 실행
   initOverlayScreens(); // 랭킹/가이드 오버레이 인터랙션 (닫기·탭·ESC)
+  initAskAi(); // 0531 #5-2: "AI에게 물어보세요" 플로팅 챗 (LLM_PROXY_URL 설정 시)
 
   // 헤더 로고 클릭 → 랜딩 복귀 (해시 제거 = 뒤로가기와 동일 효과)
   const headerBrand = document.getElementById('header-brand');
