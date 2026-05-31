@@ -291,6 +291,7 @@ const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
 **🆕 0531 #6 조회자/읍면담당자 토글 + 말투**:
 - 기존 일반/관리자 토글을 **조회자(👁️)/읍면담당자(🛠️)**로 라벨 변경(내부 값 `public`/`admin` 유지). "이해 vs 액션" 분리: 조회자=해석·평가·비전·정책 이해 중심, 읍면담당자=거기에 "다음 단계(담당자 액션)·추가 필요 데이터"(트리거 카드 셀에 `.admin-only` 부여)·관리자 편집 패널까지. 토글 시 `showInlineToast`로 모드 안내. CSS `.admin-only`(body.view-admin) 재사용 — 토글은 CSS-driven, 재렌더 불필요.
 - LLM 말투: Worker `TONE_RULE`(부드러운 존댓말 "~입니다/~예요", 개조식 금지)을 카드·`/ask` 프롬프트에 적용.
+- **읍면 현장조사 직접 입력 폼**(읍면담당자): `renderEupFieldEditPanel`(컨테이너 `#eup-field-edit`, admin-only). 8개 현장지표(L4·L6·W5·W6·W7·W9·R6·R7) 입력→`state.eupOverrides[eup][canon]`+localStorage(`EUP_OVERRIDES_STORAGE_KEY`). `getEupIndicator`가 **officer override를 최우선**(source `officer`=담당자입력 배지)으로 읽음. 저장 시 `_visionPopCache=null` 후 `renderEupAnalysis` 재호출 → 비전·트리거·시사점 즉시 재계산. (검증: L4 58.3→95 시 H축 40→80·종합 49→62·생활SOC취약 트리거 해제)
 
 **🆕 0531 2035 비전 달성률 (박세희, `namyangju-vision-2035.json`)**:
 - 출처 「2035 남양주 도시기본계획」. **시 전체 절대목표 대비 달성률**(읍면 상대 visionScore와 보완). 7수치지표(공원면적 24.5%~고용 87%)+4방향성+삶/일/쉼 영역점수(쉼터 34 최저). `vision2035` 전역, `renderVision2035Card(cityId)`(남양주만, `updateDetailPanel`에서 호출), CSS 섹션 43(`v35-*`). 핵심 인사이트=녹색문화도시 비전 vs 공원면적 24.5% 괴리.

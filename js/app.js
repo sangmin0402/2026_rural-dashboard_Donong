@@ -534,8 +534,9 @@ const state = {
   activeTab: 'overview',
   activeIndicator: 'total',
   scenarioValues: {},
-  viewMode: 'public',   // 'public' | 'admin' — 피드백 #6: 사용자 유형 토글
+  viewMode: 'public',   // 'public' | 'admin' — 피드백 #6: 사용자 유형 토글(조회자/읍면담당자)
   manualOverrides: {},  // { [cityId]: { [key]: value } } — 관리자 수동 편집값 (localStorage 동기화)
+  eupOverrides: {},     // { [eupName]: { [canonKey]: number } } — 읍면담당자 현장조사 직접 입력값 (localStorage)
   charts: {
     radar: null,
     comparison: null,
@@ -2286,6 +2287,8 @@ function initViewModeToggle() {
     if (saved === 'admin' || saved === 'public') state.viewMode = saved;
     const savedOverrides = localStorage.getItem(MANUAL_OVERRIDES_STORAGE_KEY);
     if (savedOverrides) state.manualOverrides = JSON.parse(savedOverrides) || {};
+    const savedEup = localStorage.getItem(EUP_OVERRIDES_STORAGE_KEY);
+    if (savedEup) state.eupOverrides = JSON.parse(savedEup) || {};
   } catch (err) {
     console.warn('[viewMode] localStorage 복원 실패:', err);
   }
@@ -2624,10 +2627,15 @@ const DONG_COMPARE_INDICATORS = [
 
 // 출처 배지 메타 (현장조사/시뮬레이션/시군고정)
 const EUP_SOURCE_BADGE = {
+  officer: { ko: '담당자입력', cls: 'status-officer' },
   field: { ko: '현장조사', cls: 'status-field' },
   sim:   { ko: '시뮬레이션', cls: 'status-simulation' },
   sigun: { ko: '시군고정', cls: 'status-sigun-fixed' },
 };
+
+// 읍면담당자 현장조사 직접 입력 대상 지표 (CANON 8개)
+const EUP_FIELD_INPUT_KEYS = ['L4', 'L6', 'W5', 'W6', 'W7', 'W9', 'R6', 'R7'];
+const EUP_OVERRIDES_STORAGE_KEY = 'rural-dashboard.eupOverrides';
 
 const CLUSTER_LABELS = {
   urban:   { ko: '도심형', color: '#4A90D9' },
@@ -4245,6 +4253,18 @@ function getSigunCanonValue(cityId, canon) {
  * @returns {{value:number|null, source:'field'|'sim'|'sigun', unit:string, label:string, n?:number, pending?:boolean}|null}
  */
 function getEupIndicator(eupName, canon) {
+  // 0) 읍면담당자 직접 입력값 (최우선) — state.eupOverrides
+  const ov = state.eupOverrides && state.eupOverrides[eupName];
+  if (ov && ov[canon] != null && ov[canon] !== '') {
+    const m = refMeta(canon);
+    const fsRec = fieldSurveyData && fieldSurveyData.eups && fieldSurveyData.eups[eupName]
+      && fieldSurveyData.eups[eupName].indicators && fieldSurveyData.eups[eupName].indicators[canon];
+    return {
+      value: Number(ov[canon]), source: 'officer',
+      unit: (fsRec && fsRec.unit) || (m && m.unit) || '',
+      label: (fsRec && fsRec.label) || (m && m.name) || canon,
+    };
+  }
   // 1) 현장조사 (9개 농촌 읍면만)
   const fs = fieldSurveyData && fieldSurveyData.eups && fieldSurveyData.eups[eupName];
   if (fs && fs.indicators && fs.indicators[canon]) {
@@ -5152,13 +5172,82 @@ function renderEupAnalysis(eupName, cityId, info) {
       : `<span class="data-status-badge status-simulation">시뮬레이션</span> 이 읍면(도심형)은 현장조사 미수집 — 시뮬레이션·시군 고정값 기반 추정입니다.`;
   }
   renderVisionScoreCard(eupName);
+  renderEupFieldEditPanel(eupName);
   renderEupLlmBlock(eupName);
   renderEupTriggerCards(eupName);
 }
 
+/**
+ * 읍면담당자 현장조사 직접 입력 폼 (읍면 단위). admin-only (조회자엔 CSS로 숨김).
+ * 8개 현장조사 지표를 입력·저장(localStorage) → getEupIndicator 최우선 반영 →
+ * 저장 시 비전점수·트리거·시사점 즉시 재계산.
+ */
+function renderEupFieldEditPanel(eupName) {
+  const host = document.getElementById('eup-field-edit');
+  if (!host) return;
+  const ov = (state.eupOverrides && state.eupOverrides[eupName]) || {};
+
+  const rows = EUP_FIELD_INPUT_KEYS.map(k => {
+    const cur = getEupIndicator(eupName, k);
+    const meta = indMeta(k);
+    const name = (cur && cur.label) || (meta && meta.name) || k;
+    const unit = (cur && cur.unit) || (meta && meta.unit) || '';
+    const ovVal = (ov[k] != null && ov[k] !== '') ? ov[k] : '';
+    const curTxt = (cur && cur.value != null)
+      ? `현재 ${cur.value}${unit} <span class="eupedit-src src-${cur.source}">${(EUP_SOURCE_BADGE[cur.source] || {}).ko || ''}</span>`
+      : '현재값 없음';
+    return `
+      <label class="eupedit-row">
+        <span class="eupedit-label"><b>${k}</b> ${escapeHtml(name)}</span>
+        <span class="eupedit-cur">${curTxt}</span>
+        <input type="number" step="any" class="eupedit-input" data-eup-key="${k}"
+               value="${ovVal}" placeholder="${cur && cur.value != null ? cur.value : '입력'}" aria-label="${escapeHtml(name)} 입력">
+        <span class="eupedit-unit">${escapeHtml(unit)}</span>
+      </label>`;
+  }).join('');
+
+  host.innerHTML = `
+    <div class="nyj-section-label">현장조사 데이터 입력 <span class="nyj-fired-count" style="background:#5B21B6">읍면담당자</span></div>
+    <div class="eupedit-card">
+      <p class="eupedit-hint">${escapeHtml(eupName)}의 현장조사값을 직접 입력하면 비전 적합도·트리거·시사점이 이 값으로 즉시 다시 계산됩니다. (이 브라우저에만 저장 — 서버 저장은 별도 백엔드 필요)</p>
+      <div class="eupedit-grid">${rows}</div>
+      <div class="eupedit-actions">
+        <button type="button" class="admin-btn admin-btn-primary" id="eupedit-save">💾 저장 후 재계산</button>
+        <button type="button" class="admin-btn admin-btn-ghost" id="eupedit-reset">↺ 입력 초기화</button>
+      </div>
+    </div>`;
+
+  document.getElementById('eupedit-save').addEventListener('click', () => {
+    const store = state.eupOverrides[eupName] || {};
+    host.querySelectorAll('.eupedit-input').forEach(inp => {
+      const k = inp.dataset.eupKey;
+      const v = inp.value.trim();
+      if (v === '') delete store[k];
+      else if (!isNaN(Number(v))) store[k] = Number(v);
+    });
+    if (Object.keys(store).length) state.eupOverrides[eupName] = store;
+    else delete state.eupOverrides[eupName];
+    persistEupOverrides();
+    if (typeof showInlineToast === 'function') showInlineToast(`💾 ${eupName} 현장조사값 저장 — 비전·트리거 재계산 완료`);
+    _visionPopCache = null; // 비전 정규화 모집단 재계산
+    renderEupAnalysis(eupName, state.selectedCity || 'namyangju', {});
+  });
+  document.getElementById('eupedit-reset').addEventListener('click', () => {
+    delete state.eupOverrides[eupName];
+    persistEupOverrides();
+    if (typeof showInlineToast === 'function') showInlineToast(`↺ ${eupName} 입력 초기화 — 원래 데이터로 복원`);
+    _visionPopCache = null;
+    renderEupAnalysis(eupName, state.selectedCity || 'namyangju', {});
+  });
+}
+
+function persistEupOverrides() {
+  try { localStorage.setItem(EUP_OVERRIDES_STORAGE_KEY, JSON.stringify(state.eupOverrides)); } catch (e) { /* ignore */ }
+}
+
 /** 읍면 분석 영역 비우기 (시군 복귀·非남양주 시) */
 function clearEupAnalysis() {
-  ['eup-analysis-notice', 'eup-vision-score', 'eup-llm-interpret', 'eup-trigger-grid', 'eup-insight-cards'].forEach(id => {
+  ['eup-analysis-notice', 'eup-vision-score', 'eup-field-edit', 'eup-llm-interpret', 'eup-trigger-grid', 'eup-insight-cards'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.innerHTML = '';
   });
