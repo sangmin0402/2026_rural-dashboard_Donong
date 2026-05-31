@@ -2301,6 +2301,11 @@ function initViewModeToggle() {
       applyViewMode(mode);
       // 현재 시군 패널 갱신 (관리자 카드 표시·숨김)
       if (state.selectedCity) updateDetailPanel(state.selectedCity);
+      if (typeof showInlineToast === 'function') {
+        showInlineToast(mode === 'admin'
+          ? '🛠️ 읍면담당자 모드 — 담당자 액션·추가 필요 데이터·현장조사 입력·편집이 표시됩니다.'
+          : '👁️ 조회자 모드 — 지표 해석·평가·정책 이해 중심으로 표시됩니다.');
+      }
     });
   });
 }
@@ -4799,7 +4804,7 @@ function renderEupTriggerCards(eupName) {
           <div class="nyj-verdict" style="border-color:${col.vbd};background:${col.bg};color:${col.tx}">${interpolateCard(card.verdictText, eupName, data)}</div>
         </div>
         <div class="nyj-icard-cell"><div class="nyj-cell-label">정책 제안 (민선 8기 연계)</div><div class="nyj-cell-body">${card.policy || ''}</div></div>
-        <div class="nyj-icard-cell"><div class="nyj-cell-label">다음 단계 (담당자 액션)</div><div class="nyj-cell-body">${card.next || ''}
+        <div class="nyj-icard-cell admin-only"><div class="nyj-cell-label">다음 단계 (담당자 액션)</div><div class="nyj-cell-body">${card.next || ''}
           ${card.data ? `<div class="nyj-data-need"><strong>추가 필요 데이터:</strong> ${card.data}</div>` : ''}</div></div>
       </div></div>`;
   }).join('');

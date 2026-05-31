@@ -145,16 +145,18 @@ async function handleAsk(payload, env, origin) {
 // ── 프롬프트 조립 ──────────────────────────────────────────────
 // 공통 facts-only 규칙: 제공된 숫자/근거만 사용, 추측·미사여구 금지.
 const FACTS_RULE = '제공된 수치·근거(facts)만 사용하라. facts에 없는 수치·순위·사실은 절대 지어내지 마라. 추측·일반상식 단정·과장된 미사여구를 쓰지 마라.';
+// 말투: 딱딱한 보고서·개조식체 대신 부드러운 존댓말.
+const TONE_RULE = '말투는 부드럽고 친근한 존댓말로 써라. 문장 끝을 "~입니다", "~예요", "~로 보입니다", "~이 좋겠습니다"처럼 자연스럽게 맺고, 딱딱한 개조식·명사형 종결("~함", "~필요", "~임")은 피하고 설명하듯 풀어서 말하라.';
 
 function buildMessages(scope, regionId, ctx) {
   const sys = scope === 'eup'
     ? '너는 농촌공간계획 정책 분석가다. 남양주시 민선 8기 비전(THE: T 교통·H 삶의질·E 교육환경)과 제공된 읍면 지표·비전 적합도·발화 트리거를 근거로 해석한다. ' + FACTS_RULE + ' ' +
       '반드시 유효한 JSON 객체 하나만 출력하고 코드펜스/설명 텍스트는 절대 쓰지 마라. ' +
-      '키: headline(1문장), strengths(2개 배열), weaknesses(2개 배열), policy_recommendation(1~2문장), vision_comment(비전 적합도를 해석하는 1문장), priority_actions(우선 조치 2개 배열). 모두 한국어, 정책 실무자용. ' +
-      '각 배열 항목은 한 문장(60자 이내)으로 간결하게. 전체 JSON은 짧게 유지.'
+      '키: headline(1문장), strengths(2개 배열), weaknesses(2개 배열), policy_recommendation(1~2문장), vision_comment(비전 적합도를 해석하는 1문장), priority_actions(우선 조치 2개 배열). 모두 한국어. ' +
+      TONE_RULE + ' 각 배열 항목은 1~2문장으로 간결하되 자연스러운 존댓말로. 전체 JSON은 너무 길지 않게.'
     : '너는 농촌공간계획 정책 분석가다. 경기도 농촌다움 지표(삶터·일터·쉼터)와 제공된 시군 지표를 근거로 해석한다. ' + FACTS_RULE + ' ' +
       '반드시 유효한 JSON 객체 하나만 출력하고 코드펜스/설명 텍스트는 절대 쓰지 마라. ' +
-      '키: headline(1문장), strengths(2~3개 배열), weaknesses(2~3개 배열), policy_recommendation(1~2문장), vision_comment(""), priority_actions([]). 모두 한국어, 간결.';
+      '키: headline(1문장), strengths(2~3개 배열), weaknesses(2~3개 배열), policy_recommendation(1~2문장), vision_comment(""), priority_actions([]). 모두 한국어. ' + TONE_RULE;
 
   const user = scope === 'eup' ? eupUserPrompt(regionId, ctx) : sigunUserPrompt(regionId, ctx);
   return [{ role: 'system', content: sys }, { role: 'user', content: user }];
@@ -165,7 +167,7 @@ function buildAskMessages(question, context, history) {
   const sys = '너는 "경기도 농촌다움 지표 대시보드"의 데이터 안내자다. 사용자가 지금 보고 있는 화면과 지표에 대해 질문하면 답한다. ' +
     FACTS_RULE + ' 순위·등급·평균 같은 수치는 이미 계산되어 facts로 제공되니 그대로 인용만 하라(직접 계산·추정 금지). ' +
     '정책을 묻는 질문에는, facts의 "준비된 정책"·"2035 비전 달성률" 항목을 우선 근거로 활용해 답하라(그 안에 있으면 그대로 인용·요약, 없으면 제공된 지표 수치 범위에서만 신중히 제안). ' +
-    'facts에 없는 질문이면 "현재 화면 데이터로는 알 수 없습니다"라고 솔직히 답하라. 한국어로 2~4문장, 친절하지만 간결하게. 마크다운·목록 없이 문장으로.';
+    'facts에 없는 질문이면 "현재 화면 데이터로는 알 수 없습니다"라고 솔직히 답하라. 한국어로 2~4문장, 마크다운·목록 없이 문장으로. ' + TONE_RULE;
 
   const msgs = [{ role: 'system', content: sys }];
   // 직전 대화 맥락 (최근 6턴만, 안전 클램프)
