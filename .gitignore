@@ -17,3 +17,20 @@ Thumbs.db
 scripts/venv/
 scripts/__pycache__/
 *.pyc
+
+# Cloudflare Worker — 비밀키·빌드 산출물 (절대 커밋 금지)
+worker/.dev.vars
+worker/node_modules/
+worker/.wrangler/
+.wrangler/
+*.dev.vars
+
+# impeccable / AI agent skills (개발자 개인 도구 — 공유 불필요)
+.claude/
+.agents/
+.cursor/
+.gemini/
+.github/copilot/
+.codex/
+.antigravity/
+skills-lock.json

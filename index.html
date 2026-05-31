@@ -217,7 +217,7 @@
               <div class="zone-head">
                 <span class="zone-icon" aria-hidden="true">🛡️</span>
                 <div class="zone-meta">
-                  <h4 class="zone-name">북부접경권</h4>
+                  <h3 class="zone-name">북부접경권</h3>
                   <span class="zone-count">4개 시군</span>
                 </div>
               </div>
@@ -231,7 +231,7 @@
               <div class="zone-head">
                 <span class="zone-icon" aria-hidden="true">🌾</span>
                 <div class="zone-meta">
-                  <h4 class="zone-name">남부농업권</h4>
+                  <h3 class="zone-name">남부농업권</h3>
                   <span class="zone-count">4개 시군</span>
                 </div>
               </div>
@@ -245,7 +245,7 @@
               <div class="zone-head">
                 <span class="zone-icon" aria-hidden="true">⚓</span>
                 <div class="zone-meta">
-                  <h4 class="zone-name">서부해안권</h4>
+                  <h3 class="zone-name">서부해안권</h3>
                   <span class="zone-count">2개 시군</span>
                 </div>
               </div>
@@ -259,7 +259,7 @@
               <div class="zone-head">
                 <span class="zone-icon" aria-hidden="true">🏔️</span>
                 <div class="zone-meta">
-                  <h4 class="zone-name">동부산악관광권</h4>
+                  <h3 class="zone-name">동부산악관광권</h3>
                   <span class="zone-count">2개 시군</span>
                 </div>
               </div>
@@ -273,7 +273,7 @@
               <div class="zone-head">
                 <span class="zone-icon" aria-hidden="true">🏙️</span>
                 <div class="zone-meta">
-                  <h4 class="zone-name">도심연접권</h4>
+                  <h3 class="zone-name">도심연접권</h3>
                   <span class="zone-count">3개 시군</span>
                 </div>
               </div>
@@ -552,6 +552,17 @@
         </div>
       </button>
       <div class="header-right">
+        <!-- 일반/관리자 뷰 토글 (피드백 #6) -->
+        <div class="view-mode-toggle" role="group" aria-label="화면 모드 전환">
+          <button class="view-mode-btn is-active" data-view="public" type="button" title="일반 사용자 화면 (읽기 전용)">
+            <span aria-hidden="true">👁️</span>
+            <span>일반</span>
+          </button>
+          <button class="view-mode-btn" data-view="admin" type="button" title="관리자 화면 (데이터 편집 가능)">
+            <span aria-hidden="true">✏️</span>
+            <span>관리자</span>
+          </button>
+        </div>
         <div class="search-wrapper">
           <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
@@ -731,10 +742,16 @@
               <span class="dong-detail-source" id="dong-detail-source">예시 데이터</span>
             </header>
             <div class="dong-info-grid" id="dong-info-grid"></div>
-            <p class="dong-detail-note">
+            <p class="dong-detail-note" id="dong-detail-note">
               💡 읍면 단위 농촌다움 지표는 시군 단위에서만 산출됩니다.
               이 화면은 해당 읍면의 일반 메타정보(인구·면적·특성)를 제공합니다.
             </p>
+            <!-- 0531 통합: 남양주 읍면 비전 적합도 + 트리거 시사점 카드 (JS가 채움) -->
+            <p class="eup-analysis-notice" id="eup-analysis-notice"></p>
+            <section id="eup-vision-score" class="eup-analysis-block" aria-label="읍면 비전 적합도"></section>
+            <section id="eup-llm-interpret" class="eup-analysis-block" aria-label="읍면 실시간 AI 해석"></section>
+            <section id="eup-trigger-grid" class="eup-analysis-block" aria-label="읍면 트리거 평가"></section>
+            <section id="eup-insight-cards" class="eup-analysis-block" aria-label="읍면 시사점 카드"></section>
             <button id="dong-back-btn" class="dong-back-btn" type="button">← 시군 보기로 돌아가기</button>
           </section>
 
@@ -1094,6 +1111,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <!-- Chart.js Matrix 플러그인 (히트맵) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
+  <!-- 클라이언트 설정 (LLM 프록시 URL — 비밀 아님). app.js 이전 로드 -->
+  <script src="js/config.js"></script>
   <!-- App JS -->
   <script src="js/app.js" defer></script>
 

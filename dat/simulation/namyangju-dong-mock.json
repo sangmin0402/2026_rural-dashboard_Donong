@@ -1,0 +1,978 @@
+{
+  "_meta": {
+    "version": "2026-05-18",
+    "seed": "namyangju-2026-feedback-0518",
+    "generated_at": "2026-05-21T02:21:57.349796+00:00",
+    "scope": "namyangju",
+    "purpose": "남양주시 읍면동 16개에 대한 농촌다움 9개 지표 가상값. 실제 KOSIS/SGIS 읍면동 마이크로데이터 수집 전 UI·시뮬레이션 테스트 용도. 동일 seed 로 재실행하면 동일 결과가 나온다.",
+    "cluster_counts": {
+      "urban": 7,
+      "transit": 6,
+      "rural": 3
+    },
+    "dong_count": 16,
+    "indicator_count": 9
+  },
+  "dongs": {
+    "31130110": {
+      "adm_nm": "와부읍",
+      "cluster": "transit",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 0.6,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 64.1,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 96.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 2.36,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 4.49,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 41.6,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.016,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 52.7,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 7.1,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130111": {
+      "adm_nm": "화도읍",
+      "cluster": "transit",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 0.14,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 57.1,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 70.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 2.08,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 7.1,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 42.5,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.338,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 57.4,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 11.2,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130120": {
+      "adm_nm": "진접읍",
+      "cluster": "transit",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 0.3,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 53.7,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 110.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 2.73,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 5.72,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 53.9,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.278,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 59.4,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 11.9,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130140": {
+      "adm_nm": "진건읍",
+      "cluster": "transit",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 0.3,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 53.5,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 72.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 1.89,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 6.8,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 53.8,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.23,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 62.0,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 10.2,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130150": {
+      "adm_nm": "오남읍",
+      "cluster": "transit",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 0.67,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 55.7,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 72.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 2.61,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 7.62,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 49.1,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.275,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 71.0,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 10.9,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130160": {
+      "adm_nm": "퇴계원읍",
+      "cluster": "transit",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 0.39,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 55.1,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 87.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 1.54,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 6.37,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 39.9,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.155,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 64.4,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 11.7,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130310": {
+      "adm_nm": "별내면",
+      "cluster": "rural",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": -2.22,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 33.4,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 24.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 3.44,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 15.13,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 75.9,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.63,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 87.6,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 27.3,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130340": {
+      "adm_nm": "수동면",
+      "cluster": "rural",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": -2.29,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 44.2,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 18.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 5.37,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 22.25,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 81.1,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.381,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 79.3,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 20.8,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130350": {
+      "adm_nm": "조안면",
+      "cluster": "rural",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": -1.21,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 31.9,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 14.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 3.59,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 11.63,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 60.2,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.622,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 80.9,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 22.6,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130510": {
+      "adm_nm": "호평동",
+      "cluster": "urban",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 1.4,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 83.6,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 258.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 0.43,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 1.37,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 24.4,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.161,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 46.5,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 3.9,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130520": {
+      "adm_nm": "평내동",
+      "cluster": "urban",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 3.49,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 79.2,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 346.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 0.7,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 1.77,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 24.7,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": -0.079,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 49.4,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 6.7,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130530": {
+      "adm_nm": "금곡동",
+      "cluster": "urban",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 3.94,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 92.5,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 405.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 0.54,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 1.94,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 27.6,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": -0.111,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 59.8,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 6.0,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130540": {
+      "adm_nm": "양정동",
+      "cluster": "urban",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 2.9,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 86.4,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 332.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 0.66,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 1.59,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 26.8,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.184,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 47.8,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 4.9,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130570": {
+      "adm_nm": "별내동",
+      "cluster": "urban",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 1.88,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 85.8,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 395.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 0.64,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 0.86,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 28.2,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.065,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 59.5,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 5.4,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130580": {
+      "adm_nm": "다산1동",
+      "cluster": "urban",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 3.58,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 82.3,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 206.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 0.48,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 1.11,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 26.2,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.099,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 46.5,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 3.4,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    },
+    "31130590": {
+      "adm_nm": "다산2동",
+      "cluster": "urban",
+      "indicators": {
+        "L1_pop_growth": {
+          "value": 2.95,
+          "label": "인구증가율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "L4_living_soc": {
+          "value": 90.4,
+          "label": "생활SOC 충족지수",
+          "unit": "",
+          "source": "simulation:namyangju-mock"
+        },
+        "W2_business_density": {
+          "value": 249.0,
+          "label": "사업체 밀도",
+          "unit": "개/㎢",
+          "source": "simulation:namyangju-mock"
+        },
+        "W6_young_return": {
+          "value": 0.73,
+          "label": "청년 귀농 유입 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "W7_eco_farm": {
+          "value": 1.99,
+          "label": "친환경 인증 농가 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R3_green_ratio": {
+          "value": 27.0,
+          "label": "녹지율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R4_experience_prog": {
+          "value": 0.166,
+          "label": "농촌체험 프로그램",
+          "unit": "건/천명",
+          "source": "simulation:namyangju-mock"
+        },
+        "R5_water_quality": {
+          "value": 47.0,
+          "label": "양호수질 하천 비율",
+          "unit": "%",
+          "source": "simulation:namyangju-mock"
+        },
+        "R6_park_per_capita": {
+          "value": 5.1,
+          "label": "수변·생태쉼터 면적",
+          "unit": "㎡/천명",
+          "source": "simulation:namyangju-mock"
+        }
+      }
+    }
+  }
+}

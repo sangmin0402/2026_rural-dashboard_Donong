@@ -268,6 +268,51 @@ const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
 
 ### ✅ 완료된 기능 (최신)
 
+**🆕 0531 현장조사·시사점·비전 통합 (feat/0531-field-survey-vision 브랜치, 2026-05-31)**:
+팀 자료 3종(트리거 HTML·현장조사 xlsx·비전 docx)을 통합. **읍면 클릭 시** 비전 적합도+트리거+시사점 표출.
+- **지표 ID 정규화 레이어** ⚠️중요: 4개 자료의 키가 어긋남. 표준=CANON(xlsx 확정안: W9=농촌체험, R4=양호수질, R5=수변쉼터, R6=도시텃밭, R7=주말농원). `namyangju-dong-mock.json`은 키가 한 칸 밀림(`R4_experience_prog`=W9, `R5_water_quality`=R4, `R6_park_per_capita`=R5), `CITIES.namyangju.jayulIndicators`도 앱 내부 번호 사용. **반드시 `getEupIndicator(eup, canon)` / `getEupAllIndicators(eup)` 경유**(직접 키 접근 금지). 상수: `CANON_TO_MOCK`, `CANON_TO_REF`, `SIGUN_EXTRA`.
+- **#2 읍면 비교 강화**: `dat/simulation/namyangju-field-survey.json`(9개 농촌 읍면, W5·W7·L4·L6·W6·W9·R6·R7). `scripts/build_field_survey.py`로 재생성. `DONG_COMPARE_INDICATORS` CANON 키로 교체, 표·차트에 출처 배지(`EUP_SOURCE_BADGE`: field/sim/sigun).
+- **#3 시사점 도출**: `dat/namyangju-triggers.json`(15트리거+근거+카드). 엔진 `evalRule`/`firedTriggerIds`/`buildInsightCards`/`renderEupTriggerCards`/`interpolateCard`.
+- **#4 비전 적합도**: `VISION_AXES`(T/H/E)·`normIndicator`(읍면 분포 min-max, L2 역방향)·`visionScore`·`renderVisionScoreCard`. docx 반영 '잠재 vs 체감' 분리 막대.
+- **후킹**: `showDongDetailPanel` 끝 `renderEupAnalysis(admNm,cityId,info)` → 남양주 읍면만 표시(urban 동은 시뮬레이션 폴백 안내), `clearEupAnalysis`로 정리. CSS 섹션 40(`nyj-*`). 미반영: #6 읍면담당자/조회자 토글(자료 대기)·R5 GIS(`_pending`).
+
+**🆕 0531 실시간 LLM AI 해석 (#5, MindLogic UOS Gateway)**:
+- ⚠️ 보안: 정적 사이트라 비밀키 클라이언트 금지. **Cloudflare Worker 프록시 `worker/`** 가 키 보관(`wrangler secret`·로컬 `worker/.dev.vars`=gitignore). 클라이언트는 키 없이 컨텍스트만 전송. 게이트웨이 OpenAI 호환 `POST /chat/completions`(⚠️끝 슬래시 없음), 모델 `claude-sonnet-4-6`, `max_tokens 1500`(짧으면 한국어 JSON 잘림).
+- 클라이언트: `js/config.js`의 `window.LLM_PROXY_URL`(공개값, 비밀 아님). 비면 LLM 비활성→정적 폴백. `app.js`: `llmEnabled`/`buildLlmContext`(시군·읍면)/`llmInterpret`(sessionStorage 캐시+force 재생성)/`escapeHtml`. 시군=`renderAiInterpretationCard`에 `wireLlmButton`→`applyLlmToSigunCard`. 읍면=`renderEupLlmBlock`→`renderEupLlmResult`(컨테이너 `#eup-llm-interpret`). CSS 섹션 41.
+- 응답 스키마: `{headline,strengths[],weaknesses[],policy_recommendation,vision_comment,priority_actions[]}`. 배포·로컬 절차: `worker/README.md`.
+
+**🆕 5/18 피드백 반영 (feat/feedback-0518 브랜치, 2026-05)**:
+- **시사점 카드** (`renderInsightCard`): 시군 패널에 등급별 시사점 텍스트 (피드백 #3) — `dat/indicator-insights.json`
+- **AI 해석 카드** (`renderAiInterpretationCard`): 시군별 강점·약점·정책 권고 (피드백 #5) — `dat/ai-interpretations.json` (정적 텍스트, LLM 미사용)
+- **일반/관리자 토글** (헤더 `view-mode-toggle`): `body.view-admin` 클래스 + `.admin-only` 게이팅 (피드백 #6)
+  - `state.viewMode: 'public' | 'admin'`, `state.manualOverrides: { [cityId]: {key: ...} }`
+  - `renderAdminEditPanel`: 자율지표 선정 체크박스(최대 4개) + manual 층 편집 폼 (W3 재정자립도·관리자 메모) → localStorage 저장
+  - `readField()` 에서 admin 오버라이드를 computed/raw/manual 보다 우선 적용
+- **남양주 16개 읍면 비교** (`renderDongComparison`, 피드백 #2): 클러스터별(urban/transit/rural) 칩 + 9지표 드롭다운 + Chart.js 막대 + 16×9 표
+- **시뮬레이션 데이터** (피드백 #7): `scripts/generate_mock_dong.py` → `dat/simulation/namyangju-dong-mock.json` (16개 읍면, SHA-256 결정론적)
+  - `loadSimulationData`(`loadRegionMeta` 내부), `getSimulationDongIndicators`, `listSimulationDongs`
+  - `getDongInfo()` 에서 시뮬레이션 우선, `_source: 'simulation'` 표시
+- **UI 검토**: impeccable 디자인 진단(`docs/IMPECCABLE-AUDIT.md`) + UX 벤치마크(`docs/UX-BENCHMARK.md`)
+
+새 함수·상태 요약:
+| 추가/변경 | 위치 |
+|----------|------|
+| `state.viewMode`, `state.manualOverrides` | `js/app.js` ~ state |
+| `initViewModeToggle`, `applyViewMode` | `js/app.js` |
+| `renderAdminEditPanel`, `saveAdminEdits`, `resetAdminEdits`, `showInlineToast` | `js/app.js` |
+| `renderInsightCard`, `classifyIndicatorTier`, `getIndicatorInsight`, `getZoneInsight` | `js/app.js` |
+| `renderAiInterpretationCard`, `getAiInterpretation` | `js/app.js` |
+| `renderDongComparison`, `bindDongCompareInteractions`, `drawDongCompareChart` | `js/app.js` |
+| `DONG_COMPARE_INDICATORS`, `CLUSTER_LABELS`, `DONG_COMPARE_MAX_SELECT` | `js/app.js` (상단 데이터) |
+| `dongCompareSelection`, `dongCompareIndicator`, `dongCompareChart` | `js/app.js` (상태) |
+| `getSimulationDongIndicators`, `listSimulationDongs` | `js/app.js` |
+| `indicatorInsights`, `aiInterpretations`, `simulationData` | `js/app.js` (전역 데이터) |
+| `.view-mode-toggle`, `.view-mode-btn`, `.admin-only` | `style.css` §6 / §37 |
+| `.insight-card`, `.insight-item.*` | `style.css` §36 |
+| `.admin-edit-panel`, `.admin-jayul-*`, `.admin-manual-*`, `.admin-btn`, `.admin-inline-toast` | `style.css` §37 |
+| `.dong-compare-section`, `.dong-compare-cluster`, `.dong-compare-chip`, `.cluster-tag`, `.data-status-badge.status-simulation` | `style.css` §38 |
+| `.ai-card`, `.ai-card-pros-cons`, `.ai-card-policy`, `.ai-card-badge` | `style.css` §39 |
+
 **🆕 시군 패널 UX 재배열 (feat/indicator-explorer 브랜치)**:
 - 점수 카드(삶터·일터·쉼터) → 레이더 차트 위로 이동
 - 자율지표 섹션 → 세부지표 다음·KOSIS 토글 앞

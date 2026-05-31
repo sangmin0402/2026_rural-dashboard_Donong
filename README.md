@@ -11,7 +11,7 @@
 1. [프로젝트 개요](#1-프로젝트-개요)
 2. [주요 기능](#2-주요-기능)
 3. [지표 체계](#3-지표-체계)
-4. [데이터 현황](#4-데이터-현황) · [4-1. 0427 확정 데이터·현장조사 (2026-05)](#4-1-0427-확정-데이터현장조사-2026-05)
+4. [데이터 현황](#4-데이터-현황) · [4-1. 0427 확정 데이터·현장조사 (2026-05)](#4-1-0427-확정-데이터현장조사-2026-05) · [4-2. 5/18 피드백 반영 (2026-05)](#4-2-518-피드백-반영-2026-05-featfeedback-0518-브랜치) · [4-3. 0531 현장조사·시사점·비전 통합](#4-3-0531-현장조사시사점비전-통합-feat0531-field-survey-vision-브랜치)
 5. [5대 권역 분류](#5-5대-권역-분류)
 6. [파일 구조](#6-파일-구조)
 7. [로컬 실행](#7-로컬-실행)
@@ -192,6 +192,25 @@
 - **엑셀 ↔ 웹 키 주의**: 엑셀 자율 번호와 앱 키가 한 칸 어긋난 항목이 있음(예: 엑셀 R4 수질 → 앱 **R5**, 엑셀 R5 공원·면적 → 앱 **R6**, 엑셀 W9 체험 파일명 → 앱 **R4** 등). 상세는 `indicator-reference.json`의 `aliases`/`source_key` 참고.
 - **W6(청년 귀농 유입)**: 확정안 기준 **20~39세** 귀농가구원 ÷ 전체 귀농가구원. `귀농인현황_남양주.xlsx`의 **「30대이하」** 열이 해당 구간(통계 표 연령대 명칭).
 
+### 4-2. 5/18 피드백 반영 (2026-05, `feat/feedback-0518` 브랜치)
+
+5/18 회의에서 받은 7개 피드백을 8단계 commit으로 반영. 진행 중 의도 부합도를 별도 review agent(`superpowers:code-reviewer`)가 commit마다 검증.
+
+| # | 피드백 | 반영 commit | 결과물 |
+|---|--------|------------|--------|
+| #1 | UI 재검토 + 유사 포털 사례 | Commit 1·2 | impeccable 디자인 진단 + side-tab 통일 + 헤딩 위계 정리. 사례조사: `docs/UX-BENCHMARK.md` |
+| #2 | 읍면 단위 비교 강화 (남양주) | Commit 6 | 남양주 시군 패널 안에 **"📍 남양주 16개 읍면 비교"** 섹션 (클러스터 칩 + 차트 + 표) |
+| #3 | 시사점 도출 ("그래서 어떻게?") | Commit 3 | 시군 패널 **"이 시군의 시사점" 카드** — 등급별(high/mid/low) 텍스트 |
+| #4 | 남양주 비전 적합도 점수화 | **→ 4-3에서 완료** | 민선8기 THE 비전 적합도 점수(0~100) — `feat/0531-field-survey-vision` |
+| #5 | AI 해석·분석 기능 | Commit 7 | `dat/ai-interpretations.json` (15시군 × 강점·약점·정책) + **"💡 AI 해석" 카드**. 정적 텍스트 (LLM 실시간 호출 X) |
+| #6 | 사용자 유형별 화면 분리 | Commit 4 | 헤더 **일반/관리자 토글** + 시군 패널 안에 manual 층 편집 폼 (localStorage 저장) |
+| #7 | 현장 데이터는 가상 데이터로 먼저 테스트 | Commit 5 | `scripts/generate_mock_dong.py` + `dat/simulation/namyangju-dong-mock.json` (16개 읍면 × 9지표 결정론적 mock, urban/transit/rural 3-cluster) |
+
+**참고 문서**:
+- `docs/UX-BENCHMARK.md` — 유사 포털·대시보드 사례조사 (SGIS / KOSIS / UPIS / 농촌진흥청)
+- `docs/IMPECCABLE-AUDIT.md` — 디자인 진단 결과 (29개 안티패턴 룰)
+- `docs/AI-INTERPRETATIONS.md` — AI 해석 텍스트 관리 가이드
+
 ### ⚠️ 현재 가상(Mock) 데이터 항목
 
 `app.js`의 `CITIES` 객체는 여전히 **기본 목업**을 담고 있으나, `SCORE_SOURCE_OVERRIDES`에 지정된 키는 `region-meta.json`의 `computed`/`manual`이 있으면 **실측·로컬 확정값으로 덮어씀**(지도·레이더·세부지표 카드와 동일 출처).  
@@ -211,6 +230,32 @@
 | R2 토지이용 다양성 | 국토부 NGII 연속지적도 | Shannon H 직접 계산 |
 | R3 녹지율 | 환경부 토지피복도 (세분류) | GIS 분석 필요 |
 | L5~L6, W5~W7, R4~R6 | 각 부처 / 남양주시 | 남양주 자율지표 |
+
+---
+
+### 4-3. 0531 현장조사·시사점·비전 통합 (`feat/0531-field-survey-vision` 브랜치)
+
+5/31 팀 자료 3종(김선혁 트리거 카드 HTML · 한유하 현장조사 가상데이터 xlsx · 이주영 비전 정합성 docx)을 라이브 대시보드에 통합. **읍면을 클릭하면** 비전 적합도·트리거·시사점이 함께 표출됨.
+
+| # | 피드백 | 결과물 |
+|---|--------|--------|
+| #2 | 읍면 단위 비교 **강화** | 현장조사 가상데이터(9개 농촌 읍면) → `dat/simulation/namyangju-field-survey.json` (W5·W7·L4·L6·W6·W9·R6·R7 집계). 읍면 비교 표·차트에 **출처 배지**(현장조사/시뮬레이션/시군고정) |
+| #3 | 시사점 도출 **강화** | 15개 트리거 규칙(`dat/namyangju-triggers.json`) → 정책 시사점 카드 자동 생성 (현황·SWOT·종합판단·정책제안·다음단계) |
+| #4 | 비전 적합도 점수 | 민선8기 **THE 비전**(T 교통·H 삶의질·E 교육환경) 가중평균 **0~100점** + **자원 잠재력 vs 시민 체감 서비스** 분리 막대(docx 진단) |
+
+**지표 ID 표준화(CANON)**: 4개 자료의 키가 어긋나(mock이 R4/R5/R6 한 칸 밀림) `app.js`의 `getEupIndicator()` 변환 레이어로 흡수 — 직접 키 접근 금지. 표준 = xlsx 확정안(W9=농촌체험, R4=양호수질, R5=수변쉼터, R6=도시텃밭, R7=주말농원).
+
+**재현**: `python scripts/build_field_survey.py` → field-survey.json 재생성. 현장조사 컬럼정의·실제 DB 권장 스키마는 [`docs/DATA-SOURCES.md`](docs/DATA-SOURCES.md) §12.
+
+**미반영(자료 대기)**: 사용자 유형별 화면(#6 읍면담당자/조회자 토글)은 일반/관리자 토글 골격만 존재 — 박세희 자료 도착 시 보강. **R5 수변·생태쉼터 면적**은 GIS 미수집(`_pending`) — 수집 시 비전 점수에 자동 반영.
+
+### 4-4. 실시간 LLM AI 해석 (#5, `feat/0531-field-survey-vision`)
+
+정적 텍스트였던 AI 해석을 **MindLogic UOS Gateway**(OpenAI 호환) 실시간 LLM으로 확장. 시군·읍면 카드의 **"🤖 실시간 AI 해석" 버튼** 클릭 시, 지표·비전 적합도·발화 트리거를 근거로 LLM이 맞춤 해석(헤드라인·강점·약점·정책권고·우선조치)을 생성한다.
+
+- **보안**: 정적 GitHub Pages엔 비밀키를 둘 수 없어 **Cloudflare Worker 프록시**(`worker/`)가 키를 보관(`wrangler secret`)하고 게이트웨이를 대신 호출. 클라이언트는 키 없이 구조화 컨텍스트만 전송. 배포·로컬 실행은 [`worker/README.md`](worker/README.md).
+- **설정**: `js/config.js`의 `LLM_PROXY_URL`에 배포된 Worker 주소 기입. **비우면 자동으로 사전 작성 텍스트로 폴백**(무중단).
+- **캐시·비용**: sessionStorage 캐시(같은 지역 즉시) + "↻ 재생성" 버튼. 모델 기본 `claude-sonnet-4-6`(Worker 상수). ⚠️ 키는 어떤 커밋 파일에도 없음(`config.js`엔 공개 URL만).
 
 ---
 
@@ -236,9 +281,10 @@ Web/
 ├── README.md                # 이 파일
 ├── CLAUDE.md                # AI 작업용 컨텍스트 문서
 ├── css/
-│   └── style.css            # 전체 스타일 (섹션 1~34)
+│   └── style.css            # 전체 스타일 (섹션 1~40)
 ├── js/
-│   └── app.js               # 전체 앱 로직 (Vanilla JS, 프레임워크 없음)
+│   ├── app.js               # 전체 앱 로직 (Vanilla JS, 프레임워크 없음)
+│   └── config.js            # 🆕 LLM_PROXY_URL 설정 (비밀 아님 — Worker 공개 URL)
 ├── dat/
 │   ├── gyeonggi-sigun.geojson   # 시군 경계
 │   ├── gyeonggi-dong.geojson    # 읍면동 경계 (줌 11+ 표시)
@@ -246,7 +292,18 @@ Web/
 │   ├── region-meta.json         # KOSIS·SGIS·manual·local0427 통합 캐시 (sigun + dong)
 │   ├── indicator-reference.json # 0427 기준 엑셀에서 생성한 지표 정의·alias
 │   ├── field-survey-meta.json   # 7_현장조사 항목 (통계와 분리)
-│   └── data-gap-report.json     # 수집 갭·상태 요약 (import 시 갱신)
+│   ├── data-gap-report.json     # 수집 갭·상태 요약 (import 시 갱신)
+│   ├── indicator-insights.json  # 🆕 지표×등급별 시사점 텍스트 (피드백 #3)
+│   ├── ai-interpretations.json  # 🆕 시군×AI 해석 텍스트 (피드백 #5)
+│   ├── namyangju-triggers.json  # 🆕 15개 트리거→시사점 카드 + THE비전/SWOT (0531, #3·#4)
+│   └── simulation/
+│       ├── namyangju-dong-mock.json     # 🆕 남양주 16읍면 × 9지표 결정론적 mock (피드백 #7)
+│       └── namyangju-field-survey.json  # 🆕 현장조사 가상데이터 9읍면 집계 (0531, #2)
+├── docs/
+│   ├── DATA-SOURCES.md
+│   ├── UX-BENCHMARK.md          # 🆕 유사 포털 사례조사 (피드백 #1)
+│   ├── IMPECCABLE-AUDIT.md      # 🆕 디자인 진단 결과 (피드백 #1)
+│   └── AI-INTERPRETATIONS.md    # 🆕 AI 해석 텍스트 관리 가이드 (피드백 #5)
 └── scripts/
     ├── process_ri.py            # SHP → GeoJSON 변환
     ├── process_sigun.py         # 시군구 SHP → gyeonggi-sigun.geojson (SGIS 코드 기준)
@@ -254,8 +311,18 @@ Web/
     ├── fetch_kosis.py           # KOSIS API 호출 → region-meta.json 갱신
     ├── fetch_sgis.py            # SGIS API 호출 → 시군·읍면 raw 병합
     ├── import_0427_data.py      # 0427_데이터 + 기준 엑셀 → region-meta·갭 리포트
+    ├── generate_mock_dong.py    # 🆕 남양주 16읍면 가상 데이터 생성기 (피드백 #7)
+    ├── build_field_survey.py    # 🆕 현장조사 xlsx → namyangju-field-survey.json (0531, #2)
     ├── requirements.txt         # Python 의존성
     └── README.md                # 스크립트 실행 절차 및 KOSIS API 가이드
+
+~~~ (저장소 루트, GitHub Pages가 서빙하지 않는 별도 배포) ~~~
+worker/                          # 🆕 LLM 해석 프록시 (Cloudflare Worker, 0531 #5)
+├── src/index.js                 #   MindLogic Gateway 호출 + CORS + 프롬프트 조립
+├── wrangler.toml                #   배포 설정 (키는 wrangler secret, 파일에 없음)
+├── package.json                 #   ESM
+├── README.md                    #   배포·로컬 실행 절차
+└── .dev.vars                    #   로컬 키 (gitignore — 커밋 안 됨)
 ```
 
 **주요 의존 라이브러리** (CDN)
@@ -399,4 +466,4 @@ const name = CITIES[cityId].name;
 
 ---
 
-*최종 갱신: 2026.05 — 0427 로컬·기준 엑셀 파이프라인(`import_0427_data.py`)·현장조사 메타·갭 리포트 + 읍면 SGIS raw + UI 출처 배지*
+*최종 갱신: 2026.05.31 — 0531 현장조사 가상데이터 읍면 집계 + 15트리거 시사점 카드 + 민선8기 비전 적합도 점수 통합 (`feat/0531-field-survey-vision`). 이전: 0427 로컬·기준 엑셀 파이프라인·현장조사 메타·갭 리포트 + 읍면 SGIS raw + UI 출처 배지*

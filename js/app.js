@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 경기도 농촌다움 지표 웹 대시보드
  * app.js - 메인 애플리케이션 로직
  *
@@ -59,6 +59,93 @@ const JAYUL_INDICATORS_POOL = {
   R8: { name: '국가유산',               unit: '개',      category: 'shimter', higherBetter: true, spatial: '시군',   year: 2025, source: '문화재청', pending: true },
   W8: { name: '서비스판매 종사자',       unit: '명',      category: 'ilter',   higherBetter: true, spatial: '시군',   year: 2023, source: 'KOSIS 전국사업체조사', pending: true },
 };
+
+// ===================================================================
+// === 지표 시사점·정책 제안 (피드백 #3 #5) ===
+// ===================================================================
+//   indicator-insights.json 의 텍스트를 시군별 등급에 맞춰 골라내는 헬퍼.
+//   각 지표가 "단순 수치"를 넘어 "그래서 어떻게?" 까지 답변하도록.
+
+/**
+ * 시군의 어떤 지표 점수가 5분위 중 어디(high/mid/low)에 해당하는지 판정.
+ * 정렬은 항상 값 기준 내림차순. 1~5 등급 → high(1~2), mid(3), low(4~5).
+ */
+function classifyIndicatorTier(cityId, indicatorKey) {
+  const myVal = (typeof getCityIndicatorValue === 'function')
+    ? getCityIndicatorValue(cityId, indicatorKey)
+    : (CITIES[cityId]?.indicators?.[indicatorKey] ?? CITIES[cityId]?.jayulIndicators?.[indicatorKey]);
+  if (myVal == null) return null;
+  const allVals = Object.keys(CITIES).map(cid => {
+    const v = CITIES[cid]?.indicators?.[indicatorKey];
+    if (v != null) return v;
+    return CITIES[cid]?.jayulIndicators?.[indicatorKey];
+  }).filter(v => v != null);
+  if (allVals.length < 3) return null;
+  const sorted = [...allVals].sort((a, b) => b - a);  // 큰 값 먼저
+  const idx = sorted.findIndex(v => v === myVal) + 1;
+  const tier = Math.ceil((idx / sorted.length) * 5);
+  const meta = INDICATORS[indicatorKey] || JAYUL_INDICATORS_POOL[indicatorKey];
+  // higherBetter=false 면 등급 반전 (낮은 값이 좋은 등급)
+  const adjustedTier = meta?.higherBetter === false ? (6 - tier) : tier;
+  if (adjustedTier <= 2) return 'high';
+  if (adjustedTier >= 4) return 'low';
+  return 'mid';
+}
+
+/**
+ * 특정 시군·지표에 맞는 시사점 텍스트 반환.
+ * @returns {{ interpretation, tierText, tier } | null}
+ */
+function getIndicatorInsight(cityId, indicatorKey) {
+  if (!indicatorInsights || !indicatorInsights.indicators) return null;
+  const block = indicatorInsights.indicators[indicatorKey];
+  if (!block) return null;
+  const tier = classifyIndicatorTier(cityId, indicatorKey);
+  const tierText = (tier && block[tier]) || null;
+  return {
+    interpretation: block.interpretation,
+    tierText,
+    tier,
+  };
+}
+
+/**
+ * 시군의 권역 요약 텍스트.
+ */
+function getZoneInsight(cityId) {
+  if (!indicatorInsights || !indicatorInsights.by_zone) return null;
+  const zone = (typeof CITY_ZONE !== 'undefined') ? CITY_ZONE[cityId] : null;
+  return zone ? indicatorInsights.by_zone[zone] : null;
+}
+
+/**
+ * AI 해석 데이터 조회 — 시군별 / 권역별 / 지표×등급별 (피드백 #5)
+ * 본 데이터는 정적 사전 작성 텍스트로, 향후 LLM 동적 분석으로 대체될 예정.
+ *
+ * @param {string} cityId 시군 ID (예: 'namyangju')
+ * @param {string} [indicatorKey] 선택: 특정 지표 키 (L1/L2/.../R6) — 등급별 해석 추가
+ * @returns {{ city: object|null, zone: object|null, indicatorTier: string|null }}
+ */
+function getAiInterpretation(cityId, indicatorKey) {
+  if (!aiInterpretations) return { city: null, zone: null, indicatorTier: null };
+  const zoneKey = (typeof CITY_ZONE !== 'undefined') ? CITY_ZONE[cityId] : null;
+  let indicatorTier = null;
+  if (indicatorKey) {
+    const tier = (typeof classifyIndicatorTier === 'function')
+      ? classifyIndicatorTier(cityId, indicatorKey)
+      : null;
+    if (tier) {
+      const baseKey = indicatorKey.split('_')[0]; // L1_pop_growth → L1
+      const tk = `${baseKey}_${tier}`;
+      indicatorTier = (aiInterpretations.by_indicator_tier && aiInterpretations.by_indicator_tier[tk]) || null;
+    }
+  }
+  return {
+    city: (aiInterpretations.by_city && aiInterpretations.by_city[cityId]) || null,
+    zone: (zoneKey && aiInterpretations.by_zone && aiInterpretations.by_zone[zoneKey]) || null,
+    indicatorTier,
+  };
+}
 
 // 카테고리 종합 가상 지표 키 매핑
 const CATEGORY_TOTALS = {
@@ -418,6 +505,8 @@ const state = {
   activeTab: 'overview',
   activeIndicator: 'total',
   scenarioValues: {},
+  viewMode: 'public',   // 'public' | 'admin' — 피드백 #6: 사용자 유형 토글
+  manualOverrides: {},  // { [cityId]: { [key]: value } } — 관리자 수동 편집값 (localStorage 동기화)
   charts: {
     radar: null,
     comparison: null,
@@ -657,6 +746,11 @@ let regionMeta = null;      // KOSIS 캐시 (region-meta.json)
 let indicatorReference = null; // 0427 기준 지표 정의/alias
 let fieldSurveyMeta = null;    // 현장조사 항목 메타
 let dataGapReport = null;      // API/로컬 데이터 누락 상태
+let indicatorInsights = null;  // 지표별 시사점·정책 사전 작성 텍스트 (피드백 #3 #5)
+let simulationData = null;     // 시뮬레이션 마이크로데이터 (피드백 #7 — namyangju 읍면 mock)
+let aiInterpretations = null;  // AI 해석용 사전 작성 텍스트 (피드백 #5 — 정적 텍스트)
+let fieldSurveyData = null;    // 현장조사 가상데이터 집계 (0531 — namyangju 9읍면 실데이터형, CANON 키)
+let triggerConfig = null;      // 트리거→시사점 카드 엔진 + THE비전/SWOT (0531 — namyangju-triggers.json)
 let labelGroup = null;      // 시군명 라벨 레이어
 let outlineLayer = null;    // 대상지(15개 시군) 합쳐진 외곽선 효과 레이어
 let sigunBorderLayer = null; // 시군 경계선 전용 오버레이 (dong/ri 위에 항상 표시)
@@ -930,21 +1024,36 @@ function updateRiVisibility() {
  */
 async function loadRegionMeta() {
   try {
-    const [metaResp, refResp, surveyResp, gapResp] = await Promise.all([
+    const [metaResp, refResp, surveyResp, gapResp, insightsResp, simResp, aiResp, fieldResp, trigResp] = await Promise.all([
       fetch('./dat/region-meta.json', { cache: 'no-cache' }),
       fetch('./dat/indicator-reference.json', { cache: 'no-cache' }),
       fetch('./dat/field-survey-meta.json', { cache: 'no-cache' }),
       fetch('./dat/data-gap-report.json', { cache: 'no-cache' }),
+      fetch('./dat/indicator-insights.json', { cache: 'no-cache' }),
+      fetch('./dat/simulation/namyangju-dong-mock.json', { cache: 'no-cache' }),
+      fetch('./dat/ai-interpretations.json', { cache: 'no-cache' }),
+      fetch('./dat/simulation/namyangju-field-survey.json', { cache: 'no-cache' }),
+      fetch('./dat/namyangju-triggers.json', { cache: 'no-cache' }),
     ]);
     regionMeta = metaResp.ok ? await metaResp.json() : {};
     indicatorReference = refResp.ok ? await refResp.json() : null;
     fieldSurveyMeta = surveyResp.ok ? await surveyResp.json() : null;
     dataGapReport = gapResp.ok ? await gapResp.json() : null;
+    indicatorInsights = insightsResp.ok ? await insightsResp.json() : null;
+    simulationData = simResp.ok ? await simResp.json() : null;
+    aiInterpretations = aiResp.ok ? await aiResp.json() : null;
+    fieldSurveyData = fieldResp.ok ? await fieldResp.json() : null;
+    triggerConfig = trigResp.ok ? await trigResp.json() : null;
   } catch (err) {
     regionMeta = {};
     indicatorReference = null;
     fieldSurveyMeta = null;
     dataGapReport = null;
+    indicatorInsights = null;
+    simulationData = null;
+    aiInterpretations = null;
+    fieldSurveyData = null;
+    triggerConfig = null;
   }
   // SGIS computed 값으로 CITIES mock 덮어쓰기 (실측 우선)
   applySgisOverridesToCities();
@@ -1592,17 +1701,277 @@ function updateDetailPanel(cityId) {
   // 점수 카드 업데이트
   updateScoreCards(cityId);
 
+  // 시사점·정책 제안 섹션 (피드백 #3 #5)
+  renderInsightCard(cityId);
+
+  // AI 해석 카드 (피드백 #5) — 시군 단위 사전 작성 텍스트
+  renderAiInterpretationCard(cityId);
+
+  // 관리자 편집 패널 (피드백 #6) — view-admin 모드일 때만 표시
+  renderAdminEditPanel(cityId);
+
   // 비교 추가 버튼
   updateComparisonButton(cityId);
 
   // 남양주 자율지표 섹션
   updateJayulSection(cityId);
 
+  // 남양주 읍면 비교 섹션 (피드백 #2 #7) — namyangju 만 표시
+  renderDongComparison(cityId);
+
   // KOSIS 시군 기본 통계 섹션
   renderKosisSigunStats(cityId);
 
   // 현장조사 입력/관리 섹션
   renderFieldSurveySection(cityId);
+}
+
+/**
+ * 시군별 시사점 카드 렌더 — "그래서 어떻게?" 답변 (피드백 #3 #5)
+ * - 권역 요약 (도농전환형 등)
+ * - 선정된 자율지표 중 등급별 시사점 (high/mid/low 자동 매칭)
+ */
+function renderInsightCard(cityId) {
+  // 기존 카드 제거 (시군 전환 시 재렌더)
+  const existing = document.getElementById('sigun-insight-card');
+  if (existing) existing.remove();
+
+  if (!indicatorInsights) return;
+  const city = CITIES[cityId];
+  if (!city) return;
+
+  const zoneInsight = getZoneInsight(cityId);
+
+  // 시군의 선정 자율지표 중 인사이트가 있는 것 모음 (최대 3개 — 정보 과부하 방지)
+  const selectedKeys = (city.selectedJayulKeys || []).filter(k => indicatorInsights.indicators[k]);
+  const insightsForCity = selectedKeys.slice(0, 3).map(key => {
+    const meta = JAYUL_INDICATORS_POOL[key] || INDICATORS[key];
+    const insight = getIndicatorInsight(cityId, key);
+    return { key, name: meta?.name || key, insight };
+  }).filter(x => x.insight && x.insight.tierText);
+
+  // 카드 구성
+  const card = document.createElement('section');
+  card.id = 'sigun-insight-card';
+  card.className = 'insight-card';
+  card.setAttribute('aria-label', `${city.name} 시사점 및 정책 제안`);
+
+  let html = '';
+  if (zoneInsight) {
+    html += `
+      <header class="insight-card-header">
+        <span class="insight-emoji" aria-hidden="true">💡</span>
+        <div class="insight-header-text">
+          <h3>${city.name}의 농촌다움 시사점</h3>
+          <p class="insight-zone-label"><strong>${zoneInsight.label}</strong> · ${zoneInsight.summary}</p>
+        </div>
+      </header>`;
+  }
+
+  if (insightsForCity.length > 0) {
+    html += '<div class="insight-list">';
+    insightsForCity.forEach(item => {
+      const tierClass = item.insight.tier ? `insight-tier-${item.insight.tier}` : '';
+      const tierLabel = { high: '강점', mid: '평균', low: '보강 필요' }[item.insight.tier] || '';
+      html += `
+        <article class="insight-item ${tierClass}" data-key="${item.key}">
+          <header class="insight-item-header">
+            <span class="insight-item-key">${item.key}</span>
+            <span class="insight-item-name">${item.name}</span>
+            ${tierLabel ? `<span class="insight-item-tier">${tierLabel}</span>` : ''}
+          </header>
+          <p class="insight-item-text">${item.insight.tierText}</p>
+        </article>`;
+    });
+    html += '</div>';
+  } else {
+    html += `<p class="insight-empty-note">자율지표 선정·등급 산정이 완료되면 여기에 정책 제언이 표시됩니다.</p>`;
+  }
+
+  // 안내 푸터
+  html += `
+    <footer class="insight-card-footer">
+      <small>💬 해석 텍스트는 보고서 기반의 사전 작성 가이드입니다. 향후 LLM 동적 분석으로 확장 예정.</small>
+    </footer>`;
+
+  card.innerHTML = html;
+
+  // 점수 카드 다음에 삽입
+  const scoreCards = document.getElementById('score-cards');
+  const cityDetail = document.getElementById('city-detail');
+  if (scoreCards && scoreCards.parentNode) {
+    scoreCards.parentNode.insertBefore(card, scoreCards.nextSibling);
+  } else if (cityDetail) {
+    cityDetail.appendChild(card);
+  }
+}
+
+/**
+ * AI 해석 카드 렌더 — 시군별 강점·약점·정책 권고 (피드백 #5)
+ * 본 텍스트는 사전 작성된 가이드입니다. 향후 LLM 동적 분석으로 대체 예정.
+ *
+ * 위치: 시사점 카드(`#sigun-insight-card`) 다음에 삽입.
+ *      시사점 카드가 없으면 score-cards 다음, 그것도 없으면 city-detail 끝.
+ */
+function renderAiInterpretationCard(cityId) {
+  const existing = document.getElementById('ai-interpretation-card');
+  if (existing) existing.remove();
+
+  if (!aiInterpretations) return;
+  const data = getAiInterpretation(cityId);
+  if (!data.city && !data.zone) return; // 둘 다 없으면 카드 자체 생략
+
+  const city = data.city;
+  const zone = data.zone;
+
+  const card = document.createElement('section');
+  card.id = 'ai-interpretation-card';
+  card.className = 'ai-card';
+  card.setAttribute('aria-label', `${city?.name || cityId} AI 해석`);
+
+  // 헤드라인
+  let html = `
+    <header class="ai-card-header">
+      <span class="ai-card-emoji" aria-hidden="true">💡</span>
+      <div class="ai-card-titles">
+        <h3>AI 해석 · ${city?.name || cityId}</h3>
+        ${city?.headline
+          ? `<p class="ai-card-headline">${city.headline}</p>`
+          : (zone?.summary ? `<p class="ai-card-headline">${zone.summary}</p>` : '')}
+      </div>
+      <span class="ai-card-badge">사전 작성</span>
+    </header>
+  `;
+
+  // 강점·약점
+  if (city && (city.strengths?.length || city.weaknesses?.length)) {
+    html += '<div class="ai-card-pros-cons">';
+    if (city.strengths?.length) {
+      html += `
+        <div class="ai-card-side ai-card-strengths">
+          <h4>강점</h4>
+          <ul>${city.strengths.map(s => `<li>${s}</li>`).join('')}</ul>
+        </div>`;
+    }
+    if (city.weaknesses?.length) {
+      html += `
+        <div class="ai-card-side ai-card-weaknesses">
+          <h4>약점</h4>
+          <ul>${city.weaknesses.map(w => `<li>${w}</li>`).join('')}</ul>
+        </div>`;
+    }
+    html += '</div>';
+  }
+
+  // 정책 권고
+  if (city?.policy_recommendation) {
+    html += `
+      <div class="ai-card-policy">
+        <h4>정책 권고 방향</h4>
+        <p>${city.policy_recommendation}</p>
+      </div>`;
+  } else if (zone?.policy_direction) {
+    html += `
+      <div class="ai-card-policy">
+        <h4>권역 권고 방향</h4>
+        <p>${zone.policy_direction}</p>
+      </div>`;
+  }
+
+  // 푸터 — 데이터 출처·향후 계획
+  html += `
+    <footer class="ai-card-footer">
+      <small>
+        💬 본 해석은 보고서·인터뷰 기반 사전 작성 텍스트입니다 (LLM 실시간 분석 아님).
+        ${aiInterpretations._meta?.future_work ? `<br>→ 향후 계획: ${aiInterpretations._meta.future_work}` : ''}
+      </small>
+    </footer>`;
+
+  card.innerHTML = html;
+
+  // 시사점 카드 다음, 없으면 score-cards 다음, 그것도 없으면 city-detail 끝
+  const anchor = document.getElementById('sigun-insight-card')
+              || document.getElementById('score-cards');
+  if (anchor && anchor.parentNode) {
+    anchor.parentNode.insertBefore(card, anchor.nextSibling);
+  } else {
+    const cityDetail = document.getElementById('city-detail');
+    if (cityDetail) cityDetail.appendChild(card);
+  }
+
+  // 실시간 LLM 해석 버튼 (프록시 설정 시에만) — 0531 #5
+  if (llmEnabled()) wireLlmButton(card, 'sigun', cityId);
+}
+
+/**
+ * AI 카드(시군)에 "실시간 AI 해석 생성/재생성" 버튼을 달고, 클릭 시
+ * LLM 결과로 카드 본문(헤드라인·강점·약점·정책)을 교체한다.
+ */
+function wireLlmButton(card, scope, regionId) {
+  const header = card.querySelector('.ai-card-header');
+  if (!header) return;
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'ai-llm-btn';
+  btn.textContent = '🤖 실시간 AI 해석';
+  header.appendChild(btn);
+
+  let generated = false;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = '⏳ 생성 중…';
+    const data = await llmInterpret(scope, regionId, null, { force: generated });
+    btn.disabled = false;
+    if (!data) {
+      btn.textContent = '⚠️ 실패 — 재시도';
+      return;
+    }
+    generated = true;
+    applyLlmToSigunCard(card, regionId, data);
+    btn.textContent = '↻ 재생성';
+  });
+}
+
+/** LLM 응답으로 시군 AI 카드 본문을 교체 */
+function applyLlmToSigunCard(card, cityId, d) {
+  const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
+  const li = (xs) => (xs || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+  const head = card.querySelector('.ai-card-titles');
+  if (head) {
+    head.innerHTML = `<h3>AI 해석 · ${name}</h3>${d.headline ? `<p class="ai-card-headline">${escapeHtml(d.headline)}</p>` : ''}`;
+  }
+  const badge = card.querySelector('.ai-card-badge');
+  if (badge) { badge.textContent = '실시간 LLM'; badge.classList.add('is-live'); }
+
+  // 강점·약점 교체(또는 생성)
+  let pc = card.querySelector('.ai-card-pros-cons');
+  if (!pc) {
+    pc = document.createElement('div'); pc.className = 'ai-card-pros-cons';
+    const hdr = card.querySelector('.ai-card-header');
+    if (hdr) hdr.insertAdjacentElement('afterend', pc);
+  }
+  pc.innerHTML =
+    `<div class="ai-card-side ai-card-strengths"><h4>강점</h4><ul>${li(d.strengths)}</ul></div>` +
+    `<div class="ai-card-side ai-card-weaknesses"><h4>약점</h4><ul>${li(d.weaknesses)}</ul></div>`;
+
+  // 정책 권고 교체
+  let pol = card.querySelector('.ai-card-policy');
+  if (!pol) {
+    pol = document.createElement('div'); pol.className = 'ai-card-policy';
+    pc.insertAdjacentElement('afterend', pol);
+  }
+  pol.innerHTML = `<h4>정책 권고 방향</h4><p>${escapeHtml(d.policy_recommendation || '')}</p>`;
+
+  // 푸터 — 실시간 LLM 표기
+  const foot = card.querySelector('.ai-card-footer small');
+  if (foot) foot.innerHTML = `🤖 MindLogic Gateway 실시간 LLM 해석${d._model ? ` · ${d._model}` : ''} · 지표·비전 점수 기반 자동 생성`;
+}
+
+/** 간단 HTML 이스케이프 (LLM 출력 안전 표시) */
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 /**
@@ -1651,9 +2020,14 @@ function renderRegionBasicStats(level, regionId, regionLabel) {
   }
 
   // 3-layer 통합 조회 함수 — 어느 층에 있든 값과 메타 반환
+  // 관리자 수동 편집값(state.manualOverrides) 은 manual 층보다 우선 (사용자 의도가 가장 최신)
+  const adminOverrides = (level === 'sigun'
+      && state.manualOverrides && state.manualOverrides[regionId])
+    || null;
   function readField(keys) {
     const keyList = Array.isArray(keys) ? keys : [keys];
     for (const key of keyList) {
+      if (adminOverrides    && adminOverrides[key])    return { ...adminOverrides[key],    _layer: 'manual', _key: key };
       if (meta.computed && meta.computed[key]) return { ...meta.computed[key], _layer: 'computed', _key: key };
       if (meta.raw      && meta.raw[key])      return { ...meta.raw[key],      _layer: 'raw',      _key: key };
       if (meta.manual   && meta.manual[key])   return { ...meta.manual[key],   _layer: 'manual',   _key: key };
@@ -1805,6 +2179,281 @@ function initKosisToggle() {
   });
 }
 
+// ===================================================================
+// === 일반/관리자 뷰 토글 (피드백 #6) ===
+// ===================================================================
+
+const VIEW_MODE_STORAGE_KEY = 'rural-dashboard.viewMode';
+const MANUAL_OVERRIDES_STORAGE_KEY = 'rural-dashboard.manualOverrides';
+
+/**
+ * 헤더의 일반/관리자 토글을 초기화하고 저장된 모드를 복원한다.
+ * - localStorage 에 마지막 선택 모드 저장 ('public' | 'admin')
+ * - body 에 'view-admin' 클래스 추가로 .admin-only 요소 표시
+ * - 모드 전환 시 현재 선택 시군 패널 즉시 재렌더
+ */
+function initViewModeToggle() {
+  // localStorage 복원
+  try {
+    const saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    if (saved === 'admin' || saved === 'public') state.viewMode = saved;
+    const savedOverrides = localStorage.getItem(MANUAL_OVERRIDES_STORAGE_KEY);
+    if (savedOverrides) state.manualOverrides = JSON.parse(savedOverrides) || {};
+  } catch (err) {
+    console.warn('[viewMode] localStorage 복원 실패:', err);
+  }
+
+  applyViewMode(state.viewMode);
+
+  document.querySelectorAll('.view-mode-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.view === 'admin' ? 'admin' : 'public';
+      if (mode === state.viewMode) return;
+      state.viewMode = mode;
+      try { localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode); } catch (err) { /* ignore */ }
+      applyViewMode(mode);
+      // 현재 시군 패널 갱신 (관리자 카드 표시·숨김)
+      if (state.selectedCity) updateDetailPanel(state.selectedCity);
+    });
+  });
+}
+
+/**
+ * body 클래스와 토글 버튼 활성 상태를 한 번에 적용한다.
+ * @param {'public'|'admin'} mode
+ */
+function applyViewMode(mode) {
+  document.body.classList.toggle('view-admin', mode === 'admin');
+  document.querySelectorAll('.view-mode-btn').forEach(btn => {
+    btn.classList.toggle('is-active', btn.dataset.view === mode);
+    btn.setAttribute('aria-pressed', String(btn.dataset.view === mode));
+  });
+}
+
+/**
+ * 관리자 모드에서 manual 층 + 자율지표 선정을 편집하는 패널.
+ * 시군 패널 안에서 score-cards 다음 자리에 삽입된다 (인사이트 카드 다음).
+ * @param {string} cityId
+ */
+function renderAdminEditPanel(cityId) {
+  // 기존 카드 제거 (시군 전환·모드 전환 시 재렌더)
+  const existing = document.getElementById('admin-edit-panel');
+  if (existing) existing.remove();
+
+  if (state.viewMode !== 'admin') return;
+  const city = CITIES[cityId];
+  if (!city) return;
+
+  const section = document.createElement('section');
+  section.id = 'admin-edit-panel';
+  section.className = 'admin-edit-panel admin-only';
+  section.setAttribute('aria-label', `${city.name} 관리자 편집`);
+
+  // 자율지표 풀 — 모든 후보 표시, 선정된 것은 체크 (최대 4개 제한)
+  const allJayulKeys = Object.keys(JAYUL_INDICATORS_POOL || {});
+  const selected = new Set(city.selectedJayulKeys || []);
+  const MAX_SELECTED = 4;
+
+  // manual 층 편집 — 현재 region-meta.json 의 raw/computed 와 겹치지 않는 추가 메모성 항목 + 자주 쓰는 W3 재정자립도
+  const overrides = (state.manualOverrides && state.manualOverrides[cityId]) || {};
+  const MANUAL_FIELDS = [
+    { key: 'W3_fiscal_independence', label: '재정자립도 (W3) 수동값', unit: '%', step: '0.1', placeholder: '예: 32.5' },
+    { key: 'note', label: '관리자 메모', type: 'textarea', placeholder: '시군별 보강 사항을 기록하세요.' },
+  ];
+
+  let html = `
+    <header class="admin-edit-head">
+      <span class="admin-edit-emoji" aria-hidden="true">✏️</span>
+      <div>
+        <h3>${city.name} 관리자 편집</h3>
+        <p class="admin-edit-hint">변경 사항은 이 브라우저에만 저장됩니다 (localStorage). 서버 저장은 별도 백엔드 필요.</p>
+      </div>
+    </header>
+    <div class="admin-edit-body">
+      <fieldset class="admin-jayul-fieldset">
+        <legend>자율지표 선정 (최대 ${MAX_SELECTED}개)</legend>
+        <div class="admin-jayul-grid">
+  `;
+  allJayulKeys.forEach(key => {
+    const meta = JAYUL_INDICATORS_POOL[key] || {};
+    const isChecked = selected.has(key);
+    html += `
+      <label class="admin-jayul-item ${isChecked ? 'is-checked' : ''}">
+        <input type="checkbox"
+               data-jayul-key="${key}"
+               ${isChecked ? 'checked' : ''}
+               aria-label="${meta.name || key} 선정 토글">
+        <span class="admin-jayul-key">${key}</span>
+        <span class="admin-jayul-name">${meta.name || key}</span>
+      </label>`;
+  });
+  html += `
+        </div>
+        <p class="admin-jayul-status" id="admin-jayul-status" aria-live="polite">선정 ${selected.size}/${MAX_SELECTED}개</p>
+      </fieldset>
+
+      <fieldset class="admin-manual-fieldset">
+        <legend>수동 입력 데이터</legend>
+  `;
+  MANUAL_FIELDS.forEach(field => {
+    const val = overrides[field.key];
+    const valueAttr = (val && val.value != null) ? String(val.value) : '';
+    if (field.type === 'textarea') {
+      html += `
+        <label class="admin-manual-row">
+          <span class="admin-manual-label">${field.label}</span>
+          <textarea data-manual-key="${field.key}"
+                    rows="2"
+                    placeholder="${field.placeholder || ''}"
+                    class="admin-manual-input">${valueAttr.replace(/</g, '&lt;')}</textarea>
+        </label>`;
+    } else {
+      html += `
+        <label class="admin-manual-row">
+          <span class="admin-manual-label">${field.label}${field.unit ? ` (${field.unit})` : ''}</span>
+          <input type="number"
+                 data-manual-key="${field.key}"
+                 step="${field.step || 'any'}"
+                 value="${valueAttr}"
+                 placeholder="${field.placeholder || ''}"
+                 class="admin-manual-input">
+        </label>`;
+    }
+  });
+  html += `
+      </fieldset>
+
+      <div class="admin-edit-actions">
+        <button type="button" class="admin-btn admin-btn-primary" id="admin-save-btn">💾 저장</button>
+        <button type="button" class="admin-btn admin-btn-ghost" id="admin-reset-btn">↺ 초기화</button>
+      </div>
+    </div>
+  `;
+  section.innerHTML = html;
+
+  // 인사이트 카드 다음에 삽입 (없으면 score-cards 다음)
+  const anchor = document.getElementById('sigun-insight-card') || document.getElementById('score-cards');
+  if (anchor && anchor.parentNode) {
+    anchor.parentNode.insertBefore(section, anchor.nextSibling);
+  } else {
+    const cityDetail = document.getElementById('city-detail');
+    if (cityDetail) cityDetail.appendChild(section);
+  }
+
+  // 체크박스: 선정 4개 제한 + UI 즉시 반영
+  section.querySelectorAll('input[data-jayul-key]').forEach(input => {
+    input.addEventListener('change', () => {
+      const checked = section.querySelectorAll('input[data-jayul-key]:checked');
+      if (checked.length > MAX_SELECTED) {
+        input.checked = false;
+        showInlineToast(`자율지표는 최대 ${MAX_SELECTED}개까지 선정할 수 있어요.`);
+        return;
+      }
+      input.closest('.admin-jayul-item')?.classList.toggle('is-checked', input.checked);
+      const status = section.querySelector('#admin-jayul-status');
+      if (status) status.textContent = `선정 ${checked.length}/${MAX_SELECTED}개`;
+    });
+  });
+
+  // 저장 버튼
+  const saveBtn = section.querySelector('#admin-save-btn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', () => saveAdminEdits(cityId, section));
+  }
+  const resetBtn = section.querySelector('#admin-reset-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => resetAdminEdits(cityId));
+  }
+}
+
+/**
+ * 관리자 편집을 저장: 자율지표 선정은 CITIES[cityId].selectedJayulKeys 에 반영,
+ * 수동 입력은 state.manualOverrides + localStorage 에 누적 저장.
+ */
+function saveAdminEdits(cityId, container) {
+  const city = CITIES[cityId];
+  if (!city) return;
+
+  // 자율지표 선정
+  const newSelected = Array.from(container.querySelectorAll('input[data-jayul-key]:checked'))
+    .map(i => i.dataset.jayulKey);
+  city.selectedJayulKeys = newSelected;
+
+  // 수동 입력
+  const overrides = state.manualOverrides[cityId] || {};
+  container.querySelectorAll('[data-manual-key]').forEach(field => {
+    const key = field.dataset.manualKey;
+    const raw = field.value?.trim();
+    if (!raw) {
+      delete overrides[key];
+      return;
+    }
+    const isNumber = field.tagName === 'INPUT' && field.type === 'number';
+    overrides[key] = {
+      value: isNumber ? Number(raw) : raw,
+      year: new Date().getFullYear(),
+      source: 'manual:admin-ui',
+      updated_by: 'admin',
+      updated_at: new Date().toISOString(),
+    };
+  });
+  state.manualOverrides[cityId] = overrides;
+
+  try {
+    localStorage.setItem(MANUAL_OVERRIDES_STORAGE_KEY, JSON.stringify(state.manualOverrides));
+  } catch (err) {
+    console.warn('[admin] manualOverrides 저장 실패:', err);
+  }
+
+  showInlineToast('저장됨 · 패널을 갱신합니다.');
+  // 패널 전체 재렌더 → 자율지표 카드·인사이트 카드 갱신
+  updateDetailPanel(cityId);
+}
+
+/**
+ * 현재 시군의 관리자 편집(자율지표 선정·수동 입력)을 권역 기본값으로 되돌린다.
+ */
+function resetAdminEdits(cityId) {
+  const city = CITIES[cityId];
+  if (!city) return;
+  // 자율지표 — 권역 추천값으로 복원 (CITY_ZONE[cityId] 매핑 사용)
+  const zone = typeof CITY_ZONE === 'object' ? CITY_ZONE[cityId] : null;
+  if (zone && typeof RECOMMENDED_JAYUL_BY_ZONE === 'object' && RECOMMENDED_JAYUL_BY_ZONE[zone]) {
+    city.selectedJayulKeys = [...RECOMMENDED_JAYUL_BY_ZONE[zone]];
+  }
+  // 수동 입력 — 이 시군 항목만 제거
+  if (state.manualOverrides[cityId]) {
+    delete state.manualOverrides[cityId];
+    try {
+      localStorage.setItem(MANUAL_OVERRIDES_STORAGE_KEY, JSON.stringify(state.manualOverrides));
+    } catch (err) { /* ignore */ }
+  }
+  showInlineToast('권역 기본값으로 초기화했습니다.');
+  updateDetailPanel(cityId);
+}
+
+/**
+ * 시군 패널 안에 짧은 토스트 (편집 결과 확인용).
+ * 기존 landing-toast 와 겹치지 않게 별도 인스턴스 사용.
+ */
+function showInlineToast(message) {
+  let toast = document.getElementById('admin-inline-toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'admin-inline-toast';
+    toast.className = 'admin-inline-toast';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add('is-visible');
+  clearTimeout(showInlineToast._timer);
+  showInlineToast._timer = setTimeout(() => {
+    toast.classList.remove('is-visible');
+  }, 2400);
+}
+
 function renderFieldSurveySection(cityId) {
   const old = document.getElementById('field-survey-section');
   if (old) old.remove();
@@ -1856,6 +2505,323 @@ function renderFieldSurveySection(cityId) {
   } else {
     cityDetail.appendChild(section);
   }
+}
+
+// ===================================================================
+// === 남양주 읍면 비교 섹션 (피드백 #2 — 시군보다 읍면 단위 비교 강화)
+// ===================================================================
+
+// CANON 키 기준 비교 지표. value 조회는 getEupIndicator(eupName, key) 경유 →
+// 현장조사(field) > 시뮬레이션(sim) > 시군고정(sigun) 우선순위로 자동 병합·배지 표시.
+// 앞쪽 8개(★)는 0531 현장조사 가상데이터가 9개 농촌 읍면에 실제로 제공하는 지표.
+const DONG_COMPARE_INDICATORS = [
+  { key: 'L4', label: '생활SOC 충족지수',    unit: '점',        higherBetter: true,  zeroBaseline: true  }, // ★field
+  { key: 'L6', label: '귀촌 3년 정착률',     unit: '%',         higherBetter: true,  zeroBaseline: true  }, // ★field
+  { key: 'W5', label: '농업 세대교체',        unit: '%',         higherBetter: true,  zeroBaseline: true  }, // ★field
+  { key: 'W6', label: '청년 귀농 유입',      unit: '%',         higherBetter: true,  zeroBaseline: true  }, // ★field
+  { key: 'W7', label: '친환경 인증 농가',    unit: '%',         higherBetter: true,  zeroBaseline: true  }, // ★field
+  { key: 'W9', label: '농촌체험 프로그램',   unit: '건/천명',   higherBetter: true,  zeroBaseline: true  }, // ★field
+  { key: 'R6', label: '도시텃밭 수용',       unit: '%',         higherBetter: true,  zeroBaseline: true  }, // ★field
+  { key: 'R7', label: '주말농원 활성화율',   unit: '%',         higherBetter: true,  zeroBaseline: true  }, // ★field
+  { key: 'L1', label: '인구증가율',          unit: '%',         higherBetter: true,  zeroBaseline: false }, // sim
+  { key: 'W2', label: '사업체 밀도',         unit: '개/㎢',     higherBetter: true,  zeroBaseline: true  }, // sim
+  { key: 'R3', label: '녹지율',              unit: '%',         higherBetter: true,  zeroBaseline: true  }, // sim
+  { key: 'R4', label: '양호수질 하천',       unit: '%',         higherBetter: true,  zeroBaseline: true  }, // sim
+  { key: 'R5', label: '수변·생태쉼터',       unit: '㎡/천명',   higherBetter: true,  zeroBaseline: true  }, // sim
+];
+
+// 출처 배지 메타 (현장조사/시뮬레이션/시군고정)
+const EUP_SOURCE_BADGE = {
+  field: { ko: '현장조사', cls: 'status-field' },
+  sim:   { ko: '시뮬레이션', cls: 'status-simulation' },
+  sigun: { ko: '시군고정', cls: 'status-sigun-fixed' },
+};
+
+const CLUSTER_LABELS = {
+  urban:   { ko: '도심형', color: '#4A90D9' },
+  transit: { ko: '전이형', color: '#E8A44A' },
+  rural:   { ko: '농촌형', color: '#52A866' },
+};
+
+const DONG_COMPARE_MAX_SELECT = 5;
+
+// 남양주 읍면 비교 상태 (시군 전환 시 초기화됨)
+let dongCompareSelection = []; // [admCd, ...]
+let dongCompareIndicator = 'L4'; // 현재 보고 있는 지표 (CANON 키)
+let dongCompareChart = null;
+
+/**
+ * 남양주 시군 패널 안에 읍면 비교 섹션을 렌더한다.
+ * 시뮬레이션 데이터가 로드되어 있고 cityId === 'namyangju' 일 때만 표시.
+ * @param {string} cityId
+ */
+function renderDongComparison(cityId) {
+  const old = document.getElementById('dong-comparison-section');
+  if (old) old.remove();
+
+  if (cityId !== 'namyangju') return;
+  const dongs = listSimulationDongs();
+  if (!dongs.length) return;
+
+  const cityDetail = document.getElementById('city-detail');
+  if (!cityDetail) return;
+
+  // 기본 선정 — 클러스터별 대표 (urban 1 + transit 1 + rural 1)
+  if (dongCompareSelection.length === 0) {
+    const pick = (cluster) => dongs.find(d => d.cluster === cluster);
+    dongCompareSelection = [pick('urban'), pick('transit'), pick('rural')]
+      .filter(Boolean)
+      .map(d => d.admCd);
+  }
+
+  const section = document.createElement('section');
+  section.id = 'dong-comparison-section';
+  section.className = 'dong-compare-section';
+  section.setAttribute('aria-label', '남양주 읍면 비교');
+
+  const meta = simulationData && simulationData._meta;
+  const versionTag = meta ? ` (${meta.version})` : '';
+
+  let html = `
+    <header class="dong-compare-head">
+      <div class="dong-compare-title">
+        <span aria-hidden="true">📍</span>
+        <h3>남양주 ${dongs.length}개 읍면 비교</h3>
+      </div>
+      <p class="dong-compare-subtitle">
+        <span class="data-status-badge status-field">현장조사</span>
+        <span class="data-status-badge status-simulation">시뮬레이션</span>
+        <span class="data-status-badge status-sigun-fixed">시군고정</span>
+        혼합 데이터${versionTag} · 8개 지표는 9개 농촌 읍면 현장조사 가상값, 나머지는 시뮬레이션/시군 고정값
+      </p>
+    </header>
+
+    <div class="dong-compare-toolbar">
+      <label class="dong-compare-indicator-label" for="dong-compare-indicator-select">지표 선택</label>
+      <select id="dong-compare-indicator-select" class="dong-compare-select" aria-label="비교 지표 선택">
+  `;
+  DONG_COMPARE_INDICATORS.forEach(ind => {
+    const sel = ind.key === dongCompareIndicator ? 'selected' : '';
+    html += `<option value="${ind.key}" ${sel}>${ind.label}${ind.unit ? ` (${ind.unit})` : ''}</option>`;
+  });
+  html += `
+      </select>
+      <span class="dong-compare-status" id="dong-compare-status" aria-live="polite">
+        선택 ${dongCompareSelection.length}/${DONG_COMPARE_MAX_SELECT}
+      </span>
+      <button type="button" id="dong-compare-clear" class="dong-compare-mini-btn" aria-label="선택 초기화">↺ 초기화</button>
+    </div>
+
+    <div class="dong-compare-chips" role="group" aria-label="읍면 선택">
+  `;
+  // 클러스터별 그룹화
+  ['urban', 'transit', 'rural'].forEach(cluster => {
+    const cl = CLUSTER_LABELS[cluster];
+    const items = dongs.filter(d => d.cluster === cluster);
+    if (!items.length) return;
+    html += `
+      <fieldset class="dong-compare-cluster" style="--cluster-color: ${cl.color}">
+        <legend>${cl.ko} <span class="dong-compare-cluster-n">${items.length}개</span></legend>
+        <div class="dong-compare-chip-list">
+    `;
+    items.forEach(d => {
+      const isSel = dongCompareSelection.includes(d.admCd);
+      html += `
+        <label class="dong-compare-chip ${isSel ? 'is-selected' : ''}">
+          <input type="checkbox"
+                 data-adm-cd="${d.admCd}"
+                 ${isSel ? 'checked' : ''}
+                 aria-label="${d.adm_nm} 비교 토글">
+          <span class="dong-compare-chip-name">${d.adm_nm}</span>
+        </label>`;
+    });
+    html += `</div></fieldset>`;
+  });
+  html += `
+    </div>
+
+    <div class="dong-compare-chart-wrap">
+      <canvas id="dong-compare-chart" height="220" aria-label="읍면 비교 막대 차트"></canvas>
+    </div>
+
+    <details class="dong-compare-table-wrap">
+      <summary>전체 표로 보기 (${DONG_COMPARE_INDICATORS.length}개 지표 · ${dongs.length}개 읍면)</summary>
+      <div class="dong-compare-table-scroll">
+        <table class="dong-compare-table">
+          <thead><tr>
+            <th>읍면</th>
+            <th>클러스터</th>
+            ${DONG_COMPARE_INDICATORS.map(i => `<th title="${i.label}">${i.key.split('_')[0]}</th>`).join('')}
+          </tr></thead>
+          <tbody>
+            ${dongs.map(d => {
+              const isSel = dongCompareSelection.includes(d.admCd);
+              const cl = CLUSTER_LABELS[d.cluster];
+              return `
+                <tr class="${isSel ? 'is-selected' : ''}">
+                  <td class="dong-compare-tbl-name">${d.adm_nm}</td>
+                  <td><span class="cluster-tag" style="background:${cl.color}">${cl.ko}</span></td>
+                  ${DONG_COMPARE_INDICATORS.map(i => {
+                    const r = getEupIndicator(d.adm_nm, i.key);
+                    if (!r || r.value == null) return `<td class="dong-compare-tbl-val">-</td>`;
+                    return `<td class="dong-compare-tbl-val src-${r.source}" title="출처: ${EUP_SOURCE_BADGE[r.source]?.ko || r.source}">${r.value}</td>`;
+                  }).join('')}
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </details>
+
+    <footer class="dong-compare-footnote">
+      <small>💡 클러스터별 대표 1개씩 자동 선택되어 있어요. 다른 읍면을 비교하려면 칩을 클릭하세요 (최대 ${DONG_COMPARE_MAX_SELECT}개).</small>
+    </footer>
+  `;
+  section.innerHTML = html;
+
+  // 자율지표 카드 다음, KOSIS 토글 앞에 삽입
+  const anchor = document.getElementById('kosis-toggle-btn')
+              || document.getElementById('add-comparison-wrapper');
+  if (anchor) cityDetail.insertBefore(section, anchor);
+  else cityDetail.appendChild(section);
+
+  // 이벤트 바인딩
+  bindDongCompareInteractions(section, dongs);
+
+  // 첫 차트 그리기
+  drawDongCompareChart(dongs);
+}
+
+/**
+ * 비교 섹션의 칩·드롭다운·초기화 버튼 이벤트 바인딩
+ */
+function bindDongCompareInteractions(container, dongs) {
+  // 칩 클릭 (체크박스)
+  container.querySelectorAll('input[data-adm-cd]').forEach(input => {
+    input.addEventListener('change', () => {
+      const admCd = input.dataset.admCd;
+      if (input.checked) {
+        if (dongCompareSelection.length >= DONG_COMPARE_MAX_SELECT) {
+          input.checked = false;
+          showInlineToast(`읍면은 최대 ${DONG_COMPARE_MAX_SELECT}개까지 비교할 수 있어요.`);
+          return;
+        }
+        if (!dongCompareSelection.includes(admCd)) dongCompareSelection.push(admCd);
+      } else {
+        dongCompareSelection = dongCompareSelection.filter(c => c !== admCd);
+      }
+      input.closest('.dong-compare-chip')?.classList.toggle('is-selected', input.checked);
+      const status = container.querySelector('#dong-compare-status');
+      if (status) status.textContent = `선택 ${dongCompareSelection.length}/${DONG_COMPARE_MAX_SELECT}`;
+      // 표 행 강조 갱신
+      container.querySelectorAll('.dong-compare-table tbody tr').forEach((tr, idx) => {
+        tr.classList.toggle('is-selected', dongCompareSelection.includes(dongs[idx].admCd));
+      });
+      drawDongCompareChart(dongs);
+    });
+  });
+
+  // 지표 드롭다운
+  const sel = container.querySelector('#dong-compare-indicator-select');
+  if (sel) {
+    sel.addEventListener('change', () => {
+      dongCompareIndicator = sel.value;
+      drawDongCompareChart(dongs);
+    });
+  }
+
+  // 초기화
+  const clearBtn = container.querySelector('#dong-compare-clear');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      dongCompareSelection = [];
+      renderDongComparison('namyangju'); // 섹션 재렌더 (디폴트 선정 다시 채워짐)
+    });
+  }
+}
+
+/**
+ * 현재 선택된 읍면들의 막대 차트를 (재)렌더한다.
+ * 색상은 클러스터별, 값 라벨은 위에 표시.
+ */
+function drawDongCompareChart(dongs) {
+  const canvas = document.getElementById('dong-compare-chart');
+  if (!canvas || typeof Chart === 'undefined') return;
+
+  // 기존 차트 폐기
+  if (dongCompareChart) {
+    try { dongCompareChart.destroy(); } catch (err) { /* ignore */ }
+    dongCompareChart = null;
+  }
+
+  const indicator = DONG_COMPARE_INDICATORS.find(i => i.key === dongCompareIndicator) || DONG_COMPARE_INDICATORS[0];
+  const selectedSet = new Set(dongCompareSelection);
+  const rows = dongs
+    .filter(d => selectedSet.has(d.admCd))
+    .map(d => {
+      const r = getEupIndicator(d.adm_nm, indicator.key);
+      return {
+        label: d.adm_nm,
+        cluster: d.cluster,
+        value: (r && r.value != null) ? r.value : 0,
+        source: r ? r.source : 'sigun',
+      };
+    });
+
+  if (rows.length === 0) {
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.font = '13px "Noto Sans KR", sans-serif';
+    ctx.fillStyle = '#888';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('비교할 읍면을 1개 이상 선택하세요.', canvas.width / 2, canvas.height / 2);
+    return;
+  }
+
+  dongCompareChart = new Chart(canvas.getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: rows.map(r => r.label),
+      datasets: [{
+        label: `${indicator.label}${indicator.unit ? ' (' + indicator.unit + ')' : ''}`,
+        data: rows.map(r => r.value),
+        backgroundColor: rows.map(r => CLUSTER_LABELS[r.cluster]?.color || '#999'),
+        borderColor: rows.map(r => CLUSTER_LABELS[r.cluster]?.color || '#999'),
+        borderWidth: 1.5,
+        borderRadius: 4,
+        maxBarThickness: 48,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.parsed.y} ${indicator.unit || ''}`.trim(),
+            afterLabel: (ctx) => {
+              const row = rows[ctx.dataIndex];
+              const lines = [];
+              if (row?.cluster) lines.push(`클러스터: ${CLUSTER_LABELS[row.cluster].ko}`);
+              if (row?.source) lines.push(`출처: ${EUP_SOURCE_BADGE[row.source]?.ko || row.source}`);
+              return lines;
+            },
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { font: { size: 11 } } },
+        y: {
+          // 영점 기준선: 인구증가율(L1)은 음수 가능 → false, 나머지(% / 밀도 / 비율)는 true
+          beginAtZero: indicator.zeroBaseline !== false,
+          ticks: { font: { size: 11 } },
+          title: { display: !!indicator.unit, text: indicator.unit || '', font: { size: 11 } },
+        },
+      },
+    },
+  });
 }
 
 /**
@@ -3095,6 +4061,8 @@ function getDongInfo(admCd, admNm, cityId) {
   const metaCityId = readDongValue('city_id');
   const resolvedCityId = metaCityId || cityId;
   const resolvedCity = CITIES[resolvedCityId] || city;
+  // 시뮬레이션 마이크로데이터 (피드백 #7) — 현재 namyangju 만 지원
+  const simEntry = (simulationData && simulationData.dongs && simulationData.dongs[admCd]) || null;
   const info = {
     admCd,
     admNm: metaName || admNm,
@@ -3106,10 +4074,510 @@ function getDongInfo(admCd, admNm, cityId) {
     households:  readDongValue(['households', 'tot_family']) || (hasMeta ? null : 800 + rng3(7200)),
     landMix:     readDongValue('landMix') || landMixes[rng(landMixes.length)],
     character:   readDongValue('character') || characters[rng2(characters.length)],
-    _source:     readDongSource(),
+    _source:     simEntry ? 'simulation' : readDongSource(),
+    simulation:  simEntry || null,
   };
   DONG_INFO_CACHE[admCd] = info;
   return info;
+}
+
+/**
+ * 시뮬레이션 데이터에서 특정 dong 의 지표 블록 반환 (피드백 #7)
+ * @param {string} admCd 행정코드
+ * @returns {{adm_nm:string, cluster:string, indicators:Object}|null}
+ */
+function getSimulationDongIndicators(admCd) {
+  if (!simulationData || !simulationData.dongs) return null;
+  return simulationData.dongs[admCd] || null;
+}
+
+/**
+ * 시뮬레이션 데이터의 모든 dong 목록을 배열로 반환 (피드백 #7 — 읍면 비교 UI 기반)
+ * @returns {Array<{admCd:string, adm_nm:string, cluster:string, indicators:Object}>}
+ */
+function listSimulationDongs() {
+  if (!simulationData || !simulationData.dongs) return [];
+  return Object.entries(simulationData.dongs).map(([admCd, entry]) => ({
+    admCd,
+    adm_nm: entry.adm_nm,
+    cluster: entry.cluster,
+    indicators: entry.indicators,
+  }));
+}
+
+// ===================================================================
+// === 지표 ID 정규화 + 읍면 지표 병합 레이어 (0531 통합) ===
+// ===================================================================
+// 배경: 4개 자료의 지표 ID가 서로 어긋난다. 표준(CANON)=xlsx 확정안/docx 기준.
+//  - CANON: W9=농촌체험, R4=양호수질하천, R5=수변생태쉼터, R6=도시텃밭수용, R7=주말농원
+//  - mock(namyangju-dong-mock): 키가 한 칸 밀림 → 변환 필수
+//  - CITIES.namyangju.jayulIndicators: 앱 내부 번호(R4=체험·R5=수질·R6=쉼터) → 변환 필수
+// 직접 키 접근 금지. 반드시 아래 변환 레이어 경유.
+
+// CANON → mock(namyangju-dong-mock.json) 키
+const CANON_TO_MOCK = {
+  L1: 'L1_pop_growth', L4: 'L4_living_soc', W2: 'W2_business_density',
+  W6: 'W6_young_return', W7: 'W7_eco_farm', R3: 'R3_green_ratio',
+  W9: 'R4_experience_prog', R4: 'R5_water_quality', R5: 'R6_park_per_capita',
+};
+// CANON → CITIES.jayulIndicators / indicator-reference.json key (R블록만 다름)
+const CANON_TO_REF = { W9: 'R4', R4: 'R5', R5: 'R6' };
+// CITIES.namyangju 에 없는 시군 단위 보조값 (HTML 프로토타입 기준)
+const SIGUN_EXTRA = { namyangju: { L7: 8 } }; // L7=의료시설 경기 8위(시군 고정)
+
+/** indicator-reference.json 메타 조회 (CANON → ref key). 없으면 null. */
+function refMeta(canon) {
+  if (!indicatorReference) return null;
+  const inds = indicatorReference.indicators || indicatorReference;
+  const k = CANON_TO_REF[canon] || canon;
+  return (inds && inds[k]) || null;
+}
+
+/** 시군(남양주) 단위 CANON 지표값 — CITIES mock에서 조회 (읍면 fallback 최하단) */
+function getSigunCanonValue(cityId, canon) {
+  const c = (typeof CITIES !== 'undefined') && CITIES[cityId];
+  if (!c) return undefined;
+  if (c.indicators && c.indicators[canon] != null) return c.indicators[canon];
+  const jk = CANON_TO_REF[canon] || canon;
+  if (c.jayulIndicators && c.jayulIndicators[jk] != null) return c.jayulIndicators[jk];
+  const extra = SIGUN_EXTRA[cityId];
+  if (extra && extra[canon] != null) return extra[canon];
+  return undefined;
+}
+
+/**
+ * 읍면 단위 CANON 지표값을 출처 우선순위로 병합 조회.
+ * 우선순위: field-survey(현장조사) > simulation(mock) > sigun(시군 고정값)
+ * @param {string} eupName  읍면명 (예: '조안면')
+ * @param {string} canon    CANON 지표 키 (예: 'W9')
+ * @returns {{value:number|null, source:'field'|'sim'|'sigun', unit:string, label:string, n?:number, pending?:boolean}|null}
+ */
+function getEupIndicator(eupName, canon) {
+  // 1) 현장조사 (9개 농촌 읍면만)
+  const fs = fieldSurveyData && fieldSurveyData.eups && fieldSurveyData.eups[eupName];
+  if (fs && fs.indicators && fs.indicators[canon]) {
+    const r = fs.indicators[canon];
+    return { value: r.value, source: 'field', unit: r.unit || '', label: r.label || canon, n: r.n, pending: !!r._pending };
+  }
+  // 2) 시뮬레이션 mock (16개 읍면동) — adm_cd로 조회
+  const admCd = fs ? fs.adm_cd : eupNameToAdmCd(eupName);
+  const mockKey = CANON_TO_MOCK[canon];
+  if (admCd && mockKey) {
+    const sim = getSimulationDongIndicators(admCd);
+    if (sim && sim.indicators && sim.indicators[mockKey] && sim.indicators[mockKey].value != null) {
+      const r = sim.indicators[mockKey];
+      return { value: r.value, source: 'sim', unit: r.unit || '', label: r.label || canon };
+    }
+  }
+  // 3) 시군 고정값 (전 읍면 동일)
+  const sv = getSigunCanonValue('namyangju', canon);
+  if (sv != null) {
+    const m = refMeta(canon);
+    return { value: sv, source: 'sigun', unit: (m && m.unit) || '', label: (m && m.name) || canon };
+  }
+  return null;
+}
+
+/** 읍면명 → adm_cd (simulationData 역조회) */
+function eupNameToAdmCd(eupName) {
+  if (!simulationData || !simulationData.dongs) return null;
+  const hit = Object.entries(simulationData.dongs).find(([, e]) => e.adm_nm === eupName);
+  return hit ? hit[0] : null;
+}
+
+/**
+ * 읍면의 모든 CANON 지표를 평탄한 dict로 반환 (트리거 엔진·비전 점수 입력용).
+ * { L1: 0.8, L4: 58.3, ..., _src: { L1:'sigun', L4:'field', ... } }
+ */
+function getEupAllIndicators(eupName) {
+  const CANON_KEYS = ['L1','L2','L3','L4','L5','L6','L7','L8','W1','W2','W3','W4','W5','W6','W7','W8','W9','R1','R2','R3','R4','R5','R6','R7','R8'];
+  const out = { _src: {} };
+  CANON_KEYS.forEach(k => {
+    const r = getEupIndicator(eupName, k);
+    if (r && r.value != null) { out[k] = r.value; out._src[k] = r.source; }
+  });
+  return out;
+}
+
+// ===================================================================
+// === 실시간 LLM AI 해석 (#5, MindLogic Gateway via Cloudflare Worker) ===
+// ===================================================================
+// 정적 사이트라 비밀키를 둘 수 없으므로 Worker 프록시(window.LLM_PROXY_URL)가
+// 키를 보관·호출한다. 클라이언트는 키 없이 구조화 컨텍스트만 전송.
+// LLM_PROXY_URL 미설정 시 자동 비활성 → 정적 카드 폴백.
+
+function llmEnabled() {
+  return typeof window !== 'undefined' && typeof window.LLM_PROXY_URL === 'string' && window.LLM_PROXY_URL.trim() !== '';
+}
+
+/** 간단 문자열 해시 (캐시키용, 보안 목적 아님) */
+function _hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) { h = ((h << 5) - h + s.charCodeAt(i)) | 0; }
+  return (h >>> 0).toString(36);
+}
+
+/** LLM 컨텍스트 빌더 — 시군/읍면 구조화 데이터 (키·비밀 없음) */
+function buildLlmContext(scope, regionId) {
+  if (scope === 'eup') {
+    const all = getEupAllIndicators(regionId);
+    const keys = ['L1', 'L2', 'L4', 'L6', 'W2', 'W5', 'W6', 'W7', 'W9', 'R3', 'R4', 'R5', 'R6', 'R7'];
+    const indicators = keys.map(k => {
+      const r = getEupIndicator(regionId, k);
+      return r ? { key: k, label: r.label, value: r.value, unit: r.unit, source: r.source } : null;
+    }).filter(Boolean);
+    const vs = (typeof visionScore === 'function') ? visionScore(regionId) : null;
+    const firedIds = (typeof firedTriggerIds === 'function') ? firedTriggerIds(all) : [];
+    const trigNames = (triggerConfig && triggerConfig.triggers)
+      ? triggerConfig.triggers.filter(t => firedIds.includes(t.id)).map(t => t.name) : [];
+    const cards = (typeof buildInsightCards === 'function') ? buildInsightCards(regionId, all, firedIds) : [];
+    return {
+      indicators,
+      vision: vs ? { overall: vs.overall, axes: vs.axes, potentialFelt: vs.potentialFelt } : null,
+      triggers: trigNames,
+      insights: cards.map(c => c.title).filter(Boolean),
+    };
+  }
+  // 시군
+  const c = (typeof CITIES !== 'undefined') && CITIES[regionId];
+  if (!c) return null;
+  const indKeys = Object.keys(c.indicators || {});
+  const indicators = indKeys.map(k => {
+    const meta = (typeof INDICATORS !== 'undefined') && INDICATORS[k];
+    return { key: k, label: (meta && meta.name) || k, value: c.indicators[k], unit: (meta && meta.unit) || '', source: 'sigun' };
+  });
+  const scores = (typeof calcCategoryScore === 'function') ? {
+    samlter: calcCategoryScore(regionId, 'samlter'),
+    ilter: calcCategoryScore(regionId, 'ilter'),
+    shimter: calcCategoryScore(regionId, 'shimter'),
+  } : null;
+  const seed = (typeof getAiInterpretation === 'function') ? getAiInterpretation(regionId) : null;
+  return {
+    type: c.type,
+    indicators,
+    scores,
+    seedStrengths: seed && seed.city ? seed.city.strengths : null,
+    seedWeaknesses: seed && seed.city ? seed.city.weaknesses : null,
+  };
+}
+
+/**
+ * Worker 프록시로 LLM 해석 요청. sessionStorage 캐시 + force 재생성.
+ * @returns {Promise<object|null>} 표준 스키마 또는 null(미설정/실패)
+ */
+async function llmInterpret(scope, regionId, context, opts = {}) {
+  if (!llmEnabled()) return null;
+  const ctx = context || buildLlmContext(scope, regionId);
+  if (!ctx) return null;
+
+  const cacheKey = `llm:${scope}:${regionId}:${_hashStr(JSON.stringify(ctx))}`;
+  if (!opts.force) {
+    try {
+      const hit = sessionStorage.getItem(cacheKey);
+      if (hit) return JSON.parse(hit);
+    } catch (e) { /* ignore */ }
+  }
+
+  const base = window.LLM_PROXY_URL.replace(/\/+$/, '');
+  let resp;
+  try {
+    resp = await fetch(`${base}/interpret`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json; charset=utf-8' },
+      body: JSON.stringify({ scope, regionId, context: ctx }),
+    });
+  } catch (e) {
+    console.warn('[LLM] 프록시 연결 실패:', e);
+    return null;
+  }
+  if (!resp.ok) {
+    console.warn('[LLM] 프록시 오류', resp.status);
+    return null;
+  }
+  let data;
+  try { data = await resp.json(); } catch (e) { return null; }
+  if (data && data.error) { console.warn('[LLM]', data.error, data.detail || ''); return null; }
+  try { sessionStorage.setItem(cacheKey, JSON.stringify(data)); } catch (e) { /* ignore */ }
+  return data;
+}
+
+// ===================================================================
+// === 트리거 엔진 → 시사점 카드 (#3, 0531 — 김선혁 HTML 포팅) ===
+// ===================================================================
+// namyangju-triggers.json 의 15개 트리거 규칙을 읍면 지표에 평가하여
+// 발화(fired) 트리거를 찾고, 그에 대응하는 정책 시사점 카드를 생성한다.
+
+const NYJ_CARD_COLORS = {
+  red:   { bd: '#FECACA', bg: '#FFF5F5', tx: '#7F1D1D', bar: '#EF4444', vbd: '#B5182B' },
+  amber: { bd: '#FDE68A', bg: '#FFFBEB', tx: '#78350F', bar: '#F59E0B', vbd: '#D97706' },
+  green: { bd: '#A7F3D0', bg: '#F0FDF4', tx: '#14532D', bar: '#10B981', vbd: '#2D6A4F' },
+  blue:  { bd: '#BFDBFE', bg: '#EFF6FF', tx: '#1E3A5F', bar: '#3B82F6', vbd: '#1D5FA6' },
+  gray:  { bd: '#E2E8F0', bg: '#F9FAFB', tx: '#374151', bar: '#9CA3AF', vbd: '#9CA3AF' },
+};
+const NYJ_THE_TAG = {
+  T: { bg: '#DBEAFE', tx: '#1E40AF' }, H: { bg: '#FEF3C7', tx: '#92400E' },
+  E: { bg: '#D1FAE5', tx: '#065F46' }, 'H+T': { bg: '#FEE2E2', tx: '#991B1B' }, '—': { bg: '#F3F4F6', tx: '#6B7280' },
+};
+
+/** 단일 조건 {k,op,v} 평가. 값 없으면 false. */
+function evalCond(cond, data) {
+  const x = data[cond.k];
+  if (x == null) return false;
+  switch (cond.op) {
+    case '<':  return x <  cond.v;
+    case '<=': return x <= cond.v;
+    case '>':  return x >  cond.v;
+    case '>=': return x >= cond.v;
+    case '==': return x === cond.v;
+    case '!=': return x !== cond.v;
+    default:   return false;
+  }
+}
+
+/** rule {all:[...]} / {any:[...]} 재귀 평가. */
+function evalRule(rule, data) {
+  if (!rule) return false;
+  if (rule.all) return rule.all.every(c => (c.all || c.any) ? evalRule(c, data) : evalCond(c, data));
+  if (rule.any) return rule.any.some(c => (c.all || c.any) ? evalRule(c, data) : evalCond(c, data));
+  return false;
+}
+
+/** 발화 트리거 ID 배열 반환. */
+function firedTriggerIds(data) {
+  if (!triggerConfig || !triggerConfig.triggers) return [];
+  return triggerConfig.triggers.filter(t => evalRule(t.rule, data)).map(t => t.id);
+}
+
+/** "{name} ... {L1}%" 템플릿 치환. */
+function interpolateCard(tpl, name, data) {
+  if (!tpl) return '';
+  return tpl.replace(/\{(\w+)\}/g, (m, key) => {
+    if (key === 'name') return name;
+    const v = data[key];
+    return (v == null) ? '–' : v;
+  });
+}
+
+/** 발화 트리거에 매칭되는 시사점 카드 목록 생성 (HTML getCards 로직 재현). */
+function buildInsightCards(name, data, firedIds) {
+  if (!triggerConfig || !triggerConfig.cards) return [];
+  const firedSet = new Set(firedIds);
+  const out = [];
+  triggerConfig.cards.forEach(card => {
+    if (card.fallback) return; // 폴백은 마지막에 별도 처리
+    const whenOk = (card.when || []).some(id => firedSet.has(id));
+    const notOk = !(card.not || []).some(id => firedSet.has(id));
+    if (whenOk && notOk) out.push(card);
+  });
+  if (out.length === 0) {
+    const fb = triggerConfig.cards.find(c => c.fallback);
+    if (fb) out.push(fb);
+  }
+  return out;
+}
+
+/** 트리거 그리드 + 시사점 카드를 읍면 패널에 렌더. */
+function renderEupTriggerCards(eupName) {
+  const gridHost = document.getElementById('eup-trigger-grid');
+  const cardHost = document.getElementById('eup-insight-cards');
+  if (!gridHost || !cardHost) return;
+  if (!triggerConfig) { gridHost.innerHTML = ''; cardHost.innerHTML = ''; return; }
+
+  const data = getEupAllIndicators(eupName);
+  const firedIds = firedTriggerIds(data);
+  const firedSet = new Set(firedIds);
+
+  // 1) 트리거 그리드 (15개, 발화/비활성)
+  const gridItems = triggerConfig.triggers.map(t => {
+    const fired = firedSet.has(t.id);
+    const c = fired ? t.color : 'gray';
+    const num = t.id.replace('TC-', '');
+    return `<div class="nyj-trigger-card ${fired ? 'fired fired-' + t.color : 'muted'}">
+      <div class="nyj-t-num ${c}">${num}</div>
+      <div class="nyj-t-body">
+        <div class="nyj-t-name ${c}">${t.name}</div>
+        <div class="nyj-t-cond">${t.cond}</div>
+      </div></div>`;
+  }).join('');
+  gridHost.innerHTML = `
+    <div class="nyj-section-label">트리거 조건 평가 <span class="nyj-fired-count">${firedIds.length} / 15 발화</span></div>
+    <div class="nyj-trigger-grid">${gridItems}</div>`;
+
+  // 2) 시사점 카드
+  const cards = buildInsightCards(eupName, data, firedIds);
+  const cardHtml = cards.map(card => {
+    const col = NYJ_CARD_COLORS[card.color] || NYJ_CARD_COLORS.gray;
+    const the = NYJ_THE_TAG[card.the] || NYJ_THE_TAG['—'];
+    const metrics = (card.metrics || []).map(m => {
+      const r = getEupIndicator(eupName, m.k);
+      const val = (r && r.value != null) ? `${r.value}${r.unit ? ' ' + r.unit : ''}` : '–';
+      const srcTag = r ? `<span class="nyj-metric-src src-${r.source}">${EUP_SOURCE_BADGE[r.source]?.ko || ''}</span>` : '';
+      return `<div class="nyj-metric-row">
+        <span class="nyj-metric-id">${m.k}</span>
+        <span class="nyj-metric-name">${m.name}${srcTag}</span>
+        <span class="nyj-metric-val">${val}</span></div>`;
+    }).join('');
+    return `<div class="nyj-icard" style="border-color:${col.bd}">
+      <div class="nyj-icard-head" style="background:${col.bg}">
+        <span class="nyj-icard-icon">${card.icon || '•'}</span>
+        <div class="nyj-icard-headinfo">
+          <div class="nyj-icard-title" style="color:${col.tx}">${card.title}</div>
+          <div class="nyj-icard-tags">
+            <span class="nyj-tag" style="background:${the.bg};color:${the.tx}">${card.the} 비전</span>
+            <span class="nyj-tag nyj-tag-strat">${card.strategy || ''}</span>
+          </div>
+        </div>
+      </div>
+      <div class="nyj-icard-body">
+        <div class="nyj-icard-cell"><div class="nyj-cell-label">현황 지표</div>${metrics}</div>
+        <div class="nyj-icard-cell"><div class="nyj-cell-label">SWOT 진단</div><div class="nyj-cell-body">${card.diagnosis || ''}</div></div>
+        <div class="nyj-icard-cell full">
+          <div class="nyj-cell-label">종합 판단</div>
+          <div class="nyj-verdict" style="border-color:${col.vbd};background:${col.bg};color:${col.tx}">${interpolateCard(card.verdictText, eupName, data)}</div>
+        </div>
+        <div class="nyj-icard-cell"><div class="nyj-cell-label">정책 제안 (민선 8기 연계)</div><div class="nyj-cell-body">${card.policy || ''}</div></div>
+        <div class="nyj-icard-cell"><div class="nyj-cell-label">다음 단계 (담당자 액션)</div><div class="nyj-cell-body">${card.next || ''}
+          ${card.data ? `<div class="nyj-data-need"><strong>추가 필요 데이터:</strong> ${card.data}</div>` : ''}</div></div>
+      </div></div>`;
+  }).join('');
+  cardHost.innerHTML = `
+    <div class="nyj-section-label">정책 시사점 카드 <span class="nyj-fired-count">${cards.length}개</span></div>
+    <div class="nyj-cards-list">${cardHtml}</div>`;
+}
+
+// ===================================================================
+// === 비전 적합도 점수 (#4, 0531 — 민선8기 THE 비전 연계) ===
+// ===================================================================
+// 읍면 지표를 9개 농촌 읍면(+16 mock) 분포로 0~100 정규화한 뒤,
+// THE 비전 3축(T/H/E) 가중평균으로 비전 적합도 점수를 산출한다.
+// docx(이주영): 자원 잠재력은 높아도 시민 체감 서비스가 낮으면 비전 미달 → '잠재 vs 체감' 분리.
+
+/** 정규화 모집단(읍면 분포) 캐시: { canonKey: [values...] } */
+let _visionPopCache = null;
+function getVisionPopulation() {
+  if (_visionPopCache) return _visionPopCache;
+  const pop = {};
+  const names = [];
+  if (fieldSurveyData && fieldSurveyData.eups) names.push(...Object.keys(fieldSurveyData.eups));
+  if (simulationData && simulationData.dongs) {
+    Object.values(simulationData.dongs).forEach(e => { if (!names.includes(e.adm_nm)) names.push(e.adm_nm); });
+  }
+  names.forEach(nm => {
+    const d = getEupAllIndicators(nm);
+    Object.keys(d).forEach(k => {
+      if (k === '_src') return;
+      (pop[k] = pop[k] || []).push(d[k]);
+    });
+  });
+  _visionPopCache = pop;
+  return pop;
+}
+
+const VISION_INVERSE_KEYS = new Set(['L2']); // 높을수록 나쁜 지표(노령화 등) → 반전
+
+/** 단일 지표를 읍면 분포 min-max 로 0~100 정규화 (역방향 반전 포함). */
+function normIndicator(canon, value) {
+  if (value == null) return null;
+  const arr = (getVisionPopulation()[canon] || []).filter(v => v != null);
+  if (arr.length < 2) return 50;
+  const min = Math.min(...arr), max = Math.max(...arr);
+  if (max === min) return 50;
+  let t = (value - min) / (max - min) * 100;
+  if (VISION_INVERSE_KEYS.has(canon)) t = 100 - t;
+  return Math.round(Math.max(0, Math.min(100, t)));
+}
+
+/**
+ * 읍면 비전 적합도 점수.
+ * @returns {{axes:{T,H,E}, overall:number, axisDetail:{}, missing:string[], potentialFelt:{potential,felt}}}
+ */
+function visionScore(eupName) {
+  const data = getEupAllIndicators(eupName);
+  const axesCfg = (triggerConfig && triggerConfig.vision_axes) || {};
+  const axes = {};
+  const axisDetail = {};
+  const missing = [];
+
+  Object.keys(axesCfg).forEach(axisKey => {
+    const weights = axesCfg[axisKey].weights || {};
+    let wsum = 0, acc = 0;
+    const detail = [];
+    Object.keys(weights).forEach(canon => {
+      const w = Math.abs(weights[canon]);
+      const norm = normIndicator(canon, data[canon]);
+      if (norm == null) { missing.push(canon); return; }
+      // 음수 가중치(나쁜 지표)는 normIndicator 역방향과 중복되므로 절대값만 사용
+      acc += norm * w; wsum += w;
+      detail.push({ k: canon, norm, weight: w });
+    });
+    const score = wsum > 0 ? Math.round(acc / wsum) : null;
+    axes[axisKey] = score;
+    axisDetail[axisKey] = detail;
+  });
+
+  const valid = Object.values(axes).filter(v => v != null);
+  const overall = valid.length ? Math.round(valid.reduce((a, b) => a + b, 0) / valid.length) : null;
+
+  // 잠재 vs 체감 (docx: 자원 잠재력 vs 시민 체감 서비스)
+  const pf = (triggerConfig && triggerConfig.vision_potential_felt) || { potential: [], felt: [] };
+  const avgNorm = (keys) => {
+    const vals = keys.map(k => normIndicator(k, data[k])).filter(v => v != null);
+    return vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : null;
+  };
+  const potentialFelt = { potential: avgNorm(pf.potential), felt: avgNorm(pf.felt) };
+
+  return { axes, overall, axisDetail, missing: [...new Set(missing)], potentialFelt };
+}
+
+/** 비전 적합도 카드 렌더. */
+function renderVisionScoreCard(eupName) {
+  const host = document.getElementById('eup-vision-score');
+  if (!host) return;
+  if (!triggerConfig || !triggerConfig.vision_axes) { host.innerHTML = ''; return; }
+
+  const vs = visionScore(eupName);
+  const axesCfg = triggerConfig.vision_axes;
+  const scoreColor = (s) => s == null ? '#9CA3AF' : s >= 70 ? '#2D6A4F' : s >= 45 ? '#D97706' : '#B5182B';
+
+  const axisRows = Object.keys(axesCfg).map(k => {
+    const cfg = axesCfg[k];
+    const s = vs.axes[k];
+    const pct = s == null ? 0 : s;
+    return `<div class="nyj-vision-axis">
+      <div class="nyj-vision-axis-head">
+        <span class="nyj-vision-axis-key">${k}</span>
+        <span class="nyj-vision-axis-name">${cfg.name}</span>
+        <span class="nyj-vision-axis-score" style="color:${scoreColor(s)}">${s == null ? '–' : s}</span>
+      </div>
+      <div class="nyj-vision-gauge"><div class="nyj-vision-gauge-fill" style="width:${pct}%;background:${scoreColor(s)}"></div></div>
+    </div>`;
+  }).join('');
+
+  const pf = vs.potentialFelt;
+  const gap = (pf.potential != null && pf.felt != null) ? pf.potential - pf.felt : null;
+  const pfBlock = (pf.potential != null || pf.felt != null) ? `
+    <div class="nyj-vision-pf">
+      <div class="nyj-vision-pf-label">자원 잠재력 vs 시민 체감 서비스 <span class="nyj-vision-pf-hint">(docx 진단)</span></div>
+      <div class="nyj-vision-pf-row"><span class="nyj-pf-tag">자원 잠재</span>
+        <div class="nyj-vision-gauge"><div class="nyj-vision-gauge-fill" style="width:${pf.potential||0}%;background:#2D6A4F"></div></div>
+        <span class="nyj-pf-val">${pf.potential ?? '–'}</span></div>
+      <div class="nyj-vision-pf-row"><span class="nyj-pf-tag">체감 서비스</span>
+        <div class="nyj-vision-gauge"><div class="nyj-vision-gauge-fill" style="width:${pf.felt||0}%;background:#D97706"></div></div>
+        <span class="nyj-pf-val">${pf.felt ?? '–'}</span></div>
+      ${gap != null && gap >= 20 ? `<div class="nyj-vision-pf-warn">⚠️ 자원 잠재력(${pf.potential})에 비해 시민 체감 서비스(${pf.felt})가 낮습니다. 수변·생태쉼터(R5)·농촌체험(W9) 등 체감형 기능 보강이 필요합니다.</div>` : ''}
+    </div>` : '';
+
+  host.innerHTML = `
+    <div class="nyj-vision-card">
+      <div class="nyj-vision-head">
+        <div class="nyj-vision-title">🎯 민선 8기 비전 적합도</div>
+        <div class="nyj-vision-overall" style="color:${scoreColor(vs.overall)}">${vs.overall == null ? '–' : vs.overall}<span>/100</span></div>
+      </div>
+      <div class="nyj-vision-axes">${axisRows}</div>
+      ${pfBlock}
+      ${vs.missing.length ? `<div class="nyj-vision-missing">미수집 지표(추정 제외): ${vs.missing.join(', ')}</div>` : ''}
+      <div class="nyj-vision-foot">읍면 분포(현장조사 9 + 시뮬레이션) min-max 정규화 · THE 비전 가중평균</div>
+    </div>`;
 }
 
 /**
@@ -3290,6 +4758,101 @@ function showDongDetailPanel(admCd, admNm, cityId) {
   `;
   cityDetail.classList.add('is-dong-mode');
   detail.classList.remove('hidden');
+
+  // 0531 통합: 읍면 비전 적합도 + 트리거 시사점 카드 (남양주 읍면만)
+  renderEupAnalysis(admNm, cityId, info);
+}
+
+/**
+ * 읍면 패널의 비전 적합도 + 트리거 시사점 카드 영역 렌더/정리.
+ * 남양주 읍면일 때만 표시. urban 동은 현장조사 미수집 안내 후 시뮬레이션 기반 평가.
+ */
+function renderEupAnalysis(eupName, cityId, info) {
+  const noticeHost = document.getElementById('eup-analysis-notice');
+  const staticNote = document.getElementById('dong-detail-note');
+  if (cityId !== 'namyangju' || !triggerConfig) {
+    if (staticNote) staticNote.style.display = ''; // 비남양주: 기존 안내 표시
+    clearEupAnalysis();
+    return;
+  }
+  // 남양주 읍면: 이제 읍면 지표·시사점을 제공하므로 기존 "시군 단위에서만" 안내는 숨김
+  if (staticNote) staticNote.style.display = 'none';
+  const hasField = !!(fieldSurveyData && fieldSurveyData.eups && fieldSurveyData.eups[eupName]);
+  if (noticeHost) {
+    noticeHost.innerHTML = hasField
+      ? `<span class="data-status-badge status-field">현장조사</span> 9개 농촌 읍면 가상 현장조사 데이터 기반 분석입니다.`
+      : `<span class="data-status-badge status-simulation">시뮬레이션</span> 이 읍면(도심형)은 현장조사 미수집 — 시뮬레이션·시군 고정값 기반 추정입니다.`;
+  }
+  renderVisionScoreCard(eupName);
+  renderEupLlmBlock(eupName);
+  renderEupTriggerCards(eupName);
+}
+
+/** 읍면 분석 영역 비우기 (시군 복귀·非남양주 시) */
+function clearEupAnalysis() {
+  ['eup-analysis-notice', 'eup-vision-score', 'eup-llm-interpret', 'eup-trigger-grid', 'eup-insight-cards'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+}
+
+/**
+ * 읍면 실시간 LLM 해석 블록 — 생성/재생성 버튼.
+ * LLM_PROXY_URL 미설정 시 블록을 비워 둔다(정적 시사점 카드로 충분).
+ */
+function renderEupLlmBlock(eupName) {
+  const host = document.getElementById('eup-llm-interpret');
+  if (!host) return;
+  if (!llmEnabled()) { host.innerHTML = ''; return; }
+
+  host.innerHTML = `
+    <div class="nyj-section-label">실시간 AI 해석 <span class="nyj-fired-count" style="background:#5B21B6">LLM</span></div>
+    <div class="eup-llm-card" id="eup-llm-card">
+      <button type="button" class="ai-llm-btn eup-llm-btn" id="eup-llm-btn">🤖 이 읍면 AI 해석 생성</button>
+      <p class="eup-llm-hint">현장조사 지표·비전 적합도·발화 트리거를 근거로 LLM이 맞춤 해석을 생성합니다.</p>
+    </div>`;
+
+  const btn = document.getElementById('eup-llm-btn');
+  let generated = false;
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = '⏳ 생성 중…';
+    const d = await llmInterpret('eup', eupName, null, { force: generated });
+    btn.disabled = false;
+    if (!d) { btn.textContent = '⚠️ 실패 — 재시도'; return; }
+    generated = true;
+    renderEupLlmResult(eupName, d);
+  });
+}
+
+/** 읍면 LLM 결과 렌더 */
+function renderEupLlmResult(eupName, d) {
+  const card = document.getElementById('eup-llm-card');
+  if (!card) return;
+  const li = (xs) => (xs || []).map(s => `<li>${escapeHtml(s)}</li>`).join('');
+  card.innerHTML = `
+    <div class="eup-llm-head">
+      <span class="ai-card-badge is-live">실시간 LLM</span>
+      <button type="button" class="ai-llm-btn eup-llm-btn" id="eup-llm-btn">↻ 재생성</button>
+    </div>
+    ${d.headline ? `<p class="eup-llm-headline">${escapeHtml(d.headline)}</p>` : ''}
+    ${d.vision_comment ? `<p class="eup-llm-vision">🎯 ${escapeHtml(d.vision_comment)}</p>` : ''}
+    <div class="ai-card-pros-cons">
+      <div class="ai-card-side ai-card-strengths"><h4>강점</h4><ul>${li(d.strengths)}</ul></div>
+      <div class="ai-card-side ai-card-weaknesses"><h4>약점</h4><ul>${li(d.weaknesses)}</ul></div>
+    </div>
+    ${d.policy_recommendation ? `<div class="ai-card-policy"><h4>정책 권고 방향</h4><p>${escapeHtml(d.policy_recommendation)}</p></div>` : ''}
+    ${(d.priority_actions && d.priority_actions.length) ? `<div class="ai-card-policy"><h4>우선 조치</h4><ul class="eup-llm-actions">${li(d.priority_actions)}</ul></div>` : ''}
+    <p class="eup-llm-foot">🤖 MindLogic Gateway 실시간 LLM${d._model ? ` · ${d._model}` : ''}</p>`;
+
+  // 재생성 버튼 재바인딩
+  const btn = document.getElementById('eup-llm-btn');
+  if (btn) btn.addEventListener('click', async () => {
+    btn.disabled = true; btn.textContent = '⏳ 생성 중…';
+    const nd = await llmInterpret('eup', eupName, null, { force: true });
+    btn.disabled = false;
+    if (nd) renderEupLlmResult(eupName, nd); else btn.textContent = '⚠️ 실패 — 재시도';
+  });
 }
 
 function hideDongDetailPanel() {
@@ -3297,6 +4860,7 @@ function hideDongDetailPanel() {
   const cityDetail = document.getElementById('city-detail');
   if (detail) detail.classList.add('hidden');
   if (cityDetail) cityDetail.classList.remove('is-dong-mode');
+  clearEupAnalysis(); // 0531: 읍면 비전/트리거 카드 정리
 }
 
 /**
@@ -5199,6 +6763,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // KOSIS 기본 통계 토글 (시군 패널 맨 아래 접힘 섹션)
   initKosisToggle();
+
+  // 일반/관리자 뷰 토글 (피드백 #6)
+  initViewModeToggle();
 
   // 우측 패널 지표 카드 / 자율지표 카드 클릭 → 지표 탐색 페이지 열기 (이벤트 위임)
   const cityDetailEl = document.getElementById('city-detail');
