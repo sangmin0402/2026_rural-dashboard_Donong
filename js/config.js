@@ -8,4 +8,4 @@
  *
  * ⚠️ API 키는 여기에 절대 넣지 않는다. 키는 Worker(서버)에만 존재한다.
  */
-window.LLM_PROXY_URL = '';
+window.LLM_PROXY_URL = 'https://rural-dashboard-llm.dgh05221.workers.dev';
