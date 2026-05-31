@@ -7658,3 +7658,162 @@ body.view-admin .admin-only-inline {
     gap: var(--space-2);
   }
 }
+
+/* ============================================================ */
+/* === 섹션 40: 남양주 읍면 트리거/비전 (0531 통합) === */
+/* ============================================================ */
+
+/* --- 출처 배지 추가 변형 (현장조사 / 시군고정) --- */
+.data-status-badge.status-field {
+  background: rgba(45, 106, 79, 0.14);
+  color: #1f6b47;
+  border: 1px solid rgba(45, 106, 79, 0.42);
+  padding: 1px 8px; border-radius: var(--radius-pill);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;
+}
+.data-status-badge.status-sigun-fixed {
+  background: rgba(29, 95, 166, 0.13);
+  color: #1d5fa6;
+  border: 1px solid rgba(29, 95, 166, 0.40);
+  padding: 1px 8px; border-radius: var(--radius-pill);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.02em;
+}
+
+/* 읍면 비교 표 — 출처별 셀 색조 */
+.dong-compare-tbl-val.src-field  { color: #1f6b47; font-weight: 600; }
+.dong-compare-tbl-val.src-sim    { color: #b6691d; }
+.dong-compare-tbl-val.src-sigun  { color: #1d5fa6; opacity: 0.85; }
+
+/* --- 읍면 분석 영역 공통 --- */
+.eup-analysis-notice {
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: 11.5px; line-height: 1.6; color: var(--text-muted, #667);
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.eup-analysis-block { margin-top: var(--space-3); }
+.eup-analysis-block:empty { margin-top: 0; }
+.nyj-section-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #718096; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.nyj-fired-count {
+  font-size: 10.5px; font-weight: 700; padding: 2px 9px;
+  border-radius: var(--radius-pill); background: #2C3E50; color: #fff;
+  letter-spacing: 0;
+}
+
+/* --- 비전 적합도 카드 --- */
+.nyj-vision-card {
+  border: 1px solid #E2E8F0; border-radius: 14px; background: #fff;
+  padding: 14px 16px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.nyj-vision-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.nyj-vision-title { font-size: 13.5px; font-weight: 700; color: #1C2B33; }
+.nyj-vision-overall { font-size: 30px; font-weight: 800; line-height: 1; font-family: 'DM Mono', monospace; }
+.nyj-vision-overall span { font-size: 13px; font-weight: 600; color: #A0AEC0; }
+.nyj-vision-axes { display: flex; flex-direction: column; gap: 9px; }
+.nyj-vision-axis-head {
+  display: flex; align-items: center; gap: 7px; margin-bottom: 3px;
+}
+.nyj-vision-axis-key {
+  width: 18px; height: 18px; border-radius: 5px; background: #2C3E50; color: #fff;
+  font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace; flex-shrink: 0;
+}
+.nyj-vision-axis-name { flex: 1; font-size: 11.5px; color: #4A5568; min-width: 0; }
+.nyj-vision-axis-score { font-size: 14px; font-weight: 800; font-family: 'DM Mono', monospace; }
+.nyj-vision-gauge {
+  height: 6px; background: #EDF2F7; border-radius: 3px; overflow: hidden; flex: 1;
+}
+.nyj-vision-gauge-fill { height: 100%; border-radius: 3px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+
+.nyj-vision-pf {
+  margin-top: 13px; padding-top: 12px; border-top: 1px dashed #E2E8F0;
+}
+.nyj-vision-pf-label { font-size: 11px; font-weight: 700; color: #2C3E50; margin-bottom: 8px; }
+.nyj-vision-pf-hint { font-weight: 500; color: #A0AEC0; }
+.nyj-vision-pf-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.nyj-pf-tag { width: 64px; font-size: 10.5px; color: #4A5568; flex-shrink: 0; }
+.nyj-pf-val { width: 26px; text-align: right; font-size: 11.5px; font-weight: 700; font-family: 'DM Mono', monospace; flex-shrink: 0; }
+.nyj-vision-pf-warn {
+  margin-top: 8px; padding: 8px 11px; border-radius: 8px;
+  background: #FFFBEB; border-left: 3px solid #D97706;
+  font-size: 11px; line-height: 1.6; color: #78350F;
+}
+.nyj-vision-missing { margin-top: 9px; font-size: 10.5px; color: #A0AEC0; }
+.nyj-vision-foot { margin-top: 9px; font-size: 10px; color: #CBD5E0; }
+
+/* --- 트리거 그리드 --- */
+.nyj-trigger-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px;
+}
+.nyj-trigger-card {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 7px 9px; border-radius: 7px; border: 1px solid #E2E8F0; background: #fff;
+  transition: all .2s;
+}
+.nyj-trigger-card.muted { opacity: .3; filter: grayscale(.5); }
+.nyj-trigger-card.fired-red    { border-color: #FECACA; background: #FFF5F5; }
+.nyj-trigger-card.fired-amber  { border-color: #FDE68A; background: #FFFBEB; }
+.nyj-trigger-card.fired-green  { border-color: #A7F3D0; background: #F0FDF4; }
+.nyj-trigger-card.fired-blue   { border-color: #BFDBFE; background: #EFF6FF; }
+.nyj-t-num {
+  width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9.5px; font-weight: 800; color: #fff; font-family: 'DM Mono', monospace; margin-top: 1px;
+}
+.nyj-t-num.red { background: #B5182B; } .nyj-t-num.amber { background: #D97706; }
+.nyj-t-num.green { background: #2D6A4F; } .nyj-t-num.blue { background: #1D5FA6; }
+.nyj-t-num.gray { background: #CBD5E0; color: #718096; }
+.nyj-t-body { flex: 1; min-width: 0; }
+.nyj-t-name { font-size: 11px; font-weight: 700; line-height: 1.3; margin-bottom: 2px; }
+.nyj-t-name.red { color: #B5182B; } .nyj-t-name.amber { color: #B45309; }
+.nyj-t-name.green { color: #2D6A4F; } .nyj-t-name.blue { color: #1D5FA6; } .nyj-t-name.gray { color: #A0AEC0; }
+.nyj-t-cond { font-size: 9.5px; color: #718096; font-family: 'DM Mono', monospace; line-height: 1.4; }
+
+/* --- 시사점 카드 --- */
+.nyj-cards-list { display: flex; flex-direction: column; gap: 12px; }
+.nyj-icard {
+  border-radius: 14px; border: 1px solid #E2E8F0; background: #fff; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.nyj-icard-head { padding: 11px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #E2E8F0; }
+.nyj-icard-icon { font-size: 17px; flex-shrink: 0; }
+.nyj-icard-headinfo { flex: 1; min-width: 0; }
+.nyj-icard-title { font-size: 13px; font-weight: 700; margin-bottom: 3px; }
+.nyj-icard-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+.nyj-tag { font-size: 9.5px; font-weight: 600; padding: 2px 7px; border-radius: var(--radius-pill); }
+.nyj-tag-strat { background: #F0F4F8; color: #4A5568; }
+.nyj-icard-body { display: grid; grid-template-columns: 1fr 1fr; }
+.nyj-icard-cell { padding: 11px 14px; border-right: 1px solid #EDF2F7; border-bottom: 1px solid #EDF2F7; }
+.nyj-icard-cell:nth-child(even) { border-right: none; }
+.nyj-icard-cell.full { grid-column: 1 / -1; border-right: none; }
+.nyj-cell-label {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: #A0AEC0; margin-bottom: 7px;
+}
+.nyj-cell-body { font-size: 11.5px; color: #4A5568; line-height: 1.7; }
+.nyj-metric-row { display: flex; align-items: center; gap: 7px; padding: 3px 0; border-bottom: 1px solid #F7FAFC; }
+.nyj-metric-row:last-child { border-bottom: none; }
+.nyj-metric-id { font-size: 9.5px; font-weight: 700; font-family: 'DM Mono', monospace; width: 26px; flex-shrink: 0; color: #A0AEC0; }
+.nyj-metric-name { font-size: 11px; color: #4A5568; flex: 1; min-width: 0; display: flex; align-items: center; gap: 5px; }
+.nyj-metric-src { font-size: 8.5px; font-weight: 700; padding: 0 5px; border-radius: var(--radius-pill); white-space: nowrap; }
+.nyj-metric-src.src-field { background: rgba(45,106,79,.14); color: #1f6b47; }
+.nyj-metric-src.src-sim   { background: rgba(232,156,90,.16); color: #b6691d; }
+.nyj-metric-src.src-sigun { background: rgba(29,95,166,.13); color: #1d5fa6; }
+.nyj-metric-val { font-size: 11.5px; font-weight: 700; text-align: right; flex-shrink: 0; font-family: 'DM Mono', monospace; }
+.nyj-verdict { border-radius: 8px; padding: 9px 12px; font-size: 11.5px; line-height: 1.7; border-left: 3px solid; margin-top: 4px; }
+.nyj-data-need {
+  margin-top: 8px; font-size: 10.5px; padding: 6px 10px; background: #F7FAFC;
+  border-radius: 6px; color: #718096;
+}
+.nyj-data-need strong { color: #4A5568; }
+
+@media (max-width: 640px) {
+  .nyj-icard-body { grid-template-columns: 1fr; }
+  .nyj-icard-cell { border-right: none; }
+}

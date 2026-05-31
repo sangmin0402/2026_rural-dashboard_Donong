@@ -1,0 +1,623 @@
+{
+  "_meta": {
+    "version": "2026-05-31",
+    "source": "0531작업/현장조사 가상데이터.xlsx (가상 현장조사, 한유하)",
+    "scope": "namyangju",
+    "unit": "읍면",
+    "eup_count": 9,
+    "indicators": [
+      "W5",
+      "W7",
+      "L4",
+      "L6",
+      "W6",
+      "W9",
+      "R6",
+      "R7"
+    ],
+    "id_scheme": "CANON (= xlsx 확정안). mock 파일과 R4/R5/R6 키 의미가 다름 — app.js 변환 레이어 경유.",
+    "population_source": "region-meta.json dong.raw.tot_ppltn",
+    "note": "가상(시뮬레이션) 현장조사 데이터. 실제 수집 전 UI·집계 검증용. R7은 현장조사 대체정의(분양 대비 운영구획)로 확정안 정의와 다를 수 있음."
+  },
+  "eups": {
+    "와부읍": {
+      "adm_cd": "31130110",
+      "cluster": "transit",
+      "population": 55808.0,
+      "indicators": {
+        "W5": {
+          "value": 8.0,
+          "unit": "%",
+          "label": "농업 세대교체 수준",
+          "source": "field-survey",
+          "n": 25,
+          "formula": "청년경영주_여부=='Y' 비율"
+        },
+        "W7": {
+          "value": 20.0,
+          "unit": "%",
+          "label": "친환경 인증 농가 비율",
+          "source": "field-survey",
+          "n": 25,
+          "formula": "친환경_인증_여부=='Y' 비율"
+        },
+        "L4": {
+          "value": 91.7,
+          "unit": "점",
+          "label": "생활SOC 충족지수",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "보유항목수/총항목수*100 (12개 생활SOC)"
+        },
+        "L6": {
+          "value": 70.0,
+          "unit": "%",
+          "label": "귀촌인 3년 정착률",
+          "source": "field-survey",
+          "n": 30,
+          "formula": "전입<=2023 중 2026 주소유지=='Y' 비율"
+        },
+        "W6": {
+          "value": 17.2,
+          "unit": "%",
+          "label": "청년 귀농 유입 비율(20~39세)",
+          "source": "field-survey",
+          "n": 50,
+          "formula": "sum(20_39세)/sum(가구원수)*100"
+        },
+        "W9": {
+          "value": 1.1,
+          "unit": "건/천명",
+          "label": "인구 1천명당 농촌체험 프로그램 운영 건수",
+          "source": "field-survey",
+          "n": 6,
+          "formula": "sum(연간프로그램_횟수)/인구*1000"
+        },
+        "R6": {
+          "value": 0.3,
+          "unit": "%",
+          "label": "도시텃밭 체험 수용 가능 비율",
+          "source": "field-survey",
+          "n": 3,
+          "formula": "sum(수용가능인원[도시텃밭])/인구*100"
+        },
+        "R7": {
+          "value": 94.6,
+          "unit": "%",
+          "label": "주말농원 활성화율",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "sum(운영구획)/sum(분양가능구획)*100 (현장조사 정의)"
+        }
+      }
+    },
+    "화도읍": {
+      "adm_cd": "31130111",
+      "cluster": "transit",
+      "population": 110560.0,
+      "indicators": {
+        "W5": {
+          "value": 10.0,
+          "unit": "%",
+          "label": "농업 세대교체 수준",
+          "source": "field-survey",
+          "n": 30,
+          "formula": "청년경영주_여부=='Y' 비율"
+        },
+        "W7": {
+          "value": 16.7,
+          "unit": "%",
+          "label": "친환경 인증 농가 비율",
+          "source": "field-survey",
+          "n": 30,
+          "formula": "친환경_인증_여부=='Y' 비율"
+        },
+        "L4": {
+          "value": 91.7,
+          "unit": "점",
+          "label": "생활SOC 충족지수",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "보유항목수/총항목수*100 (12개 생활SOC)"
+        },
+        "L6": {
+          "value": 69.2,
+          "unit": "%",
+          "label": "귀촌인 3년 정착률",
+          "source": "field-survey",
+          "n": 52,
+          "formula": "전입<=2023 중 2026 주소유지=='Y' 비율"
+        },
+        "W6": {
+          "value": 10.7,
+          "unit": "%",
+          "label": "청년 귀농 유입 비율(20~39세)",
+          "source": "field-survey",
+          "n": 68,
+          "formula": "sum(20_39세)/sum(가구원수)*100"
+        },
+        "W9": {
+          "value": 0.8,
+          "unit": "건/천명",
+          "label": "인구 1천명당 농촌체험 프로그램 운영 건수",
+          "source": "field-survey",
+          "n": 8,
+          "formula": "sum(연간프로그램_횟수)/인구*1000"
+        },
+        "R6": {
+          "value": 0.1,
+          "unit": "%",
+          "label": "도시텃밭 체험 수용 가능 비율",
+          "source": "field-survey",
+          "n": 2,
+          "formula": "sum(수용가능인원[도시텃밭])/인구*100"
+        }
+      }
+    },
+    "진접읍": {
+      "adm_cd": "31130120",
+      "cluster": "transit",
+      "population": 96296.0,
+      "indicators": {
+        "W5": {
+          "value": 10.7,
+          "unit": "%",
+          "label": "농업 세대교체 수준",
+          "source": "field-survey",
+          "n": 28,
+          "formula": "청년경영주_여부=='Y' 비율"
+        },
+        "W7": {
+          "value": 14.3,
+          "unit": "%",
+          "label": "친환경 인증 농가 비율",
+          "source": "field-survey",
+          "n": 28,
+          "formula": "친환경_인증_여부=='Y' 비율"
+        },
+        "L4": {
+          "value": 83.3,
+          "unit": "점",
+          "label": "생활SOC 충족지수",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "보유항목수/총항목수*100 (12개 생활SOC)"
+        },
+        "L6": {
+          "value": 71.4,
+          "unit": "%",
+          "label": "귀촌인 3년 정착률",
+          "source": "field-survey",
+          "n": 35,
+          "formula": "전입<=2023 중 2026 주소유지=='Y' 비율"
+        },
+        "W6": {
+          "value": 14.1,
+          "unit": "%",
+          "label": "청년 귀농 유입 비율(20~39세)",
+          "source": "field-survey",
+          "n": 56,
+          "formula": "sum(20_39세)/sum(가구원수)*100"
+        },
+        "W9": {
+          "value": 0.6,
+          "unit": "건/천명",
+          "label": "인구 1천명당 농촌체험 프로그램 운영 건수",
+          "source": "field-survey",
+          "n": 6,
+          "formula": "sum(연간프로그램_횟수)/인구*1000"
+        },
+        "R6": {
+          "value": 0.1,
+          "unit": "%",
+          "label": "도시텃밭 체험 수용 가능 비율",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "sum(수용가능인원[도시텃밭])/인구*100"
+        },
+        "R7": {
+          "value": 62.5,
+          "unit": "%",
+          "label": "주말농원 활성화율",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "sum(운영구획)/sum(분양가능구획)*100 (현장조사 정의)"
+        }
+      }
+    },
+    "진건읍": {
+      "adm_cd": "31130140",
+      "cluster": "transit",
+      "population": 20049.0,
+      "indicators": {
+        "W5": {
+          "value": 12.5,
+          "unit": "%",
+          "label": "농업 세대교체 수준",
+          "source": "field-survey",
+          "n": 24,
+          "formula": "청년경영주_여부=='Y' 비율"
+        },
+        "W7": {
+          "value": 20.8,
+          "unit": "%",
+          "label": "친환경 인증 농가 비율",
+          "source": "field-survey",
+          "n": 24,
+          "formula": "친환경_인증_여부=='Y' 비율"
+        },
+        "L4": {
+          "value": 66.7,
+          "unit": "점",
+          "label": "생활SOC 충족지수",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "보유항목수/총항목수*100 (12개 생활SOC)"
+        },
+        "L6": {
+          "value": 71.4,
+          "unit": "%",
+          "label": "귀촌인 3년 정착률",
+          "source": "field-survey",
+          "n": 21,
+          "formula": "전입<=2023 중 2026 주소유지=='Y' 비율"
+        },
+        "W6": {
+          "value": 4.0,
+          "unit": "%",
+          "label": "청년 귀농 유입 비율(20~39세)",
+          "source": "field-survey",
+          "n": 35,
+          "formula": "sum(20_39세)/sum(가구원수)*100"
+        },
+        "W9": {
+          "value": 2.0,
+          "unit": "건/천명",
+          "label": "인구 1천명당 농촌체험 프로그램 운영 건수",
+          "source": "field-survey",
+          "n": 4,
+          "formula": "sum(연간프로그램_횟수)/인구*1000"
+        },
+        "R7": {
+          "value": 75.8,
+          "unit": "%",
+          "label": "주말농원 활성화율",
+          "source": "field-survey",
+          "n": 3,
+          "formula": "sum(운영구획)/sum(분양가능구획)*100 (현장조사 정의)"
+        }
+      }
+    },
+    "오남읍": {
+      "adm_cd": "31130150",
+      "cluster": "transit",
+      "population": 50522.0,
+      "indicators": {
+        "W5": {
+          "value": 8.7,
+          "unit": "%",
+          "label": "농업 세대교체 수준",
+          "source": "field-survey",
+          "n": 23,
+          "formula": "청년경영주_여부=='Y' 비율"
+        },
+        "W7": {
+          "value": 13.0,
+          "unit": "%",
+          "label": "친환경 인증 농가 비율",
+          "source": "field-survey",
+          "n": 23,
+          "formula": "친환경_인증_여부=='Y' 비율"
+        },
+        "L4": {
+          "value": 75.0,
+          "unit": "점",
+          "label": "생활SOC 충족지수",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "보유항목수/총항목수*100 (12개 생활SOC)"
+        },
+        "L6": {
+          "value": 65.2,
+          "unit": "%",
+          "label": "귀촌인 3년 정착률",
+          "source": "field-survey",
+          "n": 23,
+          "formula": "전입<=2023 중 2026 주소유지=='Y' 비율"
+        },
+        "W6": {
+          "value": 12.1,
+          "unit": "%",
+          "label": "청년 귀농 유입 비율(20~39세)",
+          "source": "field-survey",
+          "n": 33,
+          "formula": "sum(20_39세)/sum(가구원수)*100"
+        },
+        "W9": {
+          "value": 0.5,
+          "unit": "건/천명",
+          "label": "인구 1천명당 농촌체험 프로그램 운영 건수",
+          "source": "field-survey",
+          "n": 3,
+          "formula": "sum(연간프로그램_횟수)/인구*1000"
+        },
+        "R6": {
+          "value": 0.1,
+          "unit": "%",
+          "label": "도시텃밭 체험 수용 가능 비율",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "sum(수용가능인원[도시텃밭])/인구*100"
+        }
+      }
+    },
+    "퇴계원읍": {
+      "adm_cd": "31130160",
+      "cluster": "transit",
+      "population": 26243.0,
+      "indicators": {
+        "W5": {
+          "value": 5.6,
+          "unit": "%",
+          "label": "농업 세대교체 수준",
+          "source": "field-survey",
+          "n": 18,
+          "formula": "청년경영주_여부=='Y' 비율"
+        },
+        "W7": {
+          "value": 5.6,
+          "unit": "%",
+          "label": "친환경 인증 농가 비율",
+          "source": "field-survey",
+          "n": 18,
+          "formula": "친환경_인증_여부=='Y' 비율"
+        },
+        "L4": {
+          "value": 83.3,
+          "unit": "점",
+          "label": "생활SOC 충족지수",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "보유항목수/총항목수*100 (12개 생활SOC)"
+        },
+        "L6": {
+          "value": 60.0,
+          "unit": "%",
+          "label": "귀촌인 3년 정착률",
+          "source": "field-survey",
+          "n": 15,
+          "formula": "전입<=2023 중 2026 주소유지=='Y' 비율"
+        },
+        "W6": {
+          "value": 17.5,
+          "unit": "%",
+          "label": "청년 귀농 유입 비율(20~39세)",
+          "source": "field-survey",
+          "n": 24,
+          "formula": "sum(20_39세)/sum(가구원수)*100"
+        },
+        "W9": {
+          "value": 0.5,
+          "unit": "건/천명",
+          "label": "인구 1천명당 농촌체험 프로그램 운영 건수",
+          "source": "field-survey",
+          "n": 2,
+          "formula": "sum(연간프로그램_횟수)/인구*1000"
+        },
+        "R6": {
+          "value": 0.0,
+          "unit": "%",
+          "label": "도시텃밭 체험 수용 가능 비율",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "sum(수용가능인원[도시텃밭])/인구*100"
+        },
+        "R7": {
+          "value": 61.3,
+          "unit": "%",
+          "label": "주말농원 활성화율",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "sum(운영구획)/sum(분양가능구획)*100 (현장조사 정의)"
+        }
+      }
+    },
+    "별내면": {
+      "adm_cd": "31130310",
+      "cluster": "rural",
+      "population": 17329.0,
+      "indicators": {
+        "W5": {
+          "value": 16.0,
+          "unit": "%",
+          "label": "농업 세대교체 수준",
+          "source": "field-survey",
+          "n": 25,
+          "formula": "청년경영주_여부=='Y' 비율"
+        },
+        "W7": {
+          "value": 24.0,
+          "unit": "%",
+          "label": "친환경 인증 농가 비율",
+          "source": "field-survey",
+          "n": 25,
+          "formula": "친환경_인증_여부=='Y' 비율"
+        },
+        "L4": {
+          "value": 66.7,
+          "unit": "점",
+          "label": "생활SOC 충족지수",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "보유항목수/총항목수*100 (12개 생활SOC)"
+        },
+        "L6": {
+          "value": 68.2,
+          "unit": "%",
+          "label": "귀촌인 3년 정착률",
+          "source": "field-survey",
+          "n": 22,
+          "formula": "전입<=2023 중 2026 주소유지=='Y' 비율"
+        },
+        "W6": {
+          "value": 16.1,
+          "unit": "%",
+          "label": "청년 귀농 유입 비율(20~39세)",
+          "source": "field-survey",
+          "n": 36,
+          "formula": "sum(20_39세)/sum(가구원수)*100"
+        },
+        "W9": {
+          "value": 2.7,
+          "unit": "건/천명",
+          "label": "인구 1천명당 농촌체험 프로그램 운영 건수",
+          "source": "field-survey",
+          "n": 5,
+          "formula": "sum(연간프로그램_횟수)/인구*1000"
+        },
+        "R6": {
+          "value": 0.6,
+          "unit": "%",
+          "label": "도시텃밭 체험 수용 가능 비율",
+          "source": "field-survey",
+          "n": 2,
+          "formula": "sum(수용가능인원[도시텃밭])/인구*100"
+        },
+        "R7": {
+          "value": 80.4,
+          "unit": "%",
+          "label": "주말농원 활성화율",
+          "source": "field-survey",
+          "n": 2,
+          "formula": "sum(운영구획)/sum(분양가능구획)*100 (현장조사 정의)"
+        }
+      }
+    },
+    "수동면": {
+      "adm_cd": "31130340",
+      "cluster": "rural",
+      "population": 9490.0,
+      "indicators": {
+        "W5": {
+          "value": 14.8,
+          "unit": "%",
+          "label": "농업 세대교체 수준",
+          "source": "field-survey",
+          "n": 27,
+          "formula": "청년경영주_여부=='Y' 비율"
+        },
+        "W7": {
+          "value": 29.6,
+          "unit": "%",
+          "label": "친환경 인증 농가 비율",
+          "source": "field-survey",
+          "n": 27,
+          "formula": "친환경_인증_여부=='Y' 비율"
+        },
+        "L4": {
+          "value": 58.3,
+          "unit": "점",
+          "label": "생활SOC 충족지수",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "보유항목수/총항목수*100 (12개 생활SOC)"
+        },
+        "L6": {
+          "value": 75.0,
+          "unit": "%",
+          "label": "귀촌인 3년 정착률",
+          "source": "field-survey",
+          "n": 20,
+          "formula": "전입<=2023 중 2026 주소유지=='Y' 비율"
+        },
+        "W6": {
+          "value": 20.2,
+          "unit": "%",
+          "label": "청년 귀농 유입 비율(20~39세)",
+          "source": "field-survey",
+          "n": 30,
+          "formula": "sum(20_39세)/sum(가구원수)*100"
+        },
+        "W9": {
+          "value": 7.6,
+          "unit": "건/천명",
+          "label": "인구 1천명당 농촌체험 프로그램 운영 건수",
+          "source": "field-survey",
+          "n": 6,
+          "formula": "sum(연간프로그램_횟수)/인구*1000"
+        },
+        "R6": {
+          "value": 0.7,
+          "unit": "%",
+          "label": "도시텃밭 체험 수용 가능 비율",
+          "source": "field-survey",
+          "n": 2,
+          "formula": "sum(수용가능인원[도시텃밭])/인구*100"
+        },
+        "R7": {
+          "value": 88.0,
+          "unit": "%",
+          "label": "주말농원 활성화율",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "sum(운영구획)/sum(분양가능구획)*100 (현장조사 정의)"
+        }
+      }
+    },
+    "조안면": {
+      "adm_cd": "31130350",
+      "cluster": "rural",
+      "population": 3456.0,
+      "indicators": {
+        "W5": {
+          "value": 12.0,
+          "unit": "%",
+          "label": "농업 세대교체 수준",
+          "source": "field-survey",
+          "n": 25,
+          "formula": "청년경영주_여부=='Y' 비율"
+        },
+        "W7": {
+          "value": 36.0,
+          "unit": "%",
+          "label": "친환경 인증 농가 비율",
+          "source": "field-survey",
+          "n": 25,
+          "formula": "친환경_인증_여부=='Y' 비율"
+        },
+        "L4": {
+          "value": 58.3,
+          "unit": "점",
+          "label": "생활SOC 충족지수",
+          "source": "field-survey",
+          "n": 1,
+          "formula": "보유항목수/총항목수*100 (12개 생활SOC)"
+        },
+        "L6": {
+          "value": 80.0,
+          "unit": "%",
+          "label": "귀촌인 3년 정착률",
+          "source": "field-survey",
+          "n": 15,
+          "formula": "전입<=2023 중 2026 주소유지=='Y' 비율"
+        },
+        "W6": {
+          "value": 10.5,
+          "unit": "%",
+          "label": "청년 귀농 유입 비율(20~39세)",
+          "source": "field-survey",
+          "n": 22,
+          "formula": "sum(20_39세)/sum(가구원수)*100"
+        },
+        "W9": {
+          "value": 17.4,
+          "unit": "건/천명",
+          "label": "인구 1천명당 농촌체험 프로그램 운영 건수",
+          "source": "field-survey",
+          "n": 5,
+          "formula": "sum(연간프로그램_횟수)/인구*1000"
+        }
+      }
+    }
+  }
+}

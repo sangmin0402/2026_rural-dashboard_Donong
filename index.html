@@ -742,10 +742,15 @@
               <span class="dong-detail-source" id="dong-detail-source">예시 데이터</span>
             </header>
             <div class="dong-info-grid" id="dong-info-grid"></div>
-            <p class="dong-detail-note">
+            <p class="dong-detail-note" id="dong-detail-note">
               💡 읍면 단위 농촌다움 지표는 시군 단위에서만 산출됩니다.
               이 화면은 해당 읍면의 일반 메타정보(인구·면적·특성)를 제공합니다.
             </p>
+            <!-- 0531 통합: 남양주 읍면 비전 적합도 + 트리거 시사점 카드 (JS가 채움) -->
+            <p class="eup-analysis-notice" id="eup-analysis-notice"></p>
+            <section id="eup-vision-score" class="eup-analysis-block" aria-label="읍면 비전 적합도"></section>
+            <section id="eup-trigger-grid" class="eup-analysis-block" aria-label="읍면 트리거 평가"></section>
+            <section id="eup-insight-cards" class="eup-analysis-block" aria-label="읍면 시사점 카드"></section>
             <button id="dong-back-btn" class="dong-back-btn" type="button">← 시군 보기로 돌아가기</button>
           </section>
 

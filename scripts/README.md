@@ -10,8 +10,24 @@
 | `fetch_kosis.py` | KOSIS Open API → 인구·세대수 갱신 (source='kosis:*') |
 | `fetch_sgis.py` | SGIS Open API → 노령화·사업체·농가 등 갱신 (source='sgis:*') |
 | `process_ri.py` | 행정리 SHP → GeoJSON 변환 |
+| `build_field_survey.py` | 현장조사 xlsx → `dat/simulation/namyangju-field-survey.json` (0531, 9개 농촌 읍면 집계) |
 
 > 두 fetch 스크립트는 **독립 실행 가능**. 자기 source 의 raw 만 갱신하고 다른 source 및 manual 층은 보존.
+
+> ⚠️ **지표 ID 주의(CANON)**: 표준 키는 xlsx 확정안 기준 — W9=농촌체험, R4=양호수질, R5=수변쉼터, R6=도시텃밭, R7=주말농원.
+> `namyangju-dong-mock.json` 은 키가 한 칸 밀려 있다(`R4_experience_prog`=W9, `R5_water_quality`=R4, `R6_park_per_capita`=R5).
+> `CITIES.namyangju.jayulIndicators` 도 앱 내부 번호(R4=체험·R5=수질·R6=쉼터)를 쓴다.
+> 읍면 지표는 **반드시 `app.js`의 `getEupIndicator()` 변환 레이어를 경유**해 조회한다(직접 키 접근 금지).
+
+### build_field_survey.py 실행
+
+```powershell
+python build_field_survey.py `
+  --xlsx "../../0531작업/현장조사 가상데이터.xlsx" `
+  --out  "../dat/simulation/namyangju-field-survey.json" `
+  --pop-source "../dat/region-meta.json"
+```
+산출 지표: W5·W7(농가조사) / L6·W6(귀촌정착) / W9·R6·R7(체험텃밭) / L4(SOC체크). 결정론적(동일 입력→동일 출력).
 
 ## 의존성 설치
 
