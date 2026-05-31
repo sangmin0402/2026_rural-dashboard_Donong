@@ -268,6 +268,14 @@ const name = (CITIES[cityId] && CITIES[cityId].name) || cityId;
 
 ### ✅ 완료된 기능 (최신)
 
+**🆕 0531 현장조사·시사점·비전 통합 (feat/0531-field-survey-vision 브랜치, 2026-05-31)**:
+팀 자료 3종(트리거 HTML·현장조사 xlsx·비전 docx)을 통합. **읍면 클릭 시** 비전 적합도+트리거+시사점 표출.
+- **지표 ID 정규화 레이어** ⚠️중요: 4개 자료의 키가 어긋남. 표준=CANON(xlsx 확정안: W9=농촌체험, R4=양호수질, R5=수변쉼터, R6=도시텃밭, R7=주말농원). `namyangju-dong-mock.json`은 키가 한 칸 밀림(`R4_experience_prog`=W9, `R5_water_quality`=R4, `R6_park_per_capita`=R5), `CITIES.namyangju.jayulIndicators`도 앱 내부 번호 사용. **반드시 `getEupIndicator(eup, canon)` / `getEupAllIndicators(eup)` 경유**(직접 키 접근 금지). 상수: `CANON_TO_MOCK`, `CANON_TO_REF`, `SIGUN_EXTRA`.
+- **#2 읍면 비교 강화**: `dat/simulation/namyangju-field-survey.json`(9개 농촌 읍면, W5·W7·L4·L6·W6·W9·R6·R7). `scripts/build_field_survey.py`로 재생성. `DONG_COMPARE_INDICATORS` CANON 키로 교체, 표·차트에 출처 배지(`EUP_SOURCE_BADGE`: field/sim/sigun).
+- **#3 시사점 도출**: `dat/namyangju-triggers.json`(15트리거+근거+카드). 엔진 `evalRule`/`firedTriggerIds`/`buildInsightCards`/`renderEupTriggerCards`/`interpolateCard`.
+- **#4 비전 적합도**: `VISION_AXES`(T/H/E)·`normIndicator`(읍면 분포 min-max, L2 역방향)·`visionScore`·`renderVisionScoreCard`. docx 반영 '잠재 vs 체감' 분리 막대.
+- **후킹**: `showDongDetailPanel` 끝 `renderEupAnalysis(admNm,cityId,info)` → 남양주 읍면만 표시(urban 동은 시뮬레이션 폴백 안내), `clearEupAnalysis`로 정리. CSS 섹션 40(`nyj-*`). 미반영: #6 읍면담당자/조회자 토글(자료 대기)·R5 GIS(`_pending`).
+
 **🆕 5/18 피드백 반영 (feat/feedback-0518 브랜치, 2026-05)**:
 - **시사점 카드** (`renderInsightCard`): 시군 패널에 등급별 시사점 텍스트 (피드백 #3) — `dat/indicator-insights.json`
 - **AI 해석 카드** (`renderAiInterpretationCard`): 시군별 강점·약점·정책 권고 (피드백 #5) — `dat/ai-interpretations.json` (정적 텍스트, LLM 미사용)

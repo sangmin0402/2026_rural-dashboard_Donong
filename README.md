@@ -11,7 +11,7 @@
 1. [프로젝트 개요](#1-프로젝트-개요)
 2. [주요 기능](#2-주요-기능)
 3. [지표 체계](#3-지표-체계)
-4. [데이터 현황](#4-데이터-현황) · [4-1. 0427 확정 데이터·현장조사 (2026-05)](#4-1-0427-확정-데이터현장조사-2026-05) · [4-2. 5/18 피드백 반영 (2026-05)](#4-2-518-피드백-반영-2026-05-featfeedback-0518-브랜치)
+4. [데이터 현황](#4-데이터-현황) · [4-1. 0427 확정 데이터·현장조사 (2026-05)](#4-1-0427-확정-데이터현장조사-2026-05) · [4-2. 5/18 피드백 반영 (2026-05)](#4-2-518-피드백-반영-2026-05-featfeedback-0518-브랜치) · [4-3. 0531 현장조사·시사점·비전 통합](#4-3-0531-현장조사시사점비전-통합-feat0531-field-survey-vision-브랜치)
 5. [5대 권역 분류](#5-5대-권역-분류)
 6. [파일 구조](#6-파일-구조)
 7. [로컬 실행](#7-로컬-실행)
@@ -201,7 +201,7 @@
 | #1 | UI 재검토 + 유사 포털 사례 | Commit 1·2 | impeccable 디자인 진단 + side-tab 통일 + 헤딩 위계 정리. 사례조사: `docs/UX-BENCHMARK.md` |
 | #2 | 읍면 단위 비교 강화 (남양주) | Commit 6 | 남양주 시군 패널 안에 **"📍 남양주 16개 읍면 비교"** 섹션 (클러스터 칩 + 차트 + 표) |
 | #3 | 시사점 도출 ("그래서 어떻게?") | Commit 3 | 시군 패널 **"이 시군의 시사점" 카드** — 등급별(high/mid/low) 텍스트 |
-| #4 | 남양주 비전 적합도 점수화 | **보류** | 비전 정의 자료 수집 후 별도 PR |
+| #4 | 남양주 비전 적합도 점수화 | **→ 4-3에서 완료** | 민선8기 THE 비전 적합도 점수(0~100) — `feat/0531-field-survey-vision` |
 | #5 | AI 해석·분석 기능 | Commit 7 | `dat/ai-interpretations.json` (15시군 × 강점·약점·정책) + **"💡 AI 해석" 카드**. 정적 텍스트 (LLM 실시간 호출 X) |
 | #6 | 사용자 유형별 화면 분리 | Commit 4 | 헤더 **일반/관리자 토글** + 시군 패널 안에 manual 층 편집 폼 (localStorage 저장) |
 | #7 | 현장 데이터는 가상 데이터로 먼저 테스트 | Commit 5 | `scripts/generate_mock_dong.py` + `dat/simulation/namyangju-dong-mock.json` (16개 읍면 × 9지표 결정론적 mock, urban/transit/rural 3-cluster) |
@@ -233,6 +233,24 @@
 
 ---
 
+### 4-3. 0531 현장조사·시사점·비전 통합 (`feat/0531-field-survey-vision` 브랜치)
+
+5/31 팀 자료 3종(김선혁 트리거 카드 HTML · 한유하 현장조사 가상데이터 xlsx · 이주영 비전 정합성 docx)을 라이브 대시보드에 통합. **읍면을 클릭하면** 비전 적합도·트리거·시사점이 함께 표출됨.
+
+| # | 피드백 | 결과물 |
+|---|--------|--------|
+| #2 | 읍면 단위 비교 **강화** | 현장조사 가상데이터(9개 농촌 읍면) → `dat/simulation/namyangju-field-survey.json` (W5·W7·L4·L6·W6·W9·R6·R7 집계). 읍면 비교 표·차트에 **출처 배지**(현장조사/시뮬레이션/시군고정) |
+| #3 | 시사점 도출 **강화** | 15개 트리거 규칙(`dat/namyangju-triggers.json`) → 정책 시사점 카드 자동 생성 (현황·SWOT·종합판단·정책제안·다음단계) |
+| #4 | 비전 적합도 점수 | 민선8기 **THE 비전**(T 교통·H 삶의질·E 교육환경) 가중평균 **0~100점** + **자원 잠재력 vs 시민 체감 서비스** 분리 막대(docx 진단) |
+
+**지표 ID 표준화(CANON)**: 4개 자료의 키가 어긋나(mock이 R4/R5/R6 한 칸 밀림) `app.js`의 `getEupIndicator()` 변환 레이어로 흡수 — 직접 키 접근 금지. 표준 = xlsx 확정안(W9=농촌체험, R4=양호수질, R5=수변쉼터, R6=도시텃밭, R7=주말농원).
+
+**재현**: `python scripts/build_field_survey.py` → field-survey.json 재생성. 현장조사 컬럼정의·실제 DB 권장 스키마는 [`docs/DATA-SOURCES.md`](docs/DATA-SOURCES.md) §12.
+
+**미반영(자료 대기)**: 사용자 유형별 화면(#6 읍면담당자/조회자 토글)은 일반/관리자 토글 골격만 존재 — 박세희 자료 도착 시 보강. **R5 수변·생태쉼터 면적**은 GIS 미수집(`_pending`) — 수집 시 비전 점수에 자동 반영.
+
+---
+
 ## 5. 5대 권역 분류
 
 보고서 표 2-36 「경기도 정책 및 사업 분석을 통한 경기도형 농촌공간 유형화」 기준
@@ -255,7 +273,7 @@ Web/
 ├── README.md                # 이 파일
 ├── CLAUDE.md                # AI 작업용 컨텍스트 문서
 ├── css/
-│   └── style.css            # 전체 스타일 (섹션 1~34)
+│   └── style.css            # 전체 스타일 (섹션 1~40)
 ├── js/
 │   └── app.js               # 전체 앱 로직 (Vanilla JS, 프레임워크 없음)
 ├── dat/
@@ -268,8 +286,10 @@ Web/
 │   ├── data-gap-report.json     # 수집 갭·상태 요약 (import 시 갱신)
 │   ├── indicator-insights.json  # 🆕 지표×등급별 시사점 텍스트 (피드백 #3)
 │   ├── ai-interpretations.json  # 🆕 시군×AI 해석 텍스트 (피드백 #5)
+│   ├── namyangju-triggers.json  # 🆕 15개 트리거→시사점 카드 + THE비전/SWOT (0531, #3·#4)
 │   └── simulation/
-│       └── namyangju-dong-mock.json  # 🆕 남양주 16읍면 × 9지표 결정론적 mock (피드백 #7)
+│       ├── namyangju-dong-mock.json     # 🆕 남양주 16읍면 × 9지표 결정론적 mock (피드백 #7)
+│       └── namyangju-field-survey.json  # 🆕 현장조사 가상데이터 9읍면 집계 (0531, #2)
 ├── docs/
 │   ├── DATA-SOURCES.md
 │   ├── UX-BENCHMARK.md          # 🆕 유사 포털 사례조사 (피드백 #1)
@@ -283,6 +303,7 @@ Web/
     ├── fetch_sgis.py            # SGIS API 호출 → 시군·읍면 raw 병합
     ├── import_0427_data.py      # 0427_데이터 + 기준 엑셀 → region-meta·갭 리포트
     ├── generate_mock_dong.py    # 🆕 남양주 16읍면 가상 데이터 생성기 (피드백 #7)
+    ├── build_field_survey.py    # 🆕 현장조사 xlsx → namyangju-field-survey.json (0531, #2)
     ├── requirements.txt         # Python 의존성
     └── README.md                # 스크립트 실행 절차 및 KOSIS API 가이드
 ```
@@ -428,4 +449,4 @@ const name = CITIES[cityId].name;
 
 ---
 
-*최종 갱신: 2026.05 — 0427 로컬·기준 엑셀 파이프라인(`import_0427_data.py`)·현장조사 메타·갭 리포트 + 읍면 SGIS raw + UI 출처 배지*
+*최종 갱신: 2026.05.31 — 0531 현장조사 가상데이터 읍면 집계 + 15트리거 시사점 카드 + 민선8기 비전 적합도 점수 통합 (`feat/0531-field-survey-vision`). 이전: 0427 로컬·기준 엑셀 파이프라인·현장조사 메타·갭 리포트 + 읍면 SGIS raw + UI 출처 배지*
