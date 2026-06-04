@@ -1,0 +1,19 @@
+{
+  "_meta": {
+    "purpose": "임계값·해석의 객관적 비교 기준(전국 농촌 평균·유사 지자체 평균). 교수 피드백 #5.",
+    "status": "placeholder",
+    "note": "현재 경기 15개 시군 평균·남양주 내부 읍면 평균은 앱이 직접 계산해 사용 중. 전국 농촌 평균·유사 지자체 평균은 외부 통계(KOSIS 농어업총조사·SGIS·통계청) 수집 후 아래 값을 채우면 비교칩이 자동 점등됨.",
+    "peer_group_def": "유사 지자체 = 도농복합·수도권 인접 시군(추후 확정)",
+    "sources_candidate": ["KOSIS 농어업총조사", "SGIS 통계지리정보서비스", "통계청 농림어업조사", "EGIS 환경공간정보서비스"],
+    "updated_at": ""
+  },
+  "indicators": {
+    "L1": { "national_rural_avg": null, "peer_avg": null },
+    "L2": { "national_rural_avg": null, "peer_avg": null },
+    "L4": { "national_rural_avg": null, "peer_avg": null },
+    "W1": { "national_rural_avg": null, "peer_avg": null },
+    "W5": { "national_rural_avg": null, "peer_avg": null },
+    "W7": { "national_rural_avg": null, "peer_avg": null },
+    "R3": { "national_rural_avg": null, "peer_avg": null }
+  }
+}

@@ -19,6 +19,26 @@
 </head>
 <body>
 
+  <!-- ===== 발표 목차 네비게이션 (0602) ===== -->
+  <nav id="present-spine" aria-label="발표 목차">
+    <div class="ps-inner">
+      <span class="ps-brand" aria-hidden="true">🎤 발표</span>
+      <ol class="ps-steps">
+        <li><button class="ps-step" type="button" data-step="1"><b>①</b><span>개요·비전</span></button></li>
+        <li><button class="ps-step" type="button" data-step="2"><b>②</b><span>지표 선정</span></button></li>
+        <li><button class="ps-step" type="button" data-step="3"><b>③</b><span>데이터·방법론</span></button></li>
+        <li><button class="ps-step" type="button" data-step="4"><b>④</b><span>읍면 진단</span></button></li>
+        <li><button class="ps-step" type="button" data-step="5"><b>⑤</b><span>종합 요약</span></button></li>
+      </ol>
+      <div class="ps-ctrl">
+        <button class="ps-arrow" id="ps-prev" type="button" aria-label="이전 단계">‹</button>
+        <button class="ps-arrow" id="ps-next" type="button" aria-label="다음 단계">›</button>
+        <button class="ps-exit" id="ps-exit" type="button" aria-label="발표 모드 종료">✕</button>
+      </div>
+    </div>
+  </nav>
+  <button id="present-launch" type="button" aria-label="발표 모드 시작">🎤 발표 모드</button>
+
   <!-- ===== 랜딩 화면 (포털형) ===== -->
   <div id="landing-screen" role="dialog" aria-modal="true" aria-label="플랫폼 소개">
     <div class="landing-bg-glow landing-bg-glow--1" aria-hidden="true"></div>
@@ -286,8 +306,35 @@
           </div>
         </section>
 
+        <!-- 남양주 2035 비전 — 발표 ① 개요·비전 (0602) -->
+        <section class="landing-vision landing-anim" style="--anim-order:5" id="landing-vision-2035">
+          <div class="landing-section-head">
+            <span class="landing-eyebrow">STORY ① · 대상 지역</span>
+            <h2 class="landing-section-title">남양주 2035 — 비전과 현실의 간극</h2>
+            <p class="landing-section-sub">「2035 남양주 도시기본계획」 + 민선 8기 THE 비전 기준, 시 전체 절대목표 대비 현재 달성 수준</p>
+          </div>
+          <div class="lv-grid">
+            <div class="lv-axes" id="lv-axes">
+              <div class="lv-axes-label">민선 8기 비전 축 (THE)</div>
+              <div class="lv-axes-chips">
+                <span class="fact-chip fact-chip--basis"><span class="fc-ico">🚆</span>T 교통·접근</span>
+                <span class="fact-chip fact-chip--basis"><span class="fc-ico">🏡</span>H 삶의 질</span>
+                <span class="fact-chip fact-chip--basis"><span class="fc-ico">🌱</span>E 교육·생태</span>
+              </div>
+              <p class="lv-axes-note">출처: 「2035 남양주 도시기본계획」 · 민선 8기 공약</p>
+            </div>
+            <div class="lv-bars" id="lv-area-bars">
+              <!-- renderLandingVision()이 채움 (폴백: 정적) -->
+              <div class="lv-bar"><span class="lv-bar-lab">삶터</span><span class="lv-bar-track"><span class="lv-bar-fill lv-bar-fill--samlter" style="width:67%"></span></span><span class="lv-bar-val">67<small>점</small></span></div>
+              <div class="lv-bar"><span class="lv-bar-lab">일터</span><span class="lv-bar-track"><span class="lv-bar-fill lv-bar-fill--ilter" style="width:87%"></span></span><span class="lv-bar-val">87<small>점</small></span></div>
+              <div class="lv-bar"><span class="lv-bar-lab">쉼터</span><span class="lv-bar-track"><span class="lv-bar-fill lv-bar-fill--shimter" style="width:34%"></span></span><span class="lv-bar-val lv-bar-val--low">34<small>점</small></span></div>
+            </div>
+          </div>
+          <p class="lv-insight" id="lv-insight">⚠️ <b>‘녹색문화도시’ 비전</b>과 달리 <b>1인당 공원면적은 목표의 24.5%</b>에 그칩니다. 쉼터(공원·자연) 달성률이 가장 낮아, 자원 잠재력 대비 시민 체감 서비스가 부족한 구조입니다.</p>
+        </section>
+
         <!-- 빠른 진입 (Bento) -->
-        <section class="landing-bento landing-anim" style="--anim-order:5" id="landing-bento">
+        <section class="landing-bento landing-anim" style="--anim-order:6" id="landing-bento">
           <div class="landing-section-head">
             <h2 class="landing-section-title">빠른 진입</h2>
             <p class="landing-section-sub">필요한 분석 기능으로 바로 이동하세요</p>
@@ -366,7 +413,7 @@
         </section>
 
         <!-- 푸터 띠 -->
-        <footer class="landing-footer-v2 landing-anim" style="--anim-order:6">
+        <footer class="landing-footer-v2 landing-anim" style="--anim-order:7">
           <div class="landing-footer-row">
             <div class="landing-footer-cell">
               <span class="landing-footer-label">법적 근거</span>
@@ -536,6 +583,25 @@
           <p>지도 위 시군에 마우스를 올리거나<br/>클릭해보세요</p>
         </div>
       </aside>
+    </main>
+  </div>
+
+  <!-- ===== 데이터·방법론 오버레이 (0602 #10) ===== -->
+  <div id="sources-screen" class="overlay-screen is-hidden" role="dialog" aria-modal="true" aria-label="데이터 출처와 방법론">
+    <header class="overlay-header">
+      <button class="overlay-brand" type="button" aria-label="첫 화면으로">
+        <span class="overlay-brand-logo" aria-hidden="true">🌿</span>
+        <span class="overlay-brand-text">경기도 농촌다움 지표 플랫폼</span>
+      </button>
+      <button class="overlay-close" type="button" aria-label="닫기" data-overlay-close>✕</button>
+    </header>
+    <main class="overlay-main">
+      <section class="guide-hero">
+        <div class="guide-hero-eyebrow">🗂️ 데이터 · 방법론</div>
+        <h2 class="guide-hero-title">어떤 데이터를, 어디서, 어떻게 만들었나</h2>
+        <p class="guide-hero-sub">지표별 출처 · 산식 · 가상 현장조사 생성 방식 (실제 데이터와의 구분)</p>
+      </section>
+      <section class="sources-body" id="sources-body"><!-- renderSourcesPage()가 채움 --></section>
     </main>
   </div>
 
@@ -749,6 +815,7 @@
             <!-- 0531 통합: 남양주 읍면 비전 적합도 + 트리거 시사점 카드 (JS가 채움) -->
             <p class="eup-analysis-notice" id="eup-analysis-notice"></p>
             <section id="eup-vision-score" class="eup-analysis-block" aria-label="읍면 비전 적합도"></section>
+            <section id="eup-diag-summary" class="eup-analysis-block" aria-label="읍면 종합 진단 요약"></section>
             <section id="eup-field-edit" class="eup-analysis-block admin-only" aria-label="읍면 현장조사 입력"></section>
             <section id="eup-llm-interpret" class="eup-analysis-block" aria-label="읍면 실시간 AI 해석"></section>
             <section id="eup-trigger-grid" class="eup-analysis-block" aria-label="읍면 트리거 평가"></section>
@@ -782,6 +849,9 @@
               <span id="city-rank-badge" class="city-rank-badge">경기도 -위</span>
             </div>
           </div>
+
+          <!-- 0602: 시군 종합 진단 요약 (강점/부족/우선과제/다음할일) — JS가 채움 -->
+          <section id="sigun-diag-summary" aria-label="시군 종합 진단 요약"></section>
 
           <!-- 점수 카드 (삶터/일터/쉼터) — 가장 중요한 농촌다움 점수, 맨 위에 -->
           <div id="score-cards">

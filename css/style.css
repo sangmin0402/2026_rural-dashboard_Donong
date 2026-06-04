@@ -59,9 +59,9 @@
 
   /* ---- Text ---- */
   --text-primary:     #1F2523;
-  --text-body:        #4A524E;
-  --text-muted:       #8A9089;
-  --text-subtle:      #AEB3AA;
+  --text-body:        #434B47;  /* 0602 가독성: 대비 소폭 강화 */
+  --text-muted:       #6E746D;  /* 0602 가독성: #8A9089→#6E746D (WCAG 대비↑) */
+  --text-subtle:      #969B92;  /* 0602 가독성: #AEB3AA→#969B92 */
   --text-onprimary:   #FFFFFF;
   --text-secondary:   var(--text-body);
 
@@ -137,11 +137,11 @@
     'JetBrains Mono', 'SF Mono', ui-monospace,
     'Cascadia Code', Menlo, monospace;
 
-  --fs-xs:   11px;
-  --fs-sm:   12px;
-  --fs-body: 13px;
-  --fs-base: 14px;
-  --fs-md:   15px;
+  --fs-xs:   11.5px;  /* 0602 가독성: 11→11.5 */
+  --fs-sm:   12.5px;  /* 0602 가독성: 12→12.5 */
+  --fs-body: 14px;    /* 0602 가독성: 13→14 */
+  --fs-base: 15px;    /* 0602 가독성: 14→15 */
+  --fs-md:   16px;    /* 0602 가독성: 15→16 */
   --fs-lg:   17px;
   --fs-xl:   20px;
   --fs-2xl:  24px;
@@ -180,7 +180,7 @@ body {
 body {
   font-family: var(--font);
   font-size: var(--fs-base);
-  line-height: 1.5;
+  line-height: 1.62;  /* 0602 가독성: 1.5→1.62 */
   color: var(--text-primary);
   background: var(--surface-base);
   font-feature-settings: 'ss01', 'tnum', 'cv11';
@@ -8013,4 +8013,220 @@ body.view-admin .admin-only-inline {
 @media (max-width: 520px) {
   .eupedit-row { grid-template-columns: 1fr 70px; }
   .eupedit-cur, .eupedit-unit { display: none; }
+}
+
+/* ============================================================ */
+/* === 섹션 45: 0602 발표용 고도화 (근거칩·종합진단·발표네비·방법론) === */
+/* ============================================================ */
+
+/* --- 45-0. fact-chip — 출처/비교/근거 공용 칩 --- */
+.fact-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: var(--fs-xs); font-weight: 600; line-height: 1.4;
+  padding: 1px 8px; border-radius: var(--radius-pill);
+  white-space: nowrap; vertical-align: middle;
+  border: 1px solid transparent; cursor: default;
+}
+.fact-chip .fc-ico { font-size: 10px; opacity: .85; }
+.fact-chip + .fact-chip { margin-left: 4px; }
+/* 출처(회색·중립) */
+.fact-chip--source { background: var(--surface-sunken); color: var(--text-body); border-color: var(--border-soft); }
+/* 비교/순위(등급색) */
+.fact-chip--rank { background: var(--primary-soft); color: var(--primary-dark); border-color: rgba(45,95,63,.18); }
+.fact-chip--rank.is-high { background: var(--success-soft); color: var(--success); border-color: rgba(47,122,75,.22); }
+.fact-chip--rank.is-low  { background: var(--danger-soft);  color: var(--danger);  border-color: rgba(184,69,61,.22); }
+.fact-chip--rank.is-wait { background: var(--surface-sunken); color: var(--text-muted); border-color: var(--border-soft); font-style: italic; }
+/* 근거 문서(파랑·도시기본계획/공약) */
+.fact-chip--basis { background: var(--samlter-soft); color: var(--samlter-dark); border-color: var(--samlter-tint); }
+/* 칩 묶음 컨테이너 */
+.fact-chip-row { display: flex; flex-wrap: wrap; gap: 5px 4px; align-items: center; margin-top: 6px; }
+
+/* --- 45-1. 발표 목차 네비게이션 (present-spine) --- */
+#present-spine { display: none; }
+body.present-mode #present-spine {
+  display: block; position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+  z-index: 1600; max-width: min(940px, 96vw);
+}
+.ps-inner {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(31,37,35,.96); color: #fff; backdrop-filter: blur(8px);
+  border-radius: var(--radius-pill); padding: 7px 12px;
+  box-shadow: 0 10px 32px rgba(0,0,0,.28); border: 1px solid rgba(255,255,255,.08);
+}
+.ps-brand { font-size: var(--fs-sm); font-weight: 700; opacity: .85; white-space: nowrap; padding-right: 4px; }
+.ps-steps { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.ps-step {
+  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  background: transparent; color: rgba(255,255,255,.78); border: 0;
+  font-size: var(--fs-sm); font-weight: 600; padding: 6px 11px; border-radius: var(--radius-pill);
+  transition: var(--transition); white-space: nowrap;
+}
+.ps-step b { font-size: var(--fs-base); font-style: normal; }
+.ps-step:hover { background: rgba(255,255,255,.12); color: #fff; }
+.ps-step.is-active { background: var(--accent); color: #1F2523; }
+.ps-ctrl { display: flex; align-items: center; gap: 3px; padding-left: 4px; border-left: 1px solid rgba(255,255,255,.15); }
+.ps-arrow, .ps-exit {
+  width: 30px; height: 30px; border-radius: 50%; border: 0; cursor: pointer;
+  background: rgba(255,255,255,.12); color: #fff; font-size: 17px; line-height: 1;
+  display: inline-flex; align-items: center; justify-content: center; transition: var(--transition);
+}
+.ps-arrow:hover, .ps-exit:hover { background: rgba(255,255,255,.24); }
+.ps-exit { font-size: 13px; }
+
+/* 발표 모드 시작 버튼 (좌하단) */
+#present-launch {
+  position: fixed; left: 18px; bottom: 18px; z-index: 1190;
+  background: var(--primary); color: #fff; border: 0; cursor: pointer;
+  font-size: var(--fs-sm); font-weight: 700; padding: 9px 14px; border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-md); transition: var(--transition);
+}
+#present-launch:hover { background: var(--primary-hover); transform: translateY(-1px); }
+body.present-mode #present-launch { display: none; }
+
+/* 발표 모드: 좁은 화면에서 라벨 축약 */
+@media (max-width: 720px) {
+  .ps-brand { display: none; }
+  .ps-step span { display: none; }
+  .ps-step { padding: 6px 9px; }
+  body.present-mode #present-spine { bottom: 10px; }
+}
+
+/* --- 45-2. 데이터·방법론 페이지 (#sources-screen) --- */
+.sources-body { max-width: 1080px; margin: 0 auto; padding: 0 var(--space-5) var(--space-12); display: flex; flex-direction: column; gap: var(--space-6); }
+.src-card { background: var(--surface-card); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: var(--shadow-sm); }
+.src-h3 { font-size: var(--fs-lg); color: var(--text-primary); margin-bottom: var(--space-2); display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.src-h3-sub { font-size: var(--fs-sm); font-weight: 500; color: var(--text-muted); }
+.src-note { font-size: var(--fs-sm); color: var(--text-muted); margin-top: var(--space-2); line-height: 1.6; }
+.src-note code { background: var(--surface-sunken); padding: 1px 5px; border-radius: var(--radius-xs); font-family: var(--font-mono); font-size: .92em; }
+
+.src-tbl-wrap { overflow-x: auto; margin-top: var(--space-3); }
+.src-tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+.src-tbl th { text-align: left; padding: 8px 10px; background: var(--surface-sunken); color: var(--text-body); font-weight: 700; border-bottom: 2px solid var(--border); white-space: nowrap; position: sticky; top: 0; }
+.src-tbl td { padding: 7px 10px; border-bottom: 1px solid var(--border-soft); color: var(--text-body); vertical-align: top; }
+.src-tbl tr:hover td { background: var(--surface-hover); }
+.src-tbl-key { font-family: var(--font-mono); font-weight: 700; color: var(--primary); }
+.src-tbl-formula { font-size: var(--fs-xs); color: var(--text-muted); max-width: 280px; }
+.src-tbl-sec { color: var(--text-muted); }
+.src-tbl a { color: var(--samlter-dark); text-decoration: none; border-bottom: 1px dotted; }
+.src-cat { display: inline-block; font-size: var(--fs-xs); font-weight: 700; padding: 1px 8px; border-radius: var(--radius-pill); }
+.src-cat--samlter { background: var(--samlter-soft); color: var(--samlter-dark); }
+.src-cat--ilter { background: var(--ilter-soft); color: var(--ilter-dark); }
+.src-cat--shimter { background: var(--shimter-soft); color: var(--shimter-dark); }
+
+.src-warn { background: var(--warning-soft); border: 1px solid #E8C98A; border-radius: var(--radius-md); padding: 12px 14px; font-size: var(--fs-sm); line-height: 1.65; color: #7A5618; margin: var(--space-3) 0; }
+.src-method-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--space-3); margin-top: var(--space-3); }
+.src-method-card { border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 12px 13px; background: var(--surface-base); }
+.src-method-head { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; }
+.src-method-head code { font-family: var(--font-mono); font-weight: 700; color: var(--primary-dark); font-size: var(--fs-sm); }
+.src-method-n { font-size: var(--fs-xs); color: var(--text-muted); }
+.src-method-cols { font-size: var(--fs-xs); color: var(--text-body); line-height: 1.55; margin-bottom: 7px; }
+.src-method-cols b { color: var(--text-primary); }
+.src-method-out { font-size: var(--fs-sm); font-weight: 700; color: var(--shimter-dark); margin-bottom: 5px; }
+.src-method-formula { font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono); line-height: 1.55; background: var(--surface-sunken); padding: 6px 8px; border-radius: var(--radius-sm); }
+
+.src-pipe { display: flex; align-items: stretch; gap: var(--space-2); margin-top: var(--space-3); flex-wrap: wrap; }
+.src-pipe-step { flex: 1 1 200px; text-align: center; background: var(--surface-base); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 14px 12px; }
+.src-pipe-ico { font-size: 26px; margin-bottom: 4px; }
+.src-pipe-step b { display: block; font-size: var(--fs-base); color: var(--text-primary); margin-bottom: 4px; }
+.src-pipe-step span { font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.6; }
+.src-pipe-arrow { display: flex; align-items: center; font-size: 22px; color: var(--text-subtle); }
+@media (max-width: 640px) { .src-pipe-arrow { display: none; } }
+.src-usage { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--space-2); margin: var(--space-3) 0; }
+.src-usage-item { text-align: center; background: var(--surface-sunken); border-radius: var(--radius-md); padding: 12px 8px; }
+.src-usage-item b { display: block; font-size: var(--fs-xl); color: var(--primary); font-family: var(--font-mono); }
+.src-usage-item span { font-size: var(--fs-xs); color: var(--text-muted); }
+
+/* --- 45-3. 랜딩 남양주 2035 비전 섹션 (Step1) --- */
+.landing-vision { margin-top: var(--space-10); }
+.landing-eyebrow { display: inline-block; font-size: var(--fs-sm); font-weight: 700; letter-spacing: .04em; color: var(--accent-dark); margin-bottom: 6px; }
+.lv-grid { display: grid; grid-template-columns: minmax(220px, 0.8fr) 1.2fr; gap: var(--space-5); align-items: center; margin-top: var(--space-4); }
+.lv-axes-label { font-size: var(--fs-sm); font-weight: 700; color: var(--text-body); margin-bottom: 8px; }
+.lv-axes-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.lv-axes-note { font-size: var(--fs-xs); color: var(--text-muted); margin-top: 8px; }
+.lv-bars { display: flex; flex-direction: column; gap: 12px; }
+.lv-bar { display: grid; grid-template-columns: 42px 1fr 52px; align-items: center; gap: 10px; }
+.lv-bar-lab { font-size: var(--fs-sm); font-weight: 700; color: var(--text-body); }
+.lv-bar-track { height: 14px; background: var(--surface-sunken); border-radius: var(--radius-pill); overflow: hidden; }
+.lv-bar-fill { display: block; height: 100%; border-radius: var(--radius-pill); transition: width .6s var(--ease); }
+.lv-bar-fill--samlter { background: var(--samlter); }
+.lv-bar-fill--ilter { background: var(--ilter); }
+.lv-bar-fill--shimter { background: var(--shimter); }
+.lv-bar-val { font-size: var(--fs-md); font-weight: 800; color: var(--text-primary); text-align: right; }
+.lv-bar-val small { font-size: var(--fs-xs); font-weight: 600; color: var(--text-muted); }
+.lv-bar-val--low { color: var(--danger); }
+.lv-insight { margin-top: var(--space-4); padding: 12px 14px; background: var(--danger-soft); border-radius: var(--radius-md); font-size: var(--fs-sm); line-height: 1.65; color: #7A2A24; }
+@media (max-width: 720px) { .lv-grid { grid-template-columns: 1fr; } }
+
+/* --- 45-4. 가이드 지표 선정논리 서사 (Step2) --- */
+.guide-rationale { background: var(--surface-card); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6); box-shadow: var(--shadow-sm); }
+.grat-pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-3); margin-top: var(--space-3); }
+.grat-pillar { border: 1px solid var(--border-soft); border-left: 4px solid var(--border); border-radius: var(--radius-md); padding: 13px 14px; background: var(--surface-base); }
+.grat-pillar--samlter { border-left-color: var(--samlter); }
+.grat-pillar--ilter { border-left-color: var(--ilter); }
+.grat-pillar--shimter { border-left-color: var(--shimter); }
+.grat-pillar-top { display: flex; align-items: center; gap: 7px; font-size: var(--fs-lg); }
+.grat-pillar-top b { font-size: var(--fs-md); color: var(--text-primary); }
+.grat-pillar-q { font-size: var(--fs-base); font-weight: 700; color: var(--text-primary); margin: 8px 0 5px; }
+.grat-pillar-d { font-size: var(--fs-sm); color: var(--text-body); line-height: 1.6; }
+.grat-jayul { margin-top: var(--space-5); padding-top: var(--space-4); border-top: 1px dashed var(--border); }
+.grat-jayul-h { font-size: var(--fs-md); color: var(--text-primary); margin-bottom: 4px; }
+.grat-tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); margin-top: var(--space-3); max-width: 460px; }
+.grat-tbl th { text-align: left; padding: 6px 10px; background: var(--surface-sunken); font-weight: 700; color: var(--text-body); border-bottom: 2px solid var(--border); }
+.grat-tbl td { padding: 6px 10px; border-bottom: 1px solid var(--border-soft); color: var(--text-body); }
+.grat-tbl-key { font-family: var(--font-mono); font-weight: 700; color: var(--primary); }
+
+/* --- 45-5. AI 판단 근거 패널 (#4) + verdict 칩 --- */
+.ivd-chips { margin-top: 8px; }
+.llm-evidence { margin: 10px 0 4px; border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--surface-base); }
+.llm-evidence > summary { cursor: pointer; padding: 9px 12px; font-size: var(--fs-sm); font-weight: 700; color: var(--primary-dark); list-style: none; user-select: none; }
+.llm-evidence > summary::-webkit-details-marker { display: none; }
+.llm-evidence > summary::before { content: '▸ '; color: var(--text-muted); }
+.llm-evidence[open] > summary::before { content: '▾ '; }
+.le-note { font-size: var(--fs-xs); color: var(--text-muted); padding: 0 12px 8px; line-height: 1.6; }
+.le-wrap { overflow-x: auto; padding: 0 8px 10px; }
+.le-tbl { width: 100%; border-collapse: collapse; font-size: var(--fs-xs); }
+.le-tbl th { text-align: left; padding: 5px 8px; color: var(--text-muted); font-weight: 600; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.le-tbl td { padding: 5px 8px; border-bottom: 1px solid var(--border-soft); color: var(--text-body); white-space: nowrap; }
+.le-val { font-family: var(--font-mono); font-weight: 700; color: var(--text-primary); }
+.le-avg { color: var(--text-muted); }
+
+/* --- 45-6. 종합 진단 요약 카드 (#6·#7) --- */
+.diag-card { border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-card); padding: var(--space-4) var(--space-5); margin: var(--space-3) 0; box-shadow: var(--shadow-sm); }
+.diag-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: var(--space-3); }
+.diag-head-ico { font-size: var(--fs-lg); }
+.diag-head h3 { font-size: var(--fs-lg); color: var(--text-primary); }
+.diag-headline { font-size: var(--fs-sm); color: var(--text-muted); font-weight: 500; }
+.diag-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+.diag-col { border-radius: var(--radius-md); padding: 11px 13px; border: 1px solid var(--border-soft); background: var(--surface-base); border-left-width: 4px; }
+.diag-col h4 { font-size: var(--fs-sm); margin-bottom: 6px; color: var(--text-primary); }
+.diag-col ul { margin: 0; padding-left: 18px; }
+.diag-col li { font-size: var(--fs-sm); color: var(--text-body); line-height: 1.55; margin-bottom: 4px; }
+.diag-empty { font-size: var(--fs-sm); color: var(--text-subtle); font-style: italic; }
+.diag-col--strength { border-left-color: var(--success); }
+.diag-col--weak { border-left-color: var(--danger); }
+.diag-col--task { border-left-color: var(--warning); }
+.diag-col--next { border-left-color: var(--primary); }
+.diag-foot { font-size: var(--fs-xs); color: var(--text-muted); margin-top: 10px; }
+@media (max-width: 720px) { .diag-grid { grid-template-columns: 1fr; } }
+
+/* --- 45-7. 입력폼 v2: 값 + 출처 + 메모 (#3) --- */
+.eupedit-row--v2 {
+  display: grid; grid-template-columns: minmax(120px, 1.4fr) auto 84px auto 130px 1fr;
+  align-items: center; gap: 8px;
+  padding-bottom: 7px; border-bottom: 1px dashed var(--border-soft);
+}
+.eupedit-srcsel {
+  padding: 6px 8px; border: 1px solid #CBD5E0; border-radius: 7px;
+  font-size: var(--fs-xs); background: #fff; color: var(--text-body); outline: none; max-width: 130px;
+}
+.eupedit-srcsel:focus { border-color: #5B21B6; box-shadow: 0 0 0 3px rgba(91,33,182,.12); }
+.eupedit-memo {
+  padding: 6px 8px; border: 1px solid #CBD5E0; border-radius: 7px;
+  font-size: var(--fs-xs); outline: none; min-width: 0; color: var(--text-body);
+}
+.eupedit-memo:focus { border-color: #5B21B6; box-shadow: 0 0 0 3px rgba(91,33,182,.12); }
+@media (max-width: 720px) {
+  .eupedit-row--v2 { grid-template-columns: 1fr 70px; gap: 6px; }
+  .eupedit-row--v2 .eupedit-cur, .eupedit-row--v2 .eupedit-unit { display: none; }
+  .eupedit-row--v2 .eupedit-srcsel, .eupedit-row--v2 .eupedit-memo { grid-column: 1 / -1; max-width: none; }
 }
