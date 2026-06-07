@@ -137,11 +137,11 @@
     'JetBrains Mono', 'SF Mono', ui-monospace,
     'Cascadia Code', Menlo, monospace;
 
-  --fs-xs:   11.5px;  /* 0602 가독성: 11→11.5 */
-  --fs-sm:   12.5px;  /* 0602 가독성: 12→12.5 */
-  --fs-body: 14px;    /* 0602 가독성: 13→14 */
-  --fs-base: 15px;    /* 0602 가독성: 14→15 */
-  --fs-md:   16px;    /* 0602 가독성: 15→16 */
+  --fs-xs:   12px;    /* 0607 가독성: 11.5→12 */
+  --fs-sm:   13px;    /* 0607 가독성: 12.5→13 */
+  --fs-body: 15px;    /* 0607 가독성: 14→15 */
+  --fs-base: 16px;    /* 0607 가독성: 15→16 */
+  --fs-md:   17px;    /* 0607 가독성: 16→17 */
   --fs-lg:   17px;
   --fs-xl:   20px;
   --fs-2xl:  24px;
@@ -8229,4 +8229,140 @@ body.present-mode #present-launch { display: none; }
   .eupedit-row--v2 { grid-template-columns: 1fr 70px; gap: 6px; }
   .eupedit-row--v2 .eupedit-cur, .eupedit-row--v2 .eupedit-unit { display: none; }
   .eupedit-row--v2 .eupedit-srcsel, .eupedit-row--v2 .eupedit-memo { grid-column: 1 / -1; max-width: none; }
+}
+
+/* ============================================================ */
+/* === 섹션 46: 0607 최종발표 개편 (랜딩 개요·플랫폼가이드·전국기준) === */
+/* ============================================================ */
+
+/* --- 46-1. 플랫폼 한줄 정의 --- */
+.landing-oneline { max-width: 1180px; margin: 0 auto; padding: var(--space-5) var(--space-6); text-align: center; }
+.landing-oneline-text { font-size: var(--fs-lg); line-height: 1.7; color: var(--text-body); }
+.landing-oneline-text strong { color: var(--primary-dark); font-weight: 700; }
+
+/* --- 46-2. 남양주 개요·비전 (#landing-overview) --- */
+.landing-overview { max-width: 1180px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+.lo-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); margin: var(--space-5) 0; }
+.lo-stat { text-align: center; background: var(--surface-card); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 14px 10px; box-shadow: var(--shadow-xs); }
+.lo-stat b { display: block; font-size: var(--fs-xl); color: var(--primary); font-weight: 800; }
+.lo-stat span { font-size: var(--fs-xs); color: var(--text-muted); }
+.lo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin-bottom: var(--space-4); }
+.lo-card { background: var(--surface-card); border: 1px solid var(--border-soft); border-left-width: 4px; border-radius: var(--radius-md); padding: var(--space-4) var(--space-5); box-shadow: var(--shadow-sm); }
+.lo-card h3 { font-size: var(--fs-md); margin-bottom: 8px; color: var(--text-primary); }
+.lo-card p { font-size: var(--fs-sm); line-height: 1.7; color: var(--text-body); }
+.lo-card p b { color: var(--text-primary); }
+.lo-card--samlter { border-left-color: var(--samlter); }
+.lo-card--ilter { border-left-color: var(--ilter); }
+.lo-card--shimter { border-left-color: var(--shimter); }
+.lo-direction { font-size: var(--fs-base); line-height: 1.7; color: var(--text-body); background: var(--primary-soft); border-radius: var(--radius-md); padding: 14px 18px; }
+.lo-direction b { color: var(--primary-dark); }
+@media (max-width: 820px) { .lo-stats { grid-template-columns: repeat(2, 1fr); } .lo-grid { grid-template-columns: 1fr; } }
+
+/* --- 46-3. 플랫폼 가이드 — 플랫폼 소개 블록 --- */
+.pg-intro { background: var(--surface-card); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); padding: var(--space-6); margin-bottom: var(--space-6); box-shadow: var(--shadow-sm); }
+.pg-oneline { font-size: var(--fs-lg); font-weight: 700; color: var(--primary-dark); line-height: 1.6; margin-bottom: var(--space-4); padding-bottom: var(--space-3); border-bottom: 2px solid var(--primary-soft); }
+.pg-block { margin-bottom: var(--space-4); }
+.pg-block h3 { font-size: var(--fs-md); color: var(--text-primary); margin-bottom: 5px; }
+.pg-block p { font-size: var(--fs-sm); line-height: 1.7; color: var(--text-body); }
+.pg-funcs { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--space-3); margin-top: var(--space-2); }
+.pg-func { border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 11px 13px; background: var(--surface-base); }
+.pg-func b { display: block; font-size: var(--fs-sm); color: var(--primary-dark); margin-bottom: 3px; }
+.pg-func span { font-size: var(--fs-xs); color: var(--text-body); line-height: 1.55; }
+
+/* --- 46-4. 트리거 전국 농촌 기준 (카드 내 셀) --- */
+.nyj-natl { margin-top: 4px; }
+.nyj-natl-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 5px; }
+.natl-level { font-size: var(--fs-xs); font-weight: 700; padding: 1px 8px; border-radius: var(--radius-pill); white-space: nowrap; }
+.natl-level--직접 { background: var(--success-soft); color: var(--success); }
+.natl-level--보조 { background: var(--samlter-soft); color: var(--samlter-dark); }
+.natl-level--해석 { background: var(--primary-soft); color: var(--primary-dark); }
+.natl-level--정성 { background: var(--accent-soft); color: var(--accent-dark); }
+.natl-level--부분 { background: var(--warning-soft); color: var(--warning); }
+.natl-level--추가 { background: var(--surface-sunken); color: var(--text-muted); }
+.natl-bench { font-size: var(--fs-xs); font-weight: 700; color: var(--text-primary); font-family: var(--font-mono); }
+.nyj-natl-interp { font-size: var(--fs-xs); line-height: 1.55; color: var(--text-body); }
+.nyj-natl-src { font-size: 10px; color: var(--text-muted); margin-top: 3px; }
+.nyj-natl-src a { color: var(--samlter-dark); }
+
+/* --- 46-5. 데이터·방법론: 전국 농촌 기준 표 --- */
+.src-natl-group { font-weight: 700; color: var(--primary-dark); background: var(--primary-soft) !important; }
+
+/* --- 46-6. 가독성 추가 상향(0607): 랜딩/가이드 본문 --- */
+.bento-card--sources .bento-icon, .bento-card--guide .bento-icon { filter: none; }
+
+/* ============================================================ */
+/* === 섹션 47: 0607 폴리시 패스 (impeccable — 위계·리듬·인터랙션) === */
+/* ============================================================ */
+
+/* 47-1. 위계: 섹션 타이틀·eyebrow 정돈 (나열식 → 편집형 리듬) */
+.landing-section-title { letter-spacing: -0.022em; line-height: 1.2; }
+.landing-eyebrow {
+  display: inline-block; font-size: var(--fs-xs); font-weight: 800;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent-dark);
+  padding: 3px 10px; border-radius: var(--radius-pill);
+  background: var(--accent-soft); margin-bottom: 10px;
+}
+.landing-section-sub { color: var(--text-body); }
+
+/* 47-2. 랜딩 섹션 리듬: 개요는 카드 패널로 띄워 그룹핑 (밋밋한 스택 탈피) */
+.landing-overview {
+  background: linear-gradient(180deg, var(--surface-card), var(--surface-base));
+  border: 1px solid var(--border-soft); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm); margin-top: var(--space-10);
+  padding: var(--space-8) clamp(20px, 4vw, 44px);
+}
+.landing-oneline {
+  border-left: 3px solid var(--primary); border-radius: var(--radius);
+  background: var(--primary-bg); text-align: left;
+  padding: var(--space-4) var(--space-6); max-width: 980px;
+}
+
+/* 47-3. 통계: 숫자 강조(tabular) + 미세 인터랙션 */
+.lo-stat b { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.lo-stat { transition: transform .18s var(--ease), box-shadow .18s var(--ease); }
+.lo-stat:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+
+/* 47-4. 카드 인터랙션 통일 — 살아있는 느낌(정적 리스트 X) */
+.lo-card, .pg-func, .src-method-card, .src-card, .diag-card, .guide-card {
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease), border-color .18s var(--ease);
+}
+.lo-card:hover, .pg-func:hover, .src-method-card:hover, .guide-card:hover {
+  transform: translateY(-2px); box-shadow: var(--shadow-md);
+}
+.lo-card { position: relative; overflow: hidden; }
+.lo-card::after {
+  content: ''; position: absolute; inset: 0 auto 0 0; width: 4px;
+  background: currentColor; opacity: 0; transition: opacity .18s;
+}
+
+/* 47-5. 플랫폼 가이드 — 번호 블록을 편집형으로 (나열 → 스텝) */
+.pg-intro { counter-reset: pgblk; }
+.pg-block { position: relative; padding-left: 8px; }
+.pg-block + .pg-block { margin-top: var(--space-5); padding-top: var(--space-5); border-top: 1px solid var(--border-soft); }
+.pg-block h3 { display: flex; align-items: center; gap: 9px; font-size: var(--fs-lg); }
+.pg-oneline { position: relative; }
+
+/* 47-6. 표 가독성: 줄무늬 + 행 호버 (트리거·출처·전국기준 표) */
+.src-tbl tbody tr:nth-child(even) td { background: rgba(45,95,63,0.022); }
+.src-tbl tbody tr:hover td { background: var(--primary-soft); }
+.grat-tbl tbody tr:hover td { background: var(--surface-hover); }
+
+/* 47-7. 시사점 카드(트리거): 헤더 강조 + 셀 간 리듬 */
+.nyj-icard { transition: transform .18s var(--ease), box-shadow .18s var(--ease); }
+.nyj-icard:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+.nyj-natl { background: var(--surface-sunken); border-radius: var(--radius-sm); padding: 9px 11px; }
+
+/* 47-8. 발표 스파인: 활성 단계 살짝 키워 현재 위치 강조 */
+.ps-step.is-active { transform: scale(1.04); box-shadow: 0 2px 10px rgba(212,165,116,.45); }
+.ps-step { transition: transform .16s var(--ease), background .16s var(--ease), color .16s var(--ease); }
+
+/* 47-9. 오버레이 본문 진입 모션 (절제) */
+.overlay-screen:not(.is-hidden) .overlay-main > * { animation: ovIn .34s var(--ease) both; }
+.overlay-screen:not(.is-hidden) .overlay-main > *:nth-child(2) { animation-delay: .05s; }
+.overlay-screen:not(.is-hidden) .overlay-main > *:nth-child(3) { animation-delay: .1s; }
+@keyframes ovIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lo-card, .pg-func, .src-method-card, .src-card, .guide-card, .lo-stat, .nyj-icard, .ps-step { transition: none; }
+  .overlay-screen:not(.is-hidden) .overlay-main > * { animation: none; }
 }

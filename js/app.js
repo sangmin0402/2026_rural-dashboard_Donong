@@ -834,6 +834,8 @@ let fieldSurveyData = null;    // 현장조사 가상데이터 집계 (0531 — 
 let triggerConfig = null;      // 트리거→시사점 카드 엔진 + THE비전/SWOT (0531 — namyangju-triggers.json)
 let vision2035 = null;         // 2035 도시기본계획 비전 달성률 (0531 — 박세희, namyangju-vision-2035.json)
 let benchmarks = null;         // 0602: 전국 농촌 평균·유사 지자체 평균 비교 기준 (placeholder, benchmarks.json)
+let nationalStandards = null;  // 0607: 전국 농촌 기준표 (national-rural-standards.json, 한유하 xlsx 시트1)
+let triggerBenchmarks = null;  // 0607: 트리거별 전국기준 매칭 (trigger-benchmarks.json, 시트2 TC-01~15)
 // 0602 (#9): AI API 토큰 사용량 세션 누적 (학교/구독제 API 활용 가능성 검토용 실측)
 const llmUsage = { calls: 0, in: 0, out: 0, model: '' };
 function recordLlmUsage(data) {
@@ -1118,7 +1120,7 @@ function updateRiVisibility() {
  */
 async function loadRegionMeta() {
   try {
-    const [metaResp, refResp, surveyResp, gapResp, insightsResp, simResp, aiResp, fieldResp, trigResp, v2035Resp, benchResp] = await Promise.all([
+    const [metaResp, refResp, surveyResp, gapResp, insightsResp, simResp, aiResp, fieldResp, trigResp, v2035Resp, benchResp, nstdResp, tbenchResp] = await Promise.all([
       fetch('./dat/region-meta.json', { cache: 'no-cache' }),
       fetch('./dat/indicator-reference.json', { cache: 'no-cache' }),
       fetch('./dat/field-survey-meta.json', { cache: 'no-cache' }),
@@ -1130,6 +1132,8 @@ async function loadRegionMeta() {
       fetch('./dat/namyangju-triggers.json', { cache: 'no-cache' }),
       fetch('./dat/namyangju-vision-2035.json', { cache: 'no-cache' }),
       fetch('./dat/benchmarks.json', { cache: 'no-cache' }),
+      fetch('./dat/national-rural-standards.json', { cache: 'no-cache' }),
+      fetch('./dat/trigger-benchmarks.json', { cache: 'no-cache' }),
     ]);
     regionMeta = metaResp.ok ? await metaResp.json() : {};
     indicatorReference = refResp.ok ? await refResp.json() : null;
@@ -1142,6 +1146,8 @@ async function loadRegionMeta() {
     triggerConfig = trigResp.ok ? await trigResp.json() : null;
     vision2035 = v2035Resp.ok ? await v2035Resp.json() : null;
     benchmarks = benchResp.ok ? await benchResp.json() : null;
+    nationalStandards = nstdResp.ok ? await nstdResp.json() : null;
+    triggerBenchmarks = tbenchResp.ok ? await tbenchResp.json() : null;
   } catch (err) {
     regionMeta = {};
     indicatorReference = null;
@@ -1154,6 +1160,8 @@ async function loadRegionMeta() {
     triggerConfig = null;
     vision2035 = null;
     benchmarks = null;
+    nationalStandards = null;
+    triggerBenchmarks = null;
   }
   // SGIS computed 값으로 CITIES mock 덮어쓰기 (실측 우선)
   applySgisOverridesToCities();
@@ -4983,6 +4991,7 @@ function renderEupTriggerCards(eupName) {
           <div class="nyj-verdict" style="border-color:${col.vbd};background:${col.bg};color:${col.tx}">${interpolateCard(card.verdictText, eupName, data)}</div>
         </div>
         <div class="nyj-icard-cell"><div class="nyj-cell-label">정책 제안 (민선 8기 연계)</div><div class="nyj-cell-body">${card.policy || ''}</div></div>
+        ${buildTriggerNatlCell((card.when || [])[0])}
         <div class="nyj-icard-cell admin-only"><div class="nyj-cell-label">다음 단계 (담당자 액션)</div><div class="nyj-cell-body">${card.next || ''}
           ${card.data ? `<div class="nyj-data-need"><strong>추가 필요 데이터:</strong> ${card.data}</div>` : ''}</div></div>
       </div></div>`;
@@ -4990,6 +4999,30 @@ function renderEupTriggerCards(eupName) {
   cardHost.innerHTML = `
     <div class="nyj-section-label">정책 시사점 카드 <span class="nyj-fired-count">${cards.length}개</span></div>
     <div class="nyj-cards-list">${cardHtml}</div>`;
+}
+
+/**
+ * 0607: 트리거 카드의 "전국 농촌 기준" 셀 — trigger-benchmarks.json(TC-0N) 기반.
+ * 반영수준 배지 + 비교기준값 + 자동해석 문구 + 출처.
+ */
+function buildTriggerNatlCell(triggerId) {
+  if (!triggerId || !triggerBenchmarks || !triggerBenchmarks.triggers) return '';
+  const b = triggerBenchmarks.triggers[triggerId];
+  if (!b) return '';
+  const lvlToken = (b.level || '').split(/\s+/)[0]; // 직접/보조/해석/정성/부분/추가
+  const benchTxt = (b.benchmark != null && b.benchmark !== '')
+    ? `<span class="natl-bench">전국기준 ${escHtml(String(b.benchmark))}${escHtml(b.unit || '')}</span>` : '';
+  const srcTxt = b.source
+    ? `<div class="nyj-natl-src">출처: ${b.url ? `<a href="${escAttr(b.url)}" target="_blank" rel="noopener">${escHtml(b.source)}</a>` : escHtml(b.source)}</div>` : '';
+  return `<div class="nyj-icard-cell nyj-natl">
+    <div class="nyj-cell-label">전국 농촌 기준 (비교)</div>
+    <div class="nyj-natl-head">
+      ${b.level ? `<span class="natl-level natl-level--${lvlToken}">${escHtml(b.level)}</span>` : ''}
+      ${benchTxt}
+    </div>
+    ${b.interpretation ? `<div class="nyj-natl-interp">${escHtml(b.interpretation)}</div>` : ''}
+    ${srcTxt}
+  </div>`;
 }
 
 // ===================================================================
@@ -6467,7 +6500,43 @@ function renderGuidePage() {
     `;
   });
 
-  wrap.innerHTML = buildGuideRationale() + sections.join('');
+  wrap.innerHTML = buildPlatformIntro() + buildGuideRationale() + sections.join('');
+}
+
+/**
+ * 0607: 플랫폼 가이드 — 플랫폼 소개 블록 (docx 1번: 배경·목적·이용대상·주요기능).
+ */
+function buildPlatformIntro() {
+  const funcs = [
+    ['지표 지도', '경기도 농촌 시군의 농촌다움 수준을 지도 위에서 확인. 삶터·일터·쉼터 영역별 점수와 종합점수를 시각화.'],
+    ['지표 탐색', '세부 지표의 정의·값·의미 확인. 인구·생활SOC·의료접근성·농가소득·농지보전·녹지·농촌관광 등을 영역별로.'],
+    ['시군 비교', '여러 시군을 선택해 종합점수나 개별 지표를 비교. 특정 지역의 상대 수준과 우선 개선 과제 검토.'],
+    ['시군 랭킹', '종합점수와 삶터·일터·쉼터 영역별 순위 제공. 우수·취약 영역 비교.'],
+    ['시나리오 분석', '생활SOC·의료·농가소득·귀농귀촌·농촌관광 등 정책 변수 조정 시 지표 변화와 예상 효과를 사전 확인.'],
+    ['남양주 특화 분석', '도농전환형 특성을 반영해 공통+자율지표로 정주 여건·농촌 경제·자연여가 환경을 구체 진단.'],
+    ['데이터 출처 · 지표 가이드', '지표별 정의·산식·데이터 출처 제공. 점수의 산출 근거를 확인해 분석 결과의 신뢰성·해석 가능성 제고.'],
+  ];
+  const funcHtml = funcs.map(([t, d]) => `<div class="pg-func"><b>${escHtml(t)}</b><span>${escHtml(d)}</span></div>`).join('');
+  return `
+    <section class="pg-intro">
+      <p class="pg-oneline">남양주의 현재 상태를 진단하고, 지역 간 비교와 정책 시나리오 검토를 통해 농촌공간계획 수립을 지원하는 의사결정 도구입니다.</p>
+      <div class="pg-block">
+        <h3>1. 플랫폼의 배경</h3>
+        <p>농촌 지역은 난개발·지역 불균형·인구 감소와 고령화로 농촌다움과 정주 여건이 약화되고 있습니다. 기존 토지이용 관리제도만으로는 농촌의 생활·산업·환경 특성을 충분히 반영하기 어렵습니다. 「농촌공간 재구조화 및 재생지원에 관한 법률」 시행 이후 지역 특성에 맞는 계획적 관리 필요성이 커졌고, 특히 경기도는 도농복합지역이 많아 지역별 특성을 반영한 지표·정책 지원 체계가 필요합니다.</p>
+      </div>
+      <div class="pg-block">
+        <h3>2. 플랫폼의 목적</h3>
+        <p>경기도 농촌 지역의 현재 상태를 데이터로 진단하고 농촌공간계획 수립을 지원합니다. 삶터·일터·쉼터 관점에서 정주 여건·농촌 경제·자연여가 환경을 종합 평가하고, 지역별 강점·취약점을 파악해 개발·이용·보전 방향을 검토합니다.</p>
+      </div>
+      <div class="pg-block">
+        <h3>3. 이용 대상 및 의사결정 지원</h3>
+        <p>지자체 담당자·연구자·계획 수립 기관·현장 조사자를 위한 의사결정 지원 도구입니다. 지역별 농촌다움 수준과 시군 간 차이를 비교하고, 생활SOC·의료 접근성·농촌관광·농업 기반·자연여가 자원 등 어떤 분야에 정책 지원이 필요한지 검토합니다. 즉 <b>현황 진단 · 우선순위 설정 · 정책 방향 검토 · 사업 대상지 선정 · 시나리오 비교</b>를 지원합니다.</p>
+      </div>
+      <div class="pg-block">
+        <h3>4. 주요 기능</h3>
+        <div class="pg-funcs">${funcHtml}</div>
+      </div>
+    </section>`;
 }
 
 /**
@@ -6503,6 +6572,7 @@ function buildGuideRationale() {
       <h3 class="src-h3">🧭 왜 이 지표들인가 — 삶터·일터·쉼터</h3>
       <p class="src-note">‘농촌다움’은 추상적 가치가 아니라 <b>세 가지 질문</b>으로 측정합니다. 각 질문에 답하는 지표를 골랐습니다.</p>
       <div class="grat-pillars">${pillarCards}</div>
+      <p class="src-note" style="margin-top:12px">지표는 <b>지역 특성 조사·관련 뉴스·정책 보고서·정부 농촌정책·지역 공간계획</b> 등 다양한 자료를 바탕으로 선정했습니다. 공통지표는 경기도 농촌 시군의 전반적 농촌다움 비교 기준으로, 자율지표는 남양주의 지역 특성·현황·정책 비전을 반영해 도농전환형 농촌을 세밀히 분석하도록 설정했습니다. (출처: KOSIS·SGIS·통계청·농어촌서비스기준·2035 도시기본계획 등 — 상세는 ‘데이터 출처’ 페이지)</p>
       ${jayulRows ? `
       <div class="grat-jayul">
         <h4 class="grat-jayul-h">남양주 자율지표 8개 — 선정 논리</h4>
@@ -6599,7 +6669,7 @@ function presentStepOverview() {
   if (typeof returnToLanding === 'function') returnToLanding();
   else document.getElementById('landing-screen')?.classList.remove('is-hidden');
   setTimeout(() => {
-    const v = document.getElementById('landing-vision-2035');
+    const v = document.getElementById('landing-overview') || document.getElementById('landing-vision-2035');
     if (v && v.scrollIntoView) v.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 140);
 }
@@ -6635,6 +6705,10 @@ function initPresentMode() {
     document.getElementById('ps-exit')?.addEventListener('click', exitPresentMode);
   }
   document.getElementById('present-launch')?.addEventListener('click', () => enterPresentMode(1));
+  // 0607: 처음부터 발표모드처럼 보이게 — 기본 present-mode ON(스파인 노출), 단 화면은 랜딩 유지(강제 이동 X)
+  document.body.classList.add('present-mode');
+  presentStep = 1;
+  if (spine) spine.querySelectorAll('.ps-step').forEach(b => b.classList.toggle('is-active', b.dataset.step === '1'));
   // 키보드 (발표 모드에서만, 입력창 포커스 시 제외)
   document.addEventListener('keydown', (e) => {
     if (!isPresentMode()) return;
@@ -6644,11 +6718,22 @@ function initPresentMode() {
     else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goPresentationStep(presentStep - 1); }
   });
   // URL 진입: ?present=1 또는 #step1..#step5
+  let urlNav = false;
   try {
     const params = new URLSearchParams(location.search);
     const m = location.hash.match(/^#step([1-5])$/);
-    if (params.get('present') === '1' || m) enterPresentMode(m ? Number(m[1]) : 1);
+    if (params.get('present') === '1' || m) { urlNav = true; enterPresentMode(m ? Number(m[1]) : 1); }
   } catch (_) {}
+  // 0607: 로드 즉시 ①(개요·비전) 위치로 점프 (URL 지정 진입이 아닐 때만)
+  if (!urlNav) {
+    setTimeout(() => {
+      const ov = document.getElementById('landing-overview');
+      const landing = document.getElementById('landing-screen');
+      if (ov && ov.scrollIntoView && landing && !landing.classList.contains('is-hidden')) {
+        ov.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 750);
+  }
 }
 
 // ===================================================================
@@ -6771,7 +6856,42 @@ function renderSourcesPage() {
       <p class="src-note">${used ? '' : 'AI 카드·챗을 사용하면 이 세션의 실제 토큰 사용량이 집계됩니다. '}⏳ <b>검토 필요:</b> 학교 공식 제공 키·쿼터 여부, 발표 후 유지 가능성, 구독제 전환 시 비용 — 외부 확인 사항입니다.</p>
     </div>`;
 
-  host.innerHTML = tableHtml + methodHtml + pipeHtml + apiHtml;
+  host.innerHTML = tableHtml + methodHtml + buildNationalStandardsHtml() + pipeHtml + apiHtml;
+}
+
+/**
+ * 0607: 데이터·방법론 — "전국 농촌 기준(비교 기준)" 표 (national-rural-standards.json).
+ * 남양주 평가의 객관적 비교 기준(농어촌서비스기준·제5차 삶의질 등).
+ */
+function buildNationalStandardsHtml() {
+  if (!nationalStandards || !nationalStandards.items || !nationalStandards.items.length) return '';
+  const rows = nationalStandards.items.map(it => {
+    const tgt = (it.target != null && it.target !== '') ? `${escHtml(String(it.target))}${escHtml(it.unit || '')}` : '—';
+    const natl = (it.national_value != null && it.national_value !== '') ? `${escHtml(String(it.national_value))}${escHtml(it.national_unit || '')}` : '—';
+    const linkCell = it.url
+      ? `<a href="${escAttr(it.url)}" target="_blank" rel="noopener">${escHtml(it.source || '출처')}</a>`
+      : escHtml(it.source || '');
+    return `<tr>
+      <td>${escHtml(it.sector)}</td>
+      <td>${escHtml(it.indicator)}</td>
+      <td class="src-tbl-formula">${escHtml(it.content)}</td>
+      <td>${tgt}</td>
+      <td>${natl}</td>
+      <td class="src-tbl-formula">${escHtml(it.dashboard_link)}</td>
+      <td class="src-tbl-sec">${linkCell}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="src-card">
+      <h3 class="src-h3">📏 전국 농촌 기준 (비교 기준) <span class="src-h3-sub">${nationalStandards.items.length}개 · 임계값 객관화</span></h3>
+      <p class="src-note">남양주 지표를 평가할 때 비교 기준으로 쓰는 전국 농촌 기준입니다. 농어촌서비스기준(2024)·제5차 농어업인 삶의 질 기본계획 등에서 발췌했습니다. 트리거 카드의 "전국 농촌 기준" 행과 연결됩니다.</p>
+      <div class="src-tbl-wrap">
+        <table class="src-tbl">
+          <thead><tr><th>부문</th><th>지표</th><th>기준 내용</th><th>목표값</th><th>전국값</th><th>대시보드 연계</th><th>출처</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    </div>`;
 }
 
 // ===================================================================
