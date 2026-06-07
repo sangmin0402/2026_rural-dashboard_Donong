@@ -6672,7 +6672,8 @@ function showDeckSlide(n) {
   if (!deck) return;
   hideAllOverlayScreens();
   document.getElementById('landing-screen')?.classList.add('is-hidden');
-  if (n === 2) { try { renderPresentJayulChips(); } catch (_) {} }
+  if (n === 2) { try { renderPresentIndicatorList(); } catch (_) {} }
+  if (n === 3) { try { renderPresentMethodCards(); renderPresentNatl(); } catch (_) {} }
   if (n === 7) { try { renderPresentSummary(); } catch (_) {} }
   if (n === 5) { try { startFeatureCarousel(); } catch (_) {} } else { stopFeatureCarousel(); }
   deck.style.display = 'block';
@@ -6696,44 +6697,97 @@ const FEATURE_SLIDES = [
 ];
 let _fcIdx = 0, _fcTimer = null, _fcWired = false, _fcPaused = false;
 
+const FC_INTERVAL = 3000;
 function _fcRender() {
   const f = FEATURE_SLIDES[_fcIdx]; if (!f) return;
   const img = document.getElementById('psc-img');
   const t = document.getElementById('psc-title');
   const dsc = document.getElementById('psc-desc');
+  const idx = document.getElementById('psc-idx');
   if (img) img.src = f.img;
   if (t) t.textContent = f.title;
   if (dsc) dsc.textContent = f.desc;
-  document.querySelectorAll('#psc-dots .psc-dot').forEach((d, i) => d.classList.toggle('is-on', i === _fcIdx));
+  if (idx) idx.textContent = `${_fcIdx + 1} / ${FEATURE_SLIDES.length}`;
+  document.querySelectorAll('#psc-thumbs .psc-thumb').forEach((d, i) => d.classList.toggle('is-on', i === _fcIdx));
+  // 진행바 리셋 → 애니메이션 재시작
+  const pf = document.getElementById('psc-progress');
+  if (pf) {
+    pf.style.transition = 'none'; pf.style.width = '0%';
+    void pf.offsetWidth;
+    if (!_fcPaused) { pf.style.transition = `width ${FC_INTERVAL}ms linear`; pf.style.width = '100%'; }
+  }
 }
 function _fcGo(i) { _fcIdx = (i + FEATURE_SLIDES.length) % FEATURE_SLIDES.length; _fcRender(); }
 function _fcWire() {
   if (_fcWired) return; _fcWired = true;
-  const dots = document.getElementById('psc-dots');
-  if (dots) dots.innerHTML = FEATURE_SLIDES.map((_, i) => `<button class="psc-dot" type="button" data-i="${i}" aria-label="${i + 1}번"></button>`).join('');
+  const thumbs = document.getElementById('psc-thumbs');
+  if (thumbs) thumbs.innerHTML = FEATURE_SLIDES.map((f, i) => `<button class="psc-thumb" type="button" data-i="${i}" aria-label="${escAttr(f.title)}"><img src="${escAttr(f.img)}" alt=""><span>${escHtml(f.title)}</span></button>`).join('');
   document.getElementById('psc-prev')?.addEventListener('click', () => { _fcGo(_fcIdx - 1); _fcKick(); });
   document.getElementById('psc-next')?.addEventListener('click', () => { _fcGo(_fcIdx + 1); _fcKick(); });
-  dots?.addEventListener('click', (e) => { const b = e.target.closest('.psc-dot'); if (b) { _fcGo(Number(b.dataset.i)); _fcKick(); } });
-  // 이미지 클릭 → 일시정지/재생 토글
-  document.getElementById('psc-img')?.addEventListener('click', () => { _fcPaused = !_fcPaused; if (!_fcPaused) _fcKick(); else clearInterval(_fcTimer); });
+  thumbs?.addEventListener('click', (e) => { const b = e.target.closest('.psc-thumb'); if (b) { _fcGo(Number(b.dataset.i)); _fcKick(); } });
+  document.getElementById('psc-img')?.addEventListener('click', () => {
+    _fcPaused = !_fcPaused;
+    if (!_fcPaused) { _fcKick(); } else { clearInterval(_fcTimer); const pf = document.getElementById('psc-progress'); if (pf) { pf.style.transition = 'none'; } }
+  });
 }
-function _fcKick() { clearInterval(_fcTimer); if (_fcPaused) return; _fcTimer = setInterval(() => _fcGo(_fcIdx + 1), 2800); }
-function startFeatureCarousel() { _fcWire(); _fcIdx = 0; _fcPaused = false; _fcRender(); _fcKick(); }
+function _fcKick() { clearInterval(_fcTimer); _fcRender(); if (_fcPaused) return; _fcTimer = setInterval(() => _fcGo(_fcIdx + 1), FC_INTERVAL); }
+function startFeatureCarousel() { _fcWire(); _fcIdx = 0; _fcPaused = false; _fcKick(); }
 function stopFeatureCarousel() { clearInterval(_fcTimer); _fcTimer = null; }
 
-/** ② 슬라이드: 남양주 자율 8지표 칩 */
-function renderPresentJayulChips() {
-  const host = document.getElementById('pslide2-jayul');
+/** ② 슬라이드: 전체 지표(공통 11 + 자율) 삶/일/쉼 3열 — 스크롤로 전부 확인 */
+function renderPresentIndicatorList() {
+  const host = document.getElementById('pslide2-indicators');
   if (!host) return;
-  let chips = '';
-  try {
-    const keys = (CITIES.namyangju && CITIES.namyangju.selectedJayulKeys) || [];
-    chips = keys.map(k => {
-      const def = (typeof JAYUL_INDICATORS_POOL !== 'undefined' && JAYUL_INDICATORS_POOL[k]) || {};
-      return makeFactChip('basis', `${k} ${def.name || ''}`.trim(), { icon: '·' });
-    }).join('');
-  } catch (_) {}
-  host.innerHTML = chips ? `<span class="ps-chips-label">남양주 자율지표 8</span>${chips}` : '';
+  const cats = [
+    { key: 'samlter', label: '삶터', cls: 'samlter', ico: '🏘️' },
+    { key: 'ilter', label: '일터', cls: 'ilter', ico: '🌾' },
+    { key: 'shimter', label: '쉼터', cls: 'shimter', ico: '🌲' },
+  ];
+  const sel = new Set((CITIES.namyangju && CITIES.namyangju.selectedJayulKeys) || []);
+  const COMMON = (typeof INDICATORS !== 'undefined') ? INDICATORS : {};
+  const JAYUL = (typeof JAYUL_INDICATORS_POOL !== 'undefined') ? JAYUL_INDICATORS_POOL : {};
+  const row = (k, def, type) => {
+    const tag = type === 'common'
+      ? '<span class="ps-ind-tag ps-ind-tag--common">공통</span>'
+      : `<span class="ps-ind-tag ps-ind-tag--auto">자율${sel.has(k) ? ' ✓' : ''}</span>`;
+    return `<div class="ps-ind-row${type === 'auto' && !sel.has(k) ? ' is-dim' : ''}"><span class="ps-ind-key">${escHtml(k)}</span><span class="ps-ind-name">${escHtml(def.name || k)}</span>${tag}</div>`;
+  };
+  host.innerHTML = cats.map(c => {
+    const common = Object.keys(COMMON).filter(k => COMMON[k].category === c.key).map(k => row(k, COMMON[k], 'common')).join('');
+    const auto = Object.keys(JAYUL).filter(k => JAYUL[k].category === c.key).map(k => row(k, JAYUL[k], 'auto')).join('');
+    return `<div class="ps-indcol ps-card--${c.cls}">
+      <div class="ps-indcol-head">${c.ico} ${c.label}</div>${common}${auto}
+    </div>`;
+  }).join('');
+}
+
+/** ③ 슬라이드: 가상 현장조사 4시트 산식 카드 */
+function renderPresentMethodCards() {
+  const host = document.getElementById('pslide3-method');
+  if (!host || typeof FIELD_SURVEY_METHOD === 'undefined') return;
+  host.innerHTML = FIELD_SURVEY_METHOD.map(s => `
+    <div class="ps-method">
+      <div class="ps-method-top"><code>${escHtml(s.sheet)}</code><span>${escHtml(s.n)}</span></div>
+      <div class="ps-method-out">${escHtml(s.out)}</div>
+      <div class="ps-method-f">${escHtml(s.formula)}</div>
+    </div>`).join('');
+}
+
+/** ③ 슬라이드: 전국 농촌 기준 요약(대표 항목 + 총계) */
+function renderPresentNatl() {
+  const host = document.getElementById('pslide3-natl');
+  if (!host) return;
+  const items = (nationalStandards && nationalStandards.items) || [];
+  const pick = (kw) => items.find(it => (it.indicator || '').includes(kw) || (it.content || '').includes(kw));
+  const reps = [
+    ['응급의료 30분 이내', pick('응급')], ['진료 접근 30~60분', pick('진료')],
+    ['생활SOC 충족', pick('초·중등') || pick('도서관')], ['농촌 고령(65세+) 25.7%', pick('65세')],
+  ].filter(x => x[1]);
+  const chips = reps.map(([lab, it]) => makeFactChip('basis', lab + (it.national_value != null && it.national_value !== '' ? ` · 전국 ${it.national_value}${it.national_unit || ''}` : ''), { icon: '📏' })).join('');
+  const cnt = items.length;
+  host.innerHTML = `
+    <p class="ps-note">농어촌서비스기준(2024)·제5차 농어업인 삶의 질 기본계획 등에서 <b>${cnt}개 기준</b>을 정리해, 트리거마다 <b>반영 수준</b>(직접·보조·해석·정성)으로 연결합니다.</p>
+    <div class="ps-chips">${chips}</div>`;
 }
 
 /** ⑥ 슬라이드: 시군 종합 진단(남양주)을 큰 4칸으로 */

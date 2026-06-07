@@ -8502,8 +8502,56 @@ body:not(.present-mode) #present-deck { display: none !important; }
 .psc-dot { width: 11px; height: 11px; border-radius: 50%; border: 0; background: var(--border-strong); cursor: pointer; padding: 0; transition: transform .15s, background .15s; }
 .psc-dot.is-on { background: var(--accent); transform: scale(1.25); }
 
+/* 캐러셀 — 인덱스·진행바·썸네일(완성도) */
+.psc-idx { display: inline-block; font-size: clamp(12px,1vw,16px); font-weight: 800; color: #fff; background: var(--accent); padding: 2px 10px; border-radius: var(--radius-pill); margin-right: 12px; vertical-align: middle; }
+.psc-progress { height: 4px; background: var(--surface-sunken); border-radius: 2px; margin-top: 8px; overflow: hidden; }
+.psc-progress-fill { display: block; height: 100%; width: 0; background: var(--accent); }
+.psc-thumbs { display: flex; gap: 8px; margin-top: clamp(10px,1.4vh,16px); flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; }
+.psc-thumb { flex: 0 0 auto; width: clamp(92px,9vw,128px); border: 2px solid transparent; border-radius: var(--radius-sm); overflow: hidden; cursor: pointer; background: var(--surface-card); padding: 0; display: flex; flex-direction: column; opacity: .6; transition: opacity .15s, border-color .15s, transform .15s; }
+.psc-thumb img { width: 100%; height: clamp(52px,5vw,72px); object-fit: cover; object-position: top center; display: block; }
+.psc-thumb span { font-size: 10.5px; color: var(--text-body); padding: 3px 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.psc-thumb:hover { opacity: 1; }
+.psc-thumb.is-on { opacity: 1; border-color: var(--accent); transform: translateY(-2px); }
+
+/* 슬라이드 상세 — 소제목 */
+.ps-subhead { font-size: clamp(17px,1.7vw,27px); font-weight: 800; color: var(--primary-dark); margin: clamp(18px,2.6vh,34px) 0 clamp(8px,1.2vh,16px); letter-spacing: -0.01em; }
+.ps-note--muted { background: var(--surface-sunken); color: var(--text-muted); }
+
+/* ② 전체 지표 3열 */
+.ps-indwrap { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(12px,1.6vw,24px); }
+.ps-indcol { background: var(--surface-card); border: 1px solid var(--border-soft); border-top-width: 4px; border-radius: var(--radius-md); padding: clamp(12px,1.4vw,20px); }
+.ps-indcol-head { font-size: clamp(16px,1.5vw,24px); font-weight: 800; color: var(--text-primary); margin-bottom: 10px; }
+.ps-ind-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border-soft); }
+.ps-ind-row:last-child { border-bottom: 0; }
+.ps-ind-row.is-dim { opacity: .5; }
+.ps-ind-key { font-family: var(--font-mono); font-weight: 700; color: var(--primary); font-size: clamp(12px,1.1vw,17px); min-width: 2.4em; }
+.ps-ind-name { flex: 1; font-size: clamp(13px,1.15vw,19px); color: var(--text-body); }
+.ps-ind-tag { font-size: clamp(10px,.8vw,13px); font-weight: 700; padding: 1px 7px; border-radius: var(--radius-pill); white-space: nowrap; }
+.ps-ind-tag--common { background: var(--samlter-soft); color: var(--samlter-dark); }
+.ps-ind-tag--auto { background: var(--accent-soft); color: var(--accent-dark); }
+
+/* ③ 가상조사 산식 카드 */
+.ps-methodgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: clamp(10px,1.2vw,18px); }
+.ps-method { background: var(--surface-base); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: 12px 14px; }
+.ps-method-top { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-bottom: 6px; }
+.ps-method-top code { font-family: var(--font-mono); font-weight: 700; color: var(--primary-dark); font-size: clamp(12px,1.1vw,16px); }
+.ps-method-top span { font-size: clamp(11px,.9vw,14px); color: var(--text-muted); }
+.ps-method-out { font-size: clamp(13px,1.15vw,18px); font-weight: 700; color: var(--shimter-dark); margin-bottom: 4px; }
+.ps-method-f { font-size: clamp(11px,1vw,15px); color: var(--text-muted); font-family: var(--font-mono); line-height: 1.5; background: var(--surface-sunken); padding: 6px 8px; border-radius: var(--radius-sm); }
+
+/* ③ 파이프라인 */
+.ps-pipe { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+.ps-pipe-step { flex: 1 1 200px; text-align: center; background: var(--surface-card); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: clamp(12px,1.4vw,20px); }
+.ps-pipe-step b { display: block; font-size: clamp(15px,1.4vw,22px); color: var(--text-primary); margin-bottom: 6px; }
+.ps-pipe-step span { font-size: clamp(12px,1vw,16px); color: var(--text-muted); line-height: 1.6; }
+.ps-pipe-arrow { display: flex; align-items: center; font-size: clamp(20px,2vw,30px); color: var(--text-subtle); }
+
 @media (max-width: 900px) {
-  .ps-3col, .ps-funcgrid, #pslide6-body .diag-grid { grid-template-columns: 1fr 1fr; }
+  .ps-3col, .ps-funcgrid, #pslide6-body .diag-grid, .ps-indwrap { grid-template-columns: 1fr 1fr; }
+  .ps-pipe-arrow { display: none; }
+}
+@media (max-width: 600px) {
+  .ps-indwrap { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
   .ps-3col, .ps-funcgrid, #pslide6-body .diag-grid { grid-template-columns: 1fr; }

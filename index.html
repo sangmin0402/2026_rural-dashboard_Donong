@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/style.css?v=20260607e">
+  <link rel="stylesheet" href="css/style.css?v=20260607f">
 </head>
 <body>
 
@@ -81,8 +81,9 @@
         <div class="ps-scrollcue" aria-hidden="true">↓ 자세히</div>
       </div>
       <div class="ps-details">
-        <p class="ps-note"><b>공통지표 11개</b>로 경기도 농촌 시군을 비교하고, <b>남양주 자율지표 8개</b>로 도농전환형 특성을 세밀히 진단합니다. 지표는 지역 특성 조사·정책 보고서·공간계획 등을 근거로 선정.</p>
-        <div id="pslide2-jayul" class="ps-chips"><!-- 자율 8지표 chips (JS) --></div>
+        <p class="ps-note"><b>공통지표 11개</b>로 경기도 농촌 시군을 비교하고, <b>남양주 자율지표 8개</b>로 도농전환형 특성을 세밀히 진단합니다. 지표는 지역 특성 조사·정책 보고서·정부 농촌정책·공간계획 등을 근거로 선정.</p>
+        <h3 class="ps-subhead">전체 지표 한눈에 — 삶터 · 일터 · 쉼터</h3>
+        <div id="pslide2-indicators" class="ps-indwrap"><!-- 공통11 + 자율 전체 (JS) --></div>
       </div>
     </section>
 
@@ -99,7 +100,20 @@
         <div class="ps-scrollcue" aria-hidden="true">↓ 자세히</div>
       </div>
       <div class="ps-details">
-        <p class="ps-note">트리거(시사점)마다 전국 농촌 기준과의 <b>반영 수준</b>(직접·보조·해석·정성)을 표시하고, 가상데이터 생성 산식·출처표는 ‘데이터 출처’ 화면에서 전부 공개합니다.</p>
+        <h3 class="ps-subhead">① 가상 현장조사 — 어떻게 만들었나</h3>
+        <p class="ps-note">공공데이터가 읍면 단위까지 없어, 실제 조사표 설계 기준으로 <b>가상 응답</b>을 만들어 플랫폼 구조·집계 로직을 먼저 검증했습니다. 9개 농촌 읍면 값은 <b>가상</b>이며, 실측이 들어오면 같은 자리에 대체됩니다.</p>
+        <div id="pslide3-method" class="ps-methodgrid"><!-- 4시트 산식 (JS) --></div>
+        <h3 class="ps-subhead">② 전국 농촌 기준 — 임계값 객관화</h3>
+        <div id="pslide3-natl" class="ps-natlwrap"><!-- 전국기준 요약 (JS) --></div>
+        <h3 class="ps-subhead">③ 데이터 파이프라인</h3>
+        <div class="ps-pipe">
+          <div class="ps-pipe-step"><b>🏛️ 수집</b><span>KOSIS·SGIS·통계청<br>지방재정365·문화재청<br>읍면 현장조사</span></div>
+          <div class="ps-pipe-arrow">→</div>
+          <div class="ps-pipe-step"><b>🗃️ 가공 (3-layer)</b><span>raw(원본+출처)<br>computed(산식)<br>manual(직접 입력)</span></div>
+          <div class="ps-pipe-arrow">→</div>
+          <div class="ps-pipe-step"><b>📊 표출</b><span>지도·비교·트리거<br>비전·AI 해석<br>출처·전국기준 동반</span></div>
+        </div>
+        <p class="ps-note ps-note--muted">전체 지표 출처표·가상데이터 산식·전국 농촌 기준표는 <b>③ 데이터 출처 화면</b>에서 한 번에 확인할 수 있습니다.</p>
       </div>
     </section>
 
@@ -134,10 +148,11 @@
             <button class="psc-nav psc-prev" id="psc-prev" type="button" aria-label="이전">‹</button>
             <button class="psc-nav psc-next" id="psc-next" type="button" aria-label="다음">›</button>
           </div>
+          <div class="psc-progress" aria-hidden="true"><span class="psc-progress-fill" id="psc-progress"></span></div>
           <div class="psc-bar">
-            <div class="psc-cap"><b id="psc-title">지표 지도</b><span id="psc-desc">시군별 농촌다움 종합점수와 영역별 차이를 지도에서 확인</span></div>
-            <div class="psc-dots" id="psc-dots"></div>
+            <div class="psc-cap"><span class="psc-idx" id="psc-idx">1 / 8</span><b id="psc-title">지표 지도</b><span id="psc-desc">시군별 농촌다움 종합점수와 영역별 차이를 지도에서 확인</span></div>
           </div>
+          <div class="psc-thumbs" id="psc-thumbs"></div>
         </div>
         <p class="ps-cue">이제 <b>읍면 진단</b>을 실제 도구로 시연합니다 →</p>
       </div>
@@ -1244,9 +1259,9 @@
   <!-- Chart.js Matrix 플러그인 (히트맵) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
   <!-- 클라이언트 설정 (LLM 프록시 URL — 비밀 아님). app.js 이전 로드 -->
-  <script src="js/config.js?v=20260607e"></script>
+  <script src="js/config.js?v=20260607f"></script>
   <!-- App JS -->
-  <script src="js/app.js?v=20260607e" defer></script>
+  <script src="js/app.js?v=20260607f" defer></script>
 
 </body>
 </html>
