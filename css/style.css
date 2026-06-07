@@ -6330,13 +6330,25 @@ body.view-admin .admin-only-inline {
 /* ── 큰 코로플레스 지도 ── */
 .explore-map-wrap {
   position: relative;
-  background: #f5f8f3;
-  border: 1px solid rgba(45,95,63,0.10);
-  border-radius: var(--radius-md);
-  padding: var(--space-3);
+  background:
+    radial-gradient(120% 90% at 50% 0%, #ffffff 0%, #f3f7f1 55%, #eaf0e7 100%);
+  border: 1px solid rgba(45,95,63,0.12);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
   margin-bottom: var(--space-4);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.7), var(--shadow-sm);
+  overflow: hidden;
+}
+/* 지도 뒤 은은한 후광 */
+.explore-map-wrap::before {
+  content: '';
+  position: absolute;
+  inset: 8% 12%;
+  background: radial-gradient(circle at 50% 42%, rgba(98,160,63,0.10), transparent 62%);
+  pointer-events: none;
 }
 #explore-map-area {
+  position: relative;
   width: 100%;
   aspect-ratio: 9 / 7;
   max-height: 560px;
@@ -6345,6 +6357,14 @@ body.view-admin .admin-only-inline {
   width: 100%;
   height: 100%;
   display: block;
+}
+/* 대상 시군 폴리곤 — 부드러운 인터랙션 */
+#explore-map-area .em-target path {
+  transition: opacity .15s var(--ease), filter .15s var(--ease);
+  cursor: pointer;
+}
+#explore-map-area .em-target path:hover {
+  filter: brightness(1.08) saturate(1.06);
 }
 .explore-map-label text { pointer-events: none; }
 

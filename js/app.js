@@ -7072,7 +7072,7 @@ function renderSourcesPage() {
         <div class="src-usage-item"><b>${used ? llmUsage.out.toLocaleString() : '—'}</b><span>출력 토큰(누적)</span></div>
         <div class="src-usage-item"><b>${llmUsage.model || 'gpt-5.4-nano'}</b><span>사용 모델</span></div>
       </div>
-      <p class="src-note">${used ? '' : 'AI 카드·챗을 사용하면 이 세션의 실제 토큰 사용량이 집계됩니다. '}⏳ <b>검토 필요:</b> 학교 공식 제공 키·쿼터 여부, 발표 후 유지 가능성, 구독제 전환 시 비용 — 외부 확인 사항입니다.</p>
+      ${used ? '' : '<p class="src-note">AI 카드·챗을 사용하면 이 세션의 실제 토큰 사용량이 집계됩니다.</p>'}
     </div>`;
 
   host.innerHTML = tableHtml + methodHtml + buildNationalStandardsHtml() + pipeHtml + apiHtml;
@@ -7726,7 +7726,17 @@ async function renderExploreMainMap(key, rows) {
     };
 
     const svgParts = [`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" role="img">`];
+    // 대상 15시군 영역을 살짝 띄우는 부드러운 그림자 (입체감)
+    svgParts.push(
+      '<defs>' +
+        '<filter id="emShadow" x="-8%" y="-8%" width="116%" height="116%">' +
+          '<feDropShadow dx="0" dy="2.5" stdDeviation="3.5" flood-color="#13301d" flood-opacity="0.22"/>' +
+        '</filter>' +
+      '</defs>'
+    );
     // 폴리곤 — 대상 15시군은 색상, 비대상은 매우 흐린 회색 (배경 컨텍스트만)
+    const bgPaths = [];
+    const targetPaths = [];
     geo.features.forEach(f => {
       const cid = f.properties.id;
       const c = f.geometry;
@@ -7734,19 +7744,22 @@ async function renderExploreMainMap(key, rows) {
       const d = pathFromCoords(c.coordinates, c.type);
       const v = valById[cid];
       const isTarget = !!CITIES[cid];
-      const fill = isTarget ? colorFor(cid) : '#e8ece4';
-      const stroke = isTarget ? '#fff' : '#d6dccd';
-      const strokeWidth = isTarget ? '1' : '0.5';
-      const opacity = isTarget ? '1' : '0.5';
       const cityName = CITIES[cid]?.name || '';
       const valStr = v == null ? '-' : v.toLocaleString(undefined, { maximumFractionDigits: 2 });
-      const titleText = isTarget
-        ? `${cityName}: ${valStr}${meta?.unit ? ' ' + meta.unit : ''}`
-        : '(대상 외 시군)';
-      svgParts.push(
-        `<path d="${d}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeWidth}" opacity="${opacity}" data-city-id="${cid}" data-target="${isTarget}"><title>${titleText}</title></path>`
-      );
+      if (isTarget) {
+        const titleText = `${cityName}: ${valStr}${meta?.unit ? ' ' + meta.unit : ''}`;
+        targetPaths.push(
+          `<path d="${d}" fill="${colorFor(cid)}" stroke="#ffffff" stroke-width="1.3" stroke-linejoin="round" data-city-id="${cid}" data-target="true"><title>${titleText}</title></path>`
+        );
+      } else {
+        bgPaths.push(
+          `<path d="${d}" fill="#eef2ea" stroke="#dde4d8" stroke-width="0.6" stroke-linejoin="round" opacity="0.6" data-city-id="${cid}" data-target="false"><title>(대상 외 시군)</title></path>`
+        );
+      }
     });
+    // 배경(비대상) → 대상(그림자로 띄움) 순으로 쌓기
+    svgParts.push('<g class="em-bg">' + bgPaths.join('') + '</g>');
+    svgParts.push('<g class="em-target" filter="url(#emShadow)">' + targetPaths.join('') + '</g>');
     // 라벨 — 대상 15시군만, 비대상은 라벨 X
     geo.features.forEach(f => {
       const cid = f.properties.id;
