@@ -8627,3 +8627,34 @@ body:not(.present-mode) #present-deck { display: none !important; }
 .mf-sw--t { border-top: 3px solid var(--warning); } .mf-sw--t b { color: var(--warning); }
 @media (max-width: 900px) { .mf-goals, .mf-swot { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .mf-goals, .mf-swot { grid-template-columns: 1fr; } }
+
+/* ============================================================ */
+/* === 섹션 52: 0607-2 발표 덱 정리 (① 격차·④ 3묶음·SWOT 압축) === */
+/* ============================================================ */
+/* ① 히어로 — 읍면 격차 한 줄 */
+.ps-hero-gap { font-size: clamp(14px,1.3vw,21px); color: var(--text-muted); margin-top: clamp(10px,1.6vh,20px); }
+.ps-hero-gap b { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+/* ④ 사이트 소개 — 3단계 흐름 그룹 */
+.ps-fcols { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: clamp(12px,1.4vw,22px); margin: clamp(14px,2vh,28px) 0; align-items: start; }
+.ps-fcol { background: var(--surface-card); border: 1px solid var(--border-soft); border-top-width: 4px; border-radius: var(--radius-lg); padding: clamp(14px,1.5vw,24px); box-shadow: var(--shadow-sm); }
+.ps-fcol--a { border-top-color: var(--samlter); }
+.ps-fcol--b { border-top-color: var(--ilter); }
+.ps-fcol--c { border-top-color: var(--shimter); }
+.ps-fcol-head { font-size: clamp(15px,1.4vw,23px); font-weight: 800; color: var(--text-primary); margin-bottom: 12px; }
+.ps-fcol-item { padding: 7px 0; border-bottom: 1px solid var(--border-soft); }
+.ps-fcol-item:last-child { border-bottom: 0; }
+.ps-fcol-item b { display: block; font-size: clamp(14px,1.2vw,20px); color: var(--primary-dark); }
+.ps-fcol-item span { font-size: clamp(12px,1vw,16px); color: var(--text-muted); }
+@media (max-width: 900px) { .ps-fcols { grid-template-columns: 1fr; } }
+
+/* SWOT 압축 — 카테고리당 한 줄 */
+.mf-swot--compact { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(8px,1vw,14px); }
+.mf-swrow { display: flex; gap: 10px; align-items: baseline; background: var(--surface-base); border: 1px solid var(--border-soft); border-left-width: 4px; border-radius: var(--radius-sm); padding: 9px 12px; }
+.mf-swrow b { flex: 0 0 auto; font-size: clamp(13px,1.1vw,18px); }
+.mf-swrow span { font-size: clamp(12px,1.02vw,16px); color: var(--text-body); line-height: 1.5; }
+.mf-swrow--s { border-left-color: var(--success); } .mf-swrow--s b { color: var(--success); }
+.mf-swrow--w { border-left-color: var(--danger); } .mf-swrow--w b { color: var(--danger); }
+.mf-swrow--o { border-left-color: var(--samlter); } .mf-swrow--o b { color: var(--samlter-dark); }
+.mf-swrow--t { border-left-color: var(--warning); } .mf-swrow--t b { color: var(--warning); }
+@media (max-width: 700px) { .mf-swot--compact { grid-template-columns: 1fr; } }

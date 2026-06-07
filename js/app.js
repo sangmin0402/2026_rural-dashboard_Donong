@@ -6773,13 +6773,13 @@ function renderPresentManifesto() {
       <ul class="mf-goal-st">${(g.strategies || []).map(s => `<li>${escHtml(s)}</li>`).join('')}</ul>
     </div>`).join('');
   const sw = manifesto.swot || {};
-  const swBlock = (k, label, cls) => `<div class="mf-sw mf-sw--${cls}"><b>${label}</b><ul>${(sw[k] || []).map(x => `<li>${escHtml(x)}</li>`).join('')}</ul></div>`;
+  const swRow = (k, label, cls) => `<div class="mf-swrow mf-swrow--${cls}"><b>${label}</b><span>${(sw[k] || []).slice(0, 4).map(escHtml).join(' · ')}</span></div>`;
   host.innerHTML = `
     <p class="ps-note ps-note--muted">민선 8기 비전 <b>THE</b> — T 교통 · H 삶의 질(문화·생활편의) · E 교육·환경. 6대 목표 18개 전략으로 추진. <span class="mf-src">(출처: 남양주시 매니페스토)</span></p>
     <div class="mf-goals">${goals}</div>
-    <h4 class="mf-swot-h">남양주 SWOT</h4>
-    <div class="mf-swot">
-      ${swBlock('S', '강점 S', 's')}${swBlock('W', '약점 W', 'w')}${swBlock('O', '기회 O', 'o')}${swBlock('T', '위협 T', 't')}
+    <h4 class="mf-swot-h">남양주 SWOT <span class="mf-src">(매니페스토 분석)</span></h4>
+    <div class="mf-swot mf-swot--compact">
+      ${swRow('S', '강점', 's')}${swRow('W', '약점', 'w')}${swRow('O', '기회', 'o')}${swRow('T', '위협', 't')}
     </div>`;
 }
 
