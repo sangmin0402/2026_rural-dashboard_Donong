@@ -8601,3 +8601,29 @@ body:not(.present-mode) #present-deck { display: none !important; }
 .explore-formula-collapsible { border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--surface-base); margin-top: var(--space-4); }
 .explore-formula-collapsible > summary { padding: 10px 14px; font-weight: 700; color: var(--primary-dark); cursor: pointer; }
 .explore-formula-body { padding: 0 14px 12px; font-size: var(--fs-sm); line-height: 1.7; color: var(--text-body); }
+
+/* ============================================================ */
+/* === 섹션 51: 0607 민선8기 매니페스토 (① 슬라이드 상세) === */
+/* ============================================================ */
+.mf-src { color: var(--text-subtle); font-weight: 500; font-size: .92em; }
+.mf-goals { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(10px,1.2vw,18px); margin: clamp(10px,1.4vh,18px) 0; }
+.mf-goal { background: var(--surface-card); border: 1px solid var(--border-soft); border-top-width: 4px; border-radius: var(--radius-md); padding: clamp(11px,1.2vw,18px); }
+.mf-goal--samlter { border-top-color: var(--samlter); }
+.mf-goal--ilter { border-top-color: var(--ilter); }
+.mf-goal--shimter { border-top-color: var(--shimter); }
+.mf-goal-head { display: flex; align-items: center; gap: 8px; font-size: clamp(14px,1.3vw,21px); font-weight: 800; color: var(--text-primary); margin-bottom: 7px; }
+.mf-goal-n { flex: 0 0 auto; width: 1.7em; height: 1.7em; border-radius: 50%; background: var(--primary); color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: .8em; }
+.mf-goal-st { margin: 0; padding-left: 18px; }
+.mf-goal-st li { font-size: clamp(12px,1.05vw,17px); color: var(--text-body); line-height: 1.55; margin-bottom: 3px; }
+.mf-swot-h { font-size: clamp(15px,1.4vw,22px); font-weight: 800; color: var(--primary-dark); margin: clamp(12px,1.6vh,20px) 0 8px; }
+.mf-swot { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(8px,1vw,14px); }
+.mf-sw { border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: clamp(10px,1.1vw,16px); background: var(--surface-base); }
+.mf-sw b { display: block; font-size: clamp(13px,1.1vw,18px); margin-bottom: 6px; }
+.mf-sw ul { margin: 0; padding-left: 16px; }
+.mf-sw li { font-size: clamp(11px,1vw,16px); color: var(--text-body); line-height: 1.5; margin-bottom: 3px; }
+.mf-sw--s { border-top: 3px solid var(--success); } .mf-sw--s b { color: var(--success); }
+.mf-sw--w { border-top: 3px solid var(--danger); } .mf-sw--w b { color: var(--danger); }
+.mf-sw--o { border-top: 3px solid var(--samlter); } .mf-sw--o b { color: var(--samlter-dark); }
+.mf-sw--t { border-top: 3px solid var(--warning); } .mf-sw--t b { color: var(--warning); }
+@media (max-width: 900px) { .mf-goals, .mf-swot { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .mf-goals, .mf-swot { grid-template-columns: 1fr; } }

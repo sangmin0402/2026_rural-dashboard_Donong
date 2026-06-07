@@ -218,6 +218,13 @@ function factsToText(ctx) {
     if (Array.isArray(v.high_rate) && v.high_rate.length) lines.push(`· 양호(80%↑): ${v.high_rate.join(', ')}`);
     if (v.key_insight) lines.push(`· 핵심: ${v.key_insight}`);
   }
+  if (ctx.manifesto) {
+    const m = ctx.manifesto;
+    lines.push(`민선8기 비전 "${m.vision || ''}" (THE: ${(m.the || []).join(' · ')})`);
+    if (Array.isArray(m.goals) && m.goals.length) lines.push(`· 6대 목표: ${m.goals.join(', ')}`);
+    if (Array.isArray(m.strength) && m.strength.length) lines.push(`· 시 강점: ${m.strength.join(', ')}`);
+    if (Array.isArray(m.weakness) && m.weakness.length) lines.push(`· 시 약점: ${m.weakness.join(', ')}`);
+  }
   if (Array.isArray(ctx.policies) && ctx.policies.length) {
     lines.push('준비된 정책(프로젝트 작성 — 답변 근거로 우선 활용):');
     ctx.policies.forEach(p => lines.push(`· ${p}`));
@@ -248,6 +255,7 @@ function eupUserPrompt(name, ctx) {
   }
   if (ctx.triggers && ctx.triggers.length) lines.push(`발화 트리거: ${ctx.triggers.join(', ')}.`);
   if (ctx.insights && ctx.insights.length) lines.push(`도출 시사점: ${ctx.insights.join(', ')}.`);
+  if (ctx.manifesto) lines.push(`민선8기 비전 "${ctx.manifesto.vision || ''}"(THE: ${(ctx.manifesto.the || []).join('·')}), 6대 목표: ${(ctx.manifesto.goals || []).join(', ')} — 해석·정책을 이 비전과 연결하라.`);
   lines.push('출처 표기 [field]=현장조사, [sim]=시뮬레이션, [sigun]=시군고정값임을 감안해 신뢰도를 해석에 반영하라.');
   return lines.join(' ');
 }
@@ -258,6 +266,7 @@ function sigunUserPrompt(name, ctx) {
   if (ctx.scores) lines.push(`종합점수 — 삶터 ${ctx.scores.samlter ?? '-'}, 일터 ${ctx.scores.ilter ?? '-'}, 쉼터 ${ctx.scores.shimter ?? '-'}.`);
   if (ctx.seedStrengths) lines.push(`참고(기존 진단) 강점: ${(ctx.seedStrengths || []).join('; ')}.`);
   if (ctx.seedWeaknesses) lines.push(`참고(기존 진단) 약점: ${(ctx.seedWeaknesses || []).join('; ')}.`);
+  if (ctx.manifesto) lines.push(`민선8기 비전 "${ctx.manifesto.vision || ''}"(THE: ${(ctx.manifesto.the || []).join('·')}), 6대 목표: ${(ctx.manifesto.goals || []).join(', ')}.`);
   return lines.join(' ');
 }
 

@@ -836,6 +836,7 @@ let vision2035 = null;         // 2035 도시기본계획 비전 달성률 (0531
 let benchmarks = null;         // 0602: 전국 농촌 평균·유사 지자체 평균 비교 기준 (placeholder, benchmarks.json)
 let nationalStandards = null;  // 0607: 전국 농촌 기준표 (national-rural-standards.json, 한유하 xlsx 시트1)
 let triggerBenchmarks = null;  // 0607: 트리거별 전국기준 매칭 (trigger-benchmarks.json, 시트2 TC-01~15)
+let manifesto = null;          // 0607: 민선8기 비전·전략 매니페스토 (namyangju-manifesto.json, PDF 추출)
 // 0602 (#9): AI API 토큰 사용량 세션 누적 (학교/구독제 API 활용 가능성 검토용 실측)
 const llmUsage = { calls: 0, in: 0, out: 0, model: '' };
 function recordLlmUsage(data) {
@@ -1120,7 +1121,7 @@ function updateRiVisibility() {
  */
 async function loadRegionMeta() {
   try {
-    const [metaResp, refResp, surveyResp, gapResp, insightsResp, simResp, aiResp, fieldResp, trigResp, v2035Resp, benchResp, nstdResp, tbenchResp] = await Promise.all([
+    const [metaResp, refResp, surveyResp, gapResp, insightsResp, simResp, aiResp, fieldResp, trigResp, v2035Resp, benchResp, nstdResp, tbenchResp, manifestoResp] = await Promise.all([
       fetch('./dat/region-meta.json', { cache: 'no-cache' }),
       fetch('./dat/indicator-reference.json', { cache: 'no-cache' }),
       fetch('./dat/field-survey-meta.json', { cache: 'no-cache' }),
@@ -1134,6 +1135,7 @@ async function loadRegionMeta() {
       fetch('./dat/benchmarks.json', { cache: 'no-cache' }),
       fetch('./dat/national-rural-standards.json', { cache: 'no-cache' }),
       fetch('./dat/trigger-benchmarks.json', { cache: 'no-cache' }),
+      fetch('./dat/namyangju-manifesto.json', { cache: 'no-cache' }),
     ]);
     regionMeta = metaResp.ok ? await metaResp.json() : {};
     indicatorReference = refResp.ok ? await refResp.json() : null;
@@ -1148,6 +1150,7 @@ async function loadRegionMeta() {
     benchmarks = benchResp.ok ? await benchResp.json() : null;
     nationalStandards = nstdResp.ok ? await nstdResp.json() : null;
     triggerBenchmarks = tbenchResp.ok ? await tbenchResp.json() : null;
+    manifesto = manifestoResp.ok ? await manifestoResp.json() : null;
   } catch (err) {
     regionMeta = {};
     indicatorReference = null;
@@ -1162,6 +1165,7 @@ async function loadRegionMeta() {
     benchmarks = null;
     nationalStandards = null;
     triggerBenchmarks = null;
+    manifesto = null;
   }
   // SGIS computed 값으로 CITIES mock 덮어쓰기 (실측 우선)
   applySgisOverridesToCities();
@@ -4513,6 +4517,7 @@ function buildLlmContext(scope, regionId) {
       vision: vs ? { overall: vs.overall, axes: vs.axes, potentialFelt: vs.potentialFelt } : null,
       triggers: trigNames,
       insights: cards.map(c => c.title).filter(Boolean),
+      manifesto: buildManifestoCtx(),
     };
   }
   // 시군
@@ -4535,6 +4540,7 @@ function buildLlmContext(scope, regionId) {
     scores,
     seedStrengths: seed && seed.city ? seed.city.strengths : null,
     seedWeaknesses: seed && seed.city ? seed.city.weaknesses : null,
+    manifesto: (regionId === 'namyangju') ? buildManifestoCtx() : null,
   };
 }
 
@@ -4650,7 +4656,27 @@ function buildAskContext() {
   const ctx = _buildAskContextRaw();
   try { attachPolicyHints(ctx); } catch (e) { /* ignore */ }
   try { attachVision2035Facts(ctx); } catch (e) { /* ignore */ }
+  try { attachManifestoFacts(ctx); } catch (e) { /* ignore */ }
   return ctx;
+}
+
+/** 민선8기 매니페스토(비전·6대 목표·SWOT)를 compact facts로 첨부 (남양주 한정) */
+function attachManifestoFacts(ctx) {
+  if (!manifesto || !ctx.region || !ctx.region.includes('남양주')) return;
+  ctx.manifesto = buildManifestoCtx();
+}
+/** AI 전달용 compact 매니페스토 (토큰 절약) */
+function buildManifestoCtx() {
+  if (!manifesto) return null;
+  const the = manifesto.the || {};
+  const sw = manifesto.swot || {};
+  return {
+    vision: manifesto.vision,
+    the: ['T ' + (the.T && the.T.ko || '교통'), 'H ' + (the.H && the.H.ko || '삶의 질'), 'E ' + (the.E && the.E.ko || '교육·환경')],
+    goals: (manifesto.goals || []).map(g => g.name),
+    strength: (sw.S || []).slice(0, 4),
+    weakness: (sw.W || []).slice(0, 4),
+  };
 }
 
 /** 준비된 정책 라이브러리(지표 등급정책 + 발화 트리거 정책)를 facts로 첨부 */
@@ -6672,6 +6698,7 @@ function showDeckSlide(n) {
   if (!deck) return;
   hideAllOverlayScreens();
   document.getElementById('landing-screen')?.classList.add('is-hidden');
+  if (n === 1) { try { renderPresentManifesto(); } catch (_) {} }
   if (n === 2) { try { renderPresentIndicatorList(); } catch (_) {} }
   if (n === 3) { try { renderPresentMethodCards(); renderPresentNatl(); } catch (_) {} }
   if (n === 7) { try { renderPresentSummary(); } catch (_) {} }
@@ -6733,6 +6760,28 @@ function _fcWire() {
 function _fcKick() { clearInterval(_fcTimer); _fcRender(); if (_fcPaused) return; _fcTimer = setInterval(() => _fcGo(_fcIdx + 1), FC_INTERVAL); }
 function startFeatureCarousel() { _fcWire(); _fcIdx = 0; _fcPaused = false; _fcKick(); }
 function stopFeatureCarousel() { clearInterval(_fcTimer); _fcTimer = null; }
+
+/** ① 슬라이드: 민선8기 매니페스토 — 6대 목표·전략 + SWOT (namyangju-manifesto.json) */
+function renderPresentManifesto() {
+  const host = document.getElementById('pslide1-manifesto');
+  if (!host) return;
+  if (!manifesto) { host.innerHTML = ''; return; }
+  const theMap = { T: 'samlter', H: 'ilter', E: 'shimter' };
+  const goals = (manifesto.goals || []).map(g => `
+    <div class="mf-goal mf-goal--${theMap[g.the] || 'samlter'}">
+      <div class="mf-goal-head"><span class="mf-goal-n">${g.n}</span>${escHtml(g.name)}</div>
+      <ul class="mf-goal-st">${(g.strategies || []).map(s => `<li>${escHtml(s)}</li>`).join('')}</ul>
+    </div>`).join('');
+  const sw = manifesto.swot || {};
+  const swBlock = (k, label, cls) => `<div class="mf-sw mf-sw--${cls}"><b>${label}</b><ul>${(sw[k] || []).map(x => `<li>${escHtml(x)}</li>`).join('')}</ul></div>`;
+  host.innerHTML = `
+    <p class="ps-note ps-note--muted">민선 8기 비전 <b>THE</b> — T 교통 · H 삶의 질(문화·생활편의) · E 교육·환경. 6대 목표 18개 전략으로 추진. <span class="mf-src">(출처: 남양주시 매니페스토)</span></p>
+    <div class="mf-goals">${goals}</div>
+    <h4 class="mf-swot-h">남양주 SWOT</h4>
+    <div class="mf-swot">
+      ${swBlock('S', '강점 S', 's')}${swBlock('W', '약점 W', 'w')}${swBlock('O', '기회 O', 'o')}${swBlock('T', '위협 T', 't')}
+    </div>`;
+}
 
 /** ② 슬라이드: 전체 지표(공통 11 + 자율) 삶/일/쉼 3열 — 스크롤로 전부 확인 */
 function renderPresentIndicatorList() {
