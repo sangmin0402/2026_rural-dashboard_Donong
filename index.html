@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/style.css?v=20260607c">
+  <link rel="stylesheet" href="css/style.css?v=20260607d">
 </head>
 <body>
 
@@ -25,10 +25,11 @@
       <span class="ps-brand" aria-hidden="true">🎤 발표<span class="ps-keyhint">← → 로 넘기기</span></span>
       <ol class="ps-steps">
         <li><button class="ps-step" type="button" data-step="1"><b>①</b><span>개요·비전</span></button></li>
-        <li><button class="ps-step" type="button" data-step="2"><b>②</b><span>플랫폼 가이드</span></button></li>
+        <li><button class="ps-step" type="button" data-step="2"><b>②</b><span>지표 선정</span></button></li>
         <li><button class="ps-step" type="button" data-step="3"><b>③</b><span>데이터·방법론</span></button></li>
-        <li><button class="ps-step" type="button" data-step="4"><b>④</b><span>읍면 진단</span></button></li>
-        <li><button class="ps-step" type="button" data-step="5"><b>⑤</b><span>종합 요약</span></button></li>
+        <li><button class="ps-step" type="button" data-step="4"><b>④</b><span>사이트 소개</span></button></li>
+        <li><button class="ps-step" type="button" data-step="5"><b>⑤</b><span>읍면 진단</span></button></li>
+        <li><button class="ps-step" type="button" data-step="6"><b>⑥</b><span>종합 요약</span></button></li>
       </ol>
       <div class="ps-ctrl">
         <button class="ps-arrow" id="ps-prev" type="button" aria-label="이전 단계">‹</button>
@@ -38,6 +39,99 @@
     </div>
   </nav>
   <button id="present-launch" type="button" aria-label="발표 모드 시작">🎤 발표 모드</button>
+
+  <!-- ===== 발표 슬라이드 덱 (0607 — 16:9 빔 발표용, 핵심 크게·세부 아래) ===== -->
+  <div id="present-deck" aria-hidden="true">
+
+    <!-- ① 개요·비전 -->
+    <section class="pslide" data-slide="1">
+      <div class="ps-hero">
+        <div class="ps-eyebrow">01 · 대상 지역</div>
+        <h2 class="ps-title">남양주, <em>인구 100만 메가시티</em>를 향한 도농복합도시</h2>
+        <p class="ps-lead">민선 8기 비전 「시민행복도시 인구 100만 메가시티 남양주」 — 대도시 성장과 읍면 농촌·자연지역 관리가 <em>동시에</em> 필요한 도시.</p>
+        <div class="ps-stats">
+          <div class="ps-stat"><b>741,735</b><span>인구 (2024)</span></div>
+          <div class="ps-stat"><b>458.1㎢</b><span>전체 면적</span></div>
+          <div class="ps-stat"><b>42.5%</b><span>자연보전권역</span></div>
+          <div class="ps-stat"><b>6읍·3면·7동</b><span>행정구역</span></div>
+        </div>
+        <div class="ps-scrollcue" aria-hidden="true">↓ 자세히</div>
+      </div>
+      <div class="ps-details">
+        <div class="ps-3col">
+          <div class="ps-card ps-card--samlter"><h4>🏘️ 삶터</h4><p>화도읍 114,425명 vs 조안면 3,817명 — 인구 집중 지역과 소규모 농촌 생활권 공존. <b>읍면별 정주 여건 차이</b>가 핵심.</p></div>
+          <div class="ps-card ps-card--ilter"><h4>🌾 일터</h4><p>사업체 71,838개·종사자 221,153명. 화도읍 9,857 vs 조안면 378개 — 단순 수가 아닌 <b>자족성·관광·농업 연계</b>로 진단.</p></div>
+          <div class="ps-card ps-card--shimter"><h4>🌲 쉼터</h4><p>정약용·물의정원·북한강 등 풍부한 수변·역사 자원 — 관광지 개수가 아닌 <b>체류형 여가 기반</b>으로 해석.</p></div>
+        </div>
+        <p class="ps-note">📍 대시보드는 성장 비전을 단일 도시 확장으로 보지 않고, <b>삶터·일터·쉼터 균형을 읍면 단위로 비교</b>하는 데 초점을 둔다.</p>
+      </div>
+    </section>
+
+    <!-- ② 지표 선정 논리 -->
+    <section class="pslide" data-slide="2">
+      <div class="ps-hero">
+        <div class="ps-eyebrow">02 · 왜 이 지표인가</div>
+        <h2 class="ps-title">농촌다움은 <em>세 가지 질문</em>으로 본다</h2>
+        <div class="ps-3col ps-3col--big">
+          <div class="ps-qcard ps-card--samlter"><span class="ps-q-ico">🏘️</span><b>삶터</b><span class="ps-q">“여기서 계속 살 수 있는가?”</span></div>
+          <div class="ps-qcard ps-card--ilter"><span class="ps-q-ico">🌾</span><b>일터</b><span class="ps-q">“먹고살 일이 있는가?”</span></div>
+          <div class="ps-qcard ps-card--shimter"><span class="ps-q-ico">🌲</span><b>쉼터</b><span class="ps-q">“쉬고 누릴 수 있는가?”</span></div>
+        </div>
+        <div class="ps-scrollcue" aria-hidden="true">↓ 자세히</div>
+      </div>
+      <div class="ps-details">
+        <p class="ps-note"><b>공통지표 11개</b>로 경기도 농촌 시군을 비교하고, <b>남양주 자율지표 8개</b>로 도농전환형 특성을 세밀히 진단합니다. 지표는 지역 특성 조사·정책 보고서·공간계획 등을 근거로 선정.</p>
+        <div id="pslide2-jayul" class="ps-chips"><!-- 자율 8지표 chips (JS) --></div>
+      </div>
+    </section>
+
+    <!-- ③ 데이터·방법론 -->
+    <section class="pslide" data-slide="3">
+      <div class="ps-hero">
+        <div class="ps-eyebrow">03 · 근거와 출처</div>
+        <h2 class="ps-title">모든 수치에 <em>출처</em>와 <em>전국 기준</em>을</h2>
+        <div class="ps-3col">
+          <div class="ps-card"><h4>🏛️ 공공데이터</h4><p>KOSIS·SGIS·통계청 — 시군 단위 공식 통계.</p></div>
+          <div class="ps-card"><h4>📋 읍면 현장조사</h4><p>공공데이터가 없는 읍면 단위는 <b>가상 현장조사</b>로 구조 검증(실데이터와 구분 표기).</p></div>
+          <div class="ps-card"><h4>📏 전국 농촌 기준</h4><p>농어촌서비스기준·삶의질 기본계획으로 <b>임계값을 객관화</b>.</p></div>
+        </div>
+        <div class="ps-scrollcue" aria-hidden="true">↓ 자세히</div>
+      </div>
+      <div class="ps-details">
+        <p class="ps-note">트리거(시사점)마다 전국 농촌 기준과의 <b>반영 수준</b>(직접·보조·해석·정성)을 표시하고, 가상데이터 생성 산식·출처표는 ‘데이터 출처’ 화면에서 전부 공개합니다.</p>
+      </div>
+    </section>
+
+    <!-- ④ 사이트 소개 (그래서 이렇게 만들었습니다) -->
+    <section class="pslide" data-slide="4">
+      <div class="ps-hero">
+        <div class="ps-eyebrow">04 · 플랫폼</div>
+        <h2 class="ps-title">그래서, <em>이렇게 만들었습니다</em></h2>
+        <p class="ps-lead">개요·지표·데이터를 한 화면에서 진단·비교·검토하는 의사결정 지원 플랫폼.</p>
+        <div class="ps-funcgrid">
+          <div class="ps-func"><b>🗺️ 지표 지도</b><span>종합점수·영역별 차이를 지도에서</span></div>
+          <div class="ps-func"><b>📊 지표 탐색</b><span>값·순위·출처와 강약점 비교</span></div>
+          <div class="ps-func"><b>⚖️ 시군 비교</b><span>여러 시군 종합·개별 지표 비교</span></div>
+          <div class="ps-func"><b>🥇 시군 랭킹</b><span>종합·영역별 순위</span></div>
+          <div class="ps-func"><b>🎯 시나리오</b><span>정책 변수 조정 효과 검토</span></div>
+          <div class="ps-func"><b>🌿 남양주 특화</b><span>자율지표·읍면별 진단</span></div>
+          <div class="ps-func"><b>🗂️ 데이터 출처</b><span>산식·원자료·출처 검토</span></div>
+          <div class="ps-func"><b>📚 지표 가이드</b><span>선정 논리·평가 체계</span></div>
+        </div>
+        <p class="ps-cue">다음 화면부터 <b>실제 도구로 시연</b>합니다 →</p>
+      </div>
+    </section>
+
+    <!-- ⑥ 종합 요약 (데이터 기반, JS가 채움) -->
+    <section class="pslide" data-slide="6">
+      <div class="ps-hero">
+        <div class="ps-eyebrow">06 · 종합</div>
+        <h2 class="ps-title">남양주, <em>무엇을 먼저</em> 해야 하나</h2>
+        <div id="pslide6-body"><!-- renderPresentSummary() --></div>
+      </div>
+    </section>
+
+  </div>
 
   <!-- ===== 랜딩 화면 (포털형) ===== -->
   <div id="landing-screen" role="dialog" aria-modal="true" aria-label="플랫폼 소개">
@@ -1129,9 +1223,9 @@
   <!-- Chart.js Matrix 플러그인 (히트맵) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
   <!-- 클라이언트 설정 (LLM 프록시 URL — 비밀 아님). app.js 이전 로드 -->
-  <script src="js/config.js?v=20260607c"></script>
+  <script src="js/config.js?v=20260607d"></script>
   <!-- App JS -->
-  <script src="js/app.js?v=20260607c" defer></script>
+  <script src="js/app.js?v=20260607d" defer></script>
 
 </body>
 </html>

@@ -6633,7 +6633,7 @@ function showGuidePage() {
 // ===================================================================
 // 5단계: ①개요·비전 ②지표 선정논리 ③데이터·방법론 ④읍면 진단 ⑤종합 요약
 // 새 라우터를 만들지 않고 기존 화면 전환 함수를 위임 호출한다.
-const PRESENT_TOTAL = 5;
+const PRESENT_TOTAL = 6;
 let presentStep = 0;
 
 function isPresentMode() { return document.body.classList.contains('present-mode'); }
@@ -6645,24 +6645,76 @@ function enterPresentMode(step) {
 function exitPresentMode() {
   document.body.classList.remove('present-mode');
   presentStep = 0;
+  hideDeck();
   document.querySelectorAll('#present-spine .ps-step').forEach(b => b.classList.remove('is-active'));
-  if (location.hash && /^#step[1-5]$/.test(location.hash)) {
+  if (location.hash && /^#step[1-6]$/.test(location.hash)) {
     history.pushState({}, '', location.pathname + location.search);
   }
+  // 자유 탐색 복귀 — 랜딩 표시
+  if (typeof returnToLanding === 'function') returnToLanding();
 }
 function goPresentationStep(n) {
   n = Math.max(1, Math.min(PRESENT_TOTAL, n));
   presentStep = n;
   try {
-    if (n === 1) presentStepOverview();
-    else if (n === 2) showGuidePage();
-    else if (n === 3) { if (typeof showSourcesPage === 'function') showSourcesPage(); }
-    else if (n === 4) presentStepDiagnosis();
-    else if (n === 5) presentStepSummary();
+    // ⑤ 읍면 진단만 실제 도구 시연 — 나머지는 전용 슬라이드 덱
+    if (n === 5) { hideDeck(); presentStepDiagnosis(); }
+    else showDeckSlide(n);
   } catch (e) { console.warn('[발표] 단계 전환 오류', e); }
   document.querySelectorAll('#present-spine .ps-step').forEach(b => {
     b.classList.toggle('is-active', Number(b.dataset.step) === n);
   });
+}
+
+/** 전용 슬라이드 덱의 n번 슬라이드 표시 (1·2·3·4·6) */
+function showDeckSlide(n) {
+  const deck = document.getElementById('present-deck');
+  if (!deck) return;
+  hideAllOverlayScreens();
+  document.getElementById('landing-screen')?.classList.add('is-hidden');
+  if (n === 2) { try { renderPresentJayulChips(); } catch (_) {} }
+  if (n === 6) { try { renderPresentSummary(); } catch (_) {} }
+  deck.style.display = 'block';
+  deck.querySelectorAll('.pslide').forEach(s => s.classList.toggle('is-active', Number(s.dataset.slide) === n));
+  deck.scrollTop = 0;
+}
+function hideDeck() { const d = document.getElementById('present-deck'); if (d) d.style.display = 'none'; }
+
+/** ② 슬라이드: 남양주 자율 8지표 칩 */
+function renderPresentJayulChips() {
+  const host = document.getElementById('pslide2-jayul');
+  if (!host) return;
+  let chips = '';
+  try {
+    const keys = (CITIES.namyangju && CITIES.namyangju.selectedJayulKeys) || [];
+    chips = keys.map(k => {
+      const def = (typeof JAYUL_INDICATORS_POOL !== 'undefined' && JAYUL_INDICATORS_POOL[k]) || {};
+      return makeFactChip('basis', `${k} ${def.name || ''}`.trim(), { icon: '·' });
+    }).join('');
+  } catch (_) {}
+  host.innerHTML = chips ? `<span class="ps-chips-label">남양주 자율지표 8</span>${chips}` : '';
+}
+
+/** ⑥ 슬라이드: 시군 종합 진단(남양주)을 큰 4칸으로 */
+function renderPresentSummary() {
+  const host = document.getElementById('pslide6-body');
+  if (!host) return;
+  const ai = (typeof getAiInterpretation === 'function') ? getAiInterpretation('namyangju') : null;
+  const c = ai && ai.city;
+  const strengths = (c && c.strengths) ? c.strengths.slice() : [];
+  const weaknesses = (c && c.weaknesses) ? c.weaknesses.slice() : [];
+  const tasks = [];
+  if (c && c.policy_recommendation) c.policy_recommendation.split(/[,，]/).map(s => s.trim()).filter(Boolean).forEach(s => tasks.push(s));
+  const nexts = [];
+  try {
+    const facts = Object.keys(INDICATORS).map(k => sigunIndicatorFact('namyangju', k)).filter(Boolean);
+    facts.sort((a, b) => b.rank - a.rank);
+    facts.slice(0, 2).forEach(f => nexts.push(`${f.name} 보강 (${f.scopeLabel} ${f.rank}/${f.total}위)`));
+  } catch (_) {}
+  if (vision2035) { const low = (vision2035.numeric || []).slice().sort((a, b) => a.rate - b.rate)[0]; if (low) nexts.push(`2035 목표 점검: ${low.name} (달성률 ${low.rate}%)`); }
+  host.innerHTML = (typeof _diagSummaryHtml === 'function')
+    ? _diagSummaryHtml({ strengths, weaknesses, tasks, nexts, adminNext: false })
+    : '';
 }
 function presentStepOverview() {
   hideAllOverlayScreens();
@@ -6705,10 +6757,8 @@ function initPresentMode() {
     document.getElementById('ps-exit')?.addEventListener('click', exitPresentMode);
   }
   document.getElementById('present-launch')?.addEventListener('click', () => enterPresentMode(1));
-  // 0607: 처음부터 발표모드처럼 보이게 — 기본 present-mode ON(스파인 노출), 단 화면은 랜딩 유지(강제 이동 X)
+  // 0607: 처음부터 발표모드 — 기본 present-mode ON + ① 개요·비전 슬라이드 표시
   document.body.classList.add('present-mode');
-  presentStep = 1;
-  if (spine) spine.querySelectorAll('.ps-step').forEach(b => b.classList.toggle('is-active', b.dataset.step === '1'));
   // 키보드 (발표 모드에서만, 입력창 포커스 시 제외)
   document.addEventListener('keydown', (e) => {
     if (!isPresentMode()) return;
@@ -6717,23 +6767,15 @@ function initPresentMode() {
     if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goPresentationStep(presentStep + 1); }
     else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goPresentationStep(presentStep - 1); }
   });
-  // URL 진입: ?present=1 또는 #step1..#step5
+  // URL 진입: ?present=1 또는 #step1..#step6
   let urlNav = false;
   try {
     const params = new URLSearchParams(location.search);
-    const m = location.hash.match(/^#step([1-5])$/);
+    const m = location.hash.match(/^#step([1-6])$/);
     if (params.get('present') === '1' || m) { urlNav = true; enterPresentMode(m ? Number(m[1]) : 1); }
   } catch (_) {}
-  // 0607: 로드 즉시 ①(개요·비전) 위치로 점프 (URL 지정 진입이 아닐 때만)
-  if (!urlNav) {
-    setTimeout(() => {
-      const ov = document.getElementById('landing-overview');
-      const landing = document.getElementById('landing-screen');
-      if (ov && ov.scrollIntoView && landing && !landing.classList.contains('is-hidden')) {
-        ov.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 750);
-  }
+  // 0607: 로드 즉시 ① 개요·비전 슬라이드 표시 (URL 지정 진입이 아닐 때만)
+  if (!urlNav) goPresentationStep(1);
 }
 
 // ===================================================================

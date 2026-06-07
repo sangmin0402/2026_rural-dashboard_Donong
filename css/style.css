@@ -8392,3 +8392,109 @@ body.present-mode .dong-detail, body.present-mode #city-detail { scroll-padding-
 /* 스파인: 발표 리모컨임을 분명히 (키 힌트) */
 .ps-keyhint { font-size: 10px; opacity: .6; margin-left: 2px; white-space: nowrap; }
 @media (max-width: 720px) { .ps-keyhint { display: none; } }
+
+/* ============================================================ */
+/* === 섹션 49: 0607 발표 슬라이드 덱 (#present-deck, 16:9 대형화면) === */
+/* ============================================================ */
+#present-deck {
+  display: none; position: fixed; inset: 0; z-index: 1550;
+  overflow-y: auto; overflow-x: hidden;
+  background:
+    radial-gradient(1200px 700px at 78% -10%, rgba(74,144,217,.10), transparent 60%),
+    radial-gradient(1000px 600px at -5% 110%, rgba(82,168,102,.10), transparent 55%),
+    linear-gradient(180deg, var(--surface-card) 0%, var(--surface-base) 100%);
+}
+body:not(.present-mode) #present-deck { display: none !important; }
+
+.pslide { display: none; }
+.pslide.is-active { display: block; animation: psIn .4s var(--ease) both; }
+@keyframes psIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* 핵심존: 첫 화면을 꽉 채움(스크롤 없이 보이는 영역) */
+.ps-hero {
+  min-height: calc(100vh - 78px);
+  max-width: 1320px; margin: 0 auto;
+  padding: 5vh clamp(28px, 5vw, 96px) 3vh;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.ps-eyebrow {
+  font-size: clamp(14px, 1.4vw, 22px); font-weight: 800; letter-spacing: .12em;
+  color: var(--accent-dark); text-transform: uppercase; margin-bottom: clamp(10px, 1.5vh, 22px);
+}
+.ps-title {
+  font-size: clamp(34px, 4.6vw, 76px); line-height: 1.12; letter-spacing: -0.03em;
+  color: var(--text-primary); font-weight: 800; margin-bottom: clamp(14px, 2.2vh, 34px);
+}
+.ps-title em { color: var(--primary); font-style: normal; }
+.ps-lead {
+  font-size: clamp(17px, 1.9vw, 30px); line-height: 1.55; color: var(--text-body);
+  max-width: 30em; margin-bottom: clamp(18px, 3vh, 40px);
+}
+.ps-lead em { color: var(--primary-dark); font-style: normal; font-weight: 700; }
+
+/* 핵심 통계 (대형) */
+.ps-stats { display: flex; flex-wrap: wrap; gap: clamp(16px, 2.4vw, 44px); }
+.ps-stat b {
+  display: block; font-size: clamp(30px, 4vw, 68px); font-weight: 800;
+  color: var(--primary); font-variant-numeric: tabular-nums; letter-spacing: -0.02em; line-height: 1;
+}
+.ps-stat span { font-size: clamp(13px, 1.2vw, 20px); color: var(--text-muted); }
+
+/* 3열 카드 */
+.ps-3col { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(14px, 1.8vw, 30px); }
+.ps-3col--big { margin-top: clamp(10px, 2vh, 24px); }
+.ps-card {
+  background: var(--surface-card); border: 1px solid var(--border-soft); border-left-width: 5px;
+  border-radius: var(--radius-lg); padding: clamp(16px, 1.8vw, 30px); box-shadow: var(--shadow-sm);
+}
+.ps-card h4 { font-size: clamp(18px, 1.7vw, 28px); margin-bottom: 8px; color: var(--text-primary); }
+.ps-card p { font-size: clamp(14px, 1.15vw, 20px); line-height: 1.6; color: var(--text-body); }
+.ps-card p b { color: var(--text-primary); }
+.ps-card--samlter { border-left-color: var(--samlter); }
+.ps-card--ilter { border-left-color: var(--ilter); }
+.ps-card--shimter { border-left-color: var(--shimter); }
+
+/* 질문 카드(②) */
+.ps-qcard {
+  background: var(--surface-card); border: 1px solid var(--border-soft); border-top-width: 5px;
+  border-radius: var(--radius-lg); padding: clamp(20px, 2.4vw, 40px); text-align: center; box-shadow: var(--shadow-sm);
+  display: flex; flex-direction: column; gap: 10px; align-items: center;
+}
+.ps-q-ico { font-size: clamp(34px, 4vw, 64px); }
+.ps-qcard b { font-size: clamp(20px, 2vw, 34px); color: var(--text-primary); }
+.ps-q { font-size: clamp(16px, 1.5vw, 26px); color: var(--text-body); font-weight: 600; }
+
+/* 기능 그리드(④) */
+.ps-funcgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: clamp(12px, 1.4vw, 22px); margin: clamp(14px,2vh,28px) 0; }
+.ps-func { background: var(--surface-card); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: clamp(13px,1.4vw,22px); }
+.ps-func b { display: block; font-size: clamp(15px, 1.4vw, 23px); color: var(--primary-dark); margin-bottom: 5px; }
+.ps-func span { font-size: clamp(12px, 1vw, 17px); color: var(--text-muted); line-height: 1.5; }
+.ps-cue { font-size: clamp(15px, 1.5vw, 24px); font-weight: 700; color: var(--accent-dark); }
+
+/* 세부(아래로 스크롤) */
+.ps-details { max-width: 1320px; margin: 0 auto; padding: 2vh clamp(28px, 5vw, 96px) 130px; }
+.ps-note { font-size: clamp(15px, 1.4vw, 24px); line-height: 1.65; color: var(--text-body); background: var(--primary-soft); border-radius: var(--radius-md); padding: clamp(14px,1.6vw,26px); }
+.ps-note b { color: var(--primary-dark); }
+.ps-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.ps-chips .fact-chip { font-size: clamp(13px, 1.1vw, 18px); padding: 4px 12px; }
+.ps-scrollcue { margin-top: clamp(16px, 3vh, 40px); font-size: clamp(13px,1.1vw,18px); color: var(--text-subtle); animation: psBob 1.8s var(--ease) infinite; }
+@keyframes psBob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+
+/* 종합요약(⑥) 큰 4칸 */
+#pslide6-body .diag-card { border: none; box-shadow: none; background: transparent; padding: 0; margin: clamp(10px,2vh,24px) 0 0; }
+#pslide6-body .diag-head { display: none; }
+#pslide6-body .diag-grid { grid-template-columns: repeat(2, 1fr); gap: clamp(14px,1.8vw,28px); }
+#pslide6-body .diag-col { padding: clamp(16px,1.8vw,28px); border-left-width: 6px; }
+#pslide6-body .diag-col h4 { font-size: clamp(17px,1.7vw,28px); margin-bottom: 10px; }
+#pslide6-body .diag-col li { font-size: clamp(14px,1.2vw,20px); line-height: 1.6; margin-bottom: 7px; }
+
+@media (max-width: 900px) {
+  .ps-3col, .ps-funcgrid, #pslide6-body .diag-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 600px) {
+  .ps-3col, .ps-funcgrid, #pslide6-body .diag-grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pslide.is-active { animation: none; }
+  .ps-scrollcue { animation: none; }
+}
