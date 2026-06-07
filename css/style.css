@@ -8658,3 +8658,44 @@ body:not(.present-mode) #present-deck { display: none !important; }
 .mf-swrow--o { border-left-color: var(--samlter); } .mf-swrow--o b { color: var(--samlter-dark); }
 .mf-swrow--t { border-left-color: var(--warning); } .mf-swrow--t b { color: var(--warning); }
 @media (max-width: 700px) { .mf-swot--compact { grid-template-columns: 1fr; } }
+
+/* ============================================================ */
+/* === 섹션 53: 0607-2 홈 스크롤 섹션 + 기능 토글 + 읍면 글씨 === */
+/* ============================================================ */
+/* 홈 섹션 공통 (개요비전·지표·데이터를 홈에서 스크롤로) */
+.landing-home-sec { max-width: 1180px; margin: 0 auto; padding: var(--space-8) var(--space-6); }
+.home-subhead { font-size: var(--fs-lg); font-weight: 800; color: var(--primary-dark); margin: var(--space-5) 0 var(--space-3); }
+.home-more { font-size: var(--fs-sm); color: var(--text-muted); margin-top: var(--space-3); }
+.home-link { background: none; border: 0; color: var(--samlter-dark); font-weight: 700; cursor: pointer; text-decoration: underline; padding: 0; font-size: inherit; }
+
+/* 기능 둘러보기 토글 */
+.home-tour { max-width: 1180px; margin: 0 auto; border: 1px solid var(--border); border-radius: var(--radius-lg); background: var(--surface-card); box-shadow: var(--shadow-sm); }
+.home-tour > summary { cursor: pointer; padding: 16px 20px; font-size: var(--fs-md); font-weight: 700; color: var(--text-primary); list-style: none; }
+.home-tour > summary::-webkit-details-marker { display: none; }
+.home-tour-ico { margin-right: 6px; }
+.home-tour-hint { font-size: var(--fs-sm); color: var(--text-muted); font-weight: 500; }
+.home-tour[open] > summary .home-tour-hint::after { content: ' ▾'; }
+.home-tour-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-3); padding: 0 20px 20px; }
+.home-thumb { text-align: left; border: 1px solid var(--border-soft); border-radius: var(--radius-md); overflow: hidden; background: var(--surface-base); cursor: pointer; padding: 0; transition: transform .15s var(--ease), box-shadow .15s var(--ease); }
+.home-thumb:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.home-thumb img { width: 100%; height: 92px; object-fit: cover; object-position: top center; display: block; }
+.home-thumb span { display: block; padding: 8px 10px; }
+.home-thumb b { display: block; font-size: var(--fs-sm); color: var(--primary-dark); }
+.home-thumb span { font-size: var(--fs-xs); color: var(--text-muted); line-height: 1.45; }
+@media (max-width: 900px) { .home-tour-thumbs { grid-template-columns: 1fr 1fr; } }
+
+/* 읍면 진단 글씨 키우기 (한유하 피드백 — 빔 가독) */
+#dong-detail .nyj-section-label { font-size: var(--fs-md); }
+#dong-detail .nyj-icard-title { font-size: var(--fs-md); }
+#dong-detail .nyj-cell-label { font-size: var(--fs-sm); }
+#dong-detail .nyj-cell-body { font-size: var(--fs-base); line-height: 1.65; }
+#dong-detail .nyj-metric-name, #dong-detail .nyj-metric-val { font-size: var(--fs-sm); }
+#dong-detail .nyj-verdict { font-size: var(--fs-base); line-height: 1.6; }
+#dong-detail .nyj-data-need { font-size: var(--fs-sm); }
+#dong-detail .diag-col h4 { font-size: var(--fs-md); }
+#dong-detail .diag-col li { font-size: var(--fs-base); line-height: 1.6; }
+#dong-detail .diag-headline { font-size: var(--fs-base); }
+#dong-detail .eup-llm-headline, #dong-detail .eup-llm-vision { font-size: var(--fs-md); }
+#dong-detail .ai-card-side li, #dong-detail .ai-card-policy p, #dong-detail .eup-llm-actions li { font-size: var(--fs-base); line-height: 1.6; }
+#dong-detail .v35-name, #dong-detail .v35-vals { font-size: var(--fs-sm); }
+#dong-detail .nyj-t-name { font-size: var(--fs-sm); }

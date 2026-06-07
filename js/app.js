@@ -1172,6 +1172,7 @@ async function loadRegionMeta() {
   updateMapColors();
   updateLegend();
   if (typeof renderLandingVision === 'function') renderLandingVision(); // 0602: 랜딩 비전 라이브 채움
+  if (typeof renderHomeSections === 'function') renderHomeSections();    // 0607-2: 홈 스크롤 섹션(개요비전·지표·데이터)
   if (state.selectedCity) {
     updateDetailPanel(state.selectedCity);
     updateRadarChart(state.selectedCity);
@@ -1201,6 +1202,42 @@ function renderLandingVision() {
   const insEl = document.getElementById('lv-insight');
   if (insEl && vision2035.key_insight) {
     insEl.innerHTML = '⚠️ ' + escHtml(vision2035.key_insight);
+  }
+}
+
+/**
+ * 0607-2: 홈(랜딩) 스크롤 섹션 — 발표 덱 ①②③ 콘텐츠를 홈에서 재사용해 표출.
+ * 플랫폼 구성(개요·비전/지표 선정/데이터·방법론)이 홈에서 바로 보이게.
+ */
+let _homeToursWired = false;
+function renderHomeSections() {
+  try { if (typeof renderPresentManifesto === 'function') renderPresentManifesto('home-manifesto'); } catch (_) {}
+  try { if (typeof renderPresentIndicatorList === 'function') renderPresentIndicatorList('home-indicators'); } catch (_) {}
+  try { if (typeof renderPresentMethodCards === 'function') renderPresentMethodCards('home-method'); } catch (_) {}
+  try { if (typeof renderPresentNatl === 'function') renderPresentNatl('home-natl'); } catch (_) {}
+  try { renderHomeTourThumbs(); } catch (_) {}
+}
+
+/** 홈 '기능 둘러보기' 토글 — 8개 기능 썸네일(클릭 시 해당 기능 진입) */
+function renderHomeTourThumbs() {
+  const host = document.getElementById('home-tour-thumbs');
+  if (!host || typeof FEATURE_SLIDES === 'undefined') return;
+  const acts = ['map', 'explore', 'compare', 'ranking', 'scenario', 'namyangju', 'sources', 'guide'];
+  host.innerHTML = FEATURE_SLIDES.map((f, i) =>
+    `<button class="home-thumb" type="button" data-action="${acts[i] || 'map'}"><img src="${escAttr(f.img)}" alt=""><span><b>${escHtml(f.title)}</b>${escHtml(f.desc)}</span></button>`
+  ).join('');
+  if (!_homeToursWired) {
+    _homeToursWired = true;
+    host.addEventListener('click', (e) => {
+      const b = e.target.closest('.home-thumb'); if (!b) return;
+      const a = b.dataset.action;
+      if (a === 'guide') return showGuidePage();
+      if (a === 'sources') return showSourcesPage();
+      if (a === 'ranking') return showRankingPage();
+      if (a === 'explore') return showExplorePage();
+      document.getElementById('landing-screen')?.classList.add('is-hidden');
+      if (typeof handleLandingAction === 'function') handleLandingAction(a);
+    });
   }
 }
 
@@ -6762,8 +6799,8 @@ function startFeatureCarousel() { _fcWire(); _fcIdx = 0; _fcPaused = false; _fcK
 function stopFeatureCarousel() { clearInterval(_fcTimer); _fcTimer = null; }
 
 /** ① 슬라이드: 민선8기 매니페스토 — 6대 목표·전략 + SWOT (namyangju-manifesto.json) */
-function renderPresentManifesto() {
-  const host = document.getElementById('pslide1-manifesto');
+function renderPresentManifesto(hostId) {
+  const host = document.getElementById(hostId || 'pslide1-manifesto');
   if (!host) return;
   if (!manifesto) { host.innerHTML = ''; return; }
   const theMap = { T: 'samlter', H: 'ilter', E: 'shimter' };
@@ -6784,8 +6821,8 @@ function renderPresentManifesto() {
 }
 
 /** ② 슬라이드: 전체 지표(공통 11 + 자율) 삶/일/쉼 3열 — 스크롤로 전부 확인 */
-function renderPresentIndicatorList() {
-  const host = document.getElementById('pslide2-indicators');
+function renderPresentIndicatorList(hostId) {
+  const host = document.getElementById(hostId || 'pslide2-indicators');
   if (!host) return;
   const cats = [
     { key: 'samlter', label: '삶터', cls: 'samlter', ico: '🏘️' },
@@ -6811,8 +6848,8 @@ function renderPresentIndicatorList() {
 }
 
 /** ③ 슬라이드: 가상 현장조사 4시트 산식 카드 */
-function renderPresentMethodCards() {
-  const host = document.getElementById('pslide3-method');
+function renderPresentMethodCards(hostId) {
+  const host = document.getElementById(hostId || 'pslide3-method');
   if (!host || typeof FIELD_SURVEY_METHOD === 'undefined') return;
   host.innerHTML = FIELD_SURVEY_METHOD.map(s => `
     <div class="ps-method">
@@ -6823,8 +6860,8 @@ function renderPresentMethodCards() {
 }
 
 /** ③ 슬라이드: 전국 농촌 기준 요약(대표 항목 + 총계) */
-function renderPresentNatl() {
-  const host = document.getElementById('pslide3-natl');
+function renderPresentNatl(hostId) {
+  const host = document.getElementById(hostId || 'pslide3-natl');
   if (!host) return;
   const items = (nationalStandards && nationalStandards.items) || [];
   const pick = (kw) => items.find(it => (it.indicator || '').includes(kw) || (it.content || '').includes(kw));
@@ -6901,8 +6938,7 @@ function initPresentMode() {
     document.getElementById('ps-exit')?.addEventListener('click', exitPresentMode);
   }
   document.getElementById('present-launch')?.addEventListener('click', () => enterPresentMode(1));
-  // 0607: 처음부터 발표모드 — 기본 present-mode ON + ① 개요·비전 슬라이드 표시
-  document.body.classList.add('present-mode');
+  // 0607-2: 홈(랜딩)이 기본 진입. 발표 슬라이드 덱은 '🎤 발표 모드' 버튼/?present=1 로만 진입.
   // 키보드 (발표 모드에서만, 입력창 포커스 시 제외)
   document.addEventListener('keydown', (e) => {
     if (!isPresentMode()) return;
@@ -6911,15 +6947,12 @@ function initPresentMode() {
     if (e.key === 'ArrowRight' || e.key === 'PageDown') { e.preventDefault(); goPresentationStep(presentStep + 1); }
     else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); goPresentationStep(presentStep - 1); }
   });
-  // URL 진입: ?present=1 또는 #step1..#step6
-  let urlNav = false;
+  // URL 진입(선택): ?present=1 또는 #step1..#step6 일 때만 발표 덱으로. 기본은 홈(랜딩).
   try {
     const params = new URLSearchParams(location.search);
     const m = location.hash.match(/^#step([1-6])$/);
-    if (params.get('present') === '1' || m) { urlNav = true; enterPresentMode(m ? Number(m[1]) : 1); }
+    if (params.get('present') === '1' || m) enterPresentMode(m ? Number(m[1]) : 1);
   } catch (_) {}
-  // 0607: 로드 즉시 ① 개요·비전 슬라이드 표시 (URL 지정 진입이 아닐 때만)
-  if (!urlNav) goPresentationStep(1);
 }
 
 // ===================================================================

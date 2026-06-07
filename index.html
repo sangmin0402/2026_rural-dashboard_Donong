@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/style.css?v=20260607i">
+  <link rel="stylesheet" href="css/style.css?v=20260607j">
 </head>
 <body>
 
@@ -395,10 +395,34 @@
             </article>
           </div>
           <p class="lo-direction"><b>📍 대시보드 진단 방향</b> — 남양주의 성장 비전을 단일한 도시 확장으로 보지 않고, <b>삶터·일터·쉼터의 균형성을 읍면 단위에서 비교</b>하는 데 초점을 둔다.</p>
+          <h3 class="home-subhead">민선 8기 비전 — “상상 더(THE) 이상 남양주”</h3>
+          <div id="home-manifesto"><!-- THE·6대 목표 + SWOT (JS) --></div>
+        </section>
+
+        <!-- 지표 선정 (홈 스크롤 — 0607-2) -->
+        <section class="landing-home-sec landing-anim" style="--anim-order:5" id="home-indicators-sec">
+          <div class="landing-section-head">
+            <span class="landing-eyebrow">지표 체계</span>
+            <h2 class="landing-section-title">지표 선정 — 삶터·일터·쉼터</h2>
+            <p class="landing-section-sub">공통지표 11개로 경기 농촌 시군을 비교하고, 남양주 자율지표 8개로 도농전환형 특성을 진단합니다. (✓ = 남양주 선정)</p>
+          </div>
+          <div id="home-indicators" class="ps-indwrap"><!-- 전체 지표 (JS) --></div>
+        </section>
+
+        <!-- 데이터·방법론 (홈 스크롤 — 0607-2) -->
+        <section class="landing-home-sec landing-anim" style="--anim-order:6" id="home-method-sec">
+          <div class="landing-section-head">
+            <span class="landing-eyebrow">데이터 구축</span>
+            <h2 class="landing-section-title">데이터·방법론 — 출처와 전국 기준</h2>
+            <p class="landing-section-sub">공공데이터(KOSIS·SGIS) + 읍면 가상 현장조사 + 전국 농촌 기준으로 임계값을 객관화합니다.</p>
+          </div>
+          <div id="home-method" class="ps-methodgrid"><!-- 4시트 산식 (JS) --></div>
+          <div id="home-natl" class="ps-natlwrap" style="margin-top:14px"><!-- 전국기준 요약 (JS) --></div>
+          <p class="home-more">전체 출처표·전국 기준표는 상단 <button class="home-link" data-action="sources" type="button">데이터 출처</button> 에서 확인하세요.</p>
         </section>
 
         <!-- 빠른 진입 (Bento) -->
-        <section class="landing-bento landing-anim" style="--anim-order:5" id="landing-bento">
+        <section class="landing-bento landing-anim" style="--anim-order:7" id="landing-bento">
           <div class="landing-section-head">
             <h2 class="landing-section-title">빠른 진입</h2>
             <p class="landing-section-sub">필요한 분석 기능으로 바로 이동하세요</p>
@@ -494,8 +518,16 @@
           </div>
         </section>
 
+        <!-- 기능 둘러보기 토글 (홈 — 0607-2) -->
+        <section class="landing-home-sec landing-anim" style="--anim-order:8">
+          <details class="home-tour" id="home-tour">
+            <summary><span class="home-tour-ico">🖼️</span> 기능 둘러보기 — 화면 미리보기 8개 <span class="home-tour-hint">(펼치기)</span></summary>
+            <div id="home-tour-thumbs" class="home-tour-thumbs"><!-- 8 기능 썸네일 (JS) --></div>
+          </details>
+        </section>
+
         <!-- 푸터 띠 -->
-        <footer class="landing-footer-v2 landing-anim" style="--anim-order:7">
+        <footer class="landing-footer-v2 landing-anim" style="--anim-order:9">
           <div class="landing-footer-row">
             <div class="landing-footer-cell">
               <span class="landing-footer-label">법적 근거</span>
@@ -1265,9 +1297,9 @@
   <!-- Chart.js Matrix 플러그인 (히트맵) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
   <!-- 클라이언트 설정 (LLM 프록시 URL — 비밀 아님). app.js 이전 로드 -->
-  <script src="js/config.js?v=20260607i"></script>
+  <script src="js/config.js?v=20260607j"></script>
   <!-- App JS -->
-  <script src="js/app.js?v=20260607i" defer></script>
+  <script src="js/app.js?v=20260607j" defer></script>
 
 </body>
 </html>
