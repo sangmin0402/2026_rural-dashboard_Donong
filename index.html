@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/style.css?v=20260607j">
+  <link rel="stylesheet" href="css/style.css?v=20260607k">
 </head>
 <body>
 
@@ -380,19 +380,22 @@
             <div class="lo-stat"><b>458.1㎢</b><span>전체 면적</span></div>
             <div class="lo-stat"><b>42.5%</b><span>자연보전권역 (194.91㎢)</span></div>
           </div>
-          <div class="lo-grid">
-            <article class="lo-card lo-card--samlter">
-              <h3>🏘️ 삶터 — 정주 기반과 생활권 격차</h3>
-              <p>교통·복지·교육도시 지향(GTX-B, 제2외곽순환, 지하철 8·9호선 연장 등). 다만 화도읍 114,425명·다산1동 105,962명처럼 인구 집중 지역과 조안면 3,817명·수동면 9,039명처럼 소규모 농촌·산림 생활권이 공존 → <b>읍면별 정주 여건 차이</b>를 보는 것이 중요.</p>
-            </article>
-            <article class="lo-card lo-card--ilter">
-              <h3>🌾 일터 — 자족도시와 첨단미래산업</h3>
-              <p>첨단산업단지·미래형 복합의료타운·AI 클라우드 밸리 등 자족 기반 강화. 2024년 사업체 71,838개·종사자 221,153명. 화도읍 9,857·진접읍 9,847·별내동 9,299 vs 조안면 378개 → 단순 사업체 수가 아닌 <b>자족성·관광·농업 연계</b>를 함께 진단.</p>
-            </article>
-            <article class="lo-card lo-card--shimter">
-              <h3>🌲 쉼터 — 역사·수변·산림 힐링문화도시</h3>
-              <p>정약용 유적지·다산생태공원·물의정원·북한강자전거길·수종사 등 풍부한 관광·휴식 자원. 조안면 물의정원은 북한강 수변공원 → 관광지 개수가 아닌 <b>수변·역사·생태·체류형 여가</b> 기반으로 해석.</p>
-            </article>
+          <div class="lo-gaps">
+            <p class="lo-gaps-cap">같은 남양주 안에서도 읍면 격차가 큽니다 — 그래서 <b>읍면 단위로 비교</b>합니다.</p>
+            <div class="lo-gap">
+              <span class="lo-gap-label">인구</span>
+              <span class="lo-gap-hi">화도읍 114,425명</span>
+              <span class="lo-gap-vs">↔</span>
+              <span class="lo-gap-lo">조안면 3,817명</span>
+              <span class="lo-gap-x">약 30배</span>
+            </div>
+            <div class="lo-gap">
+              <span class="lo-gap-label">사업체</span>
+              <span class="lo-gap-hi">화도읍 9,857개</span>
+              <span class="lo-gap-vs">↔</span>
+              <span class="lo-gap-lo">조안면 378개</span>
+              <span class="lo-gap-x">약 26배</span>
+            </div>
           </div>
           <p class="lo-direction"><b>📍 대시보드 진단 방향</b> — 남양주의 성장 비전을 단일한 도시 확장으로 보지 않고, <b>삶터·일터·쉼터의 균형성을 읍면 단위에서 비교</b>하는 데 초점을 둔다.</p>
           <h3 class="home-subhead">민선 8기 비전 — “상상 더(THE) 이상 남양주”</h3>
@@ -1297,9 +1300,9 @@
   <!-- Chart.js Matrix 플러그인 (히트맵) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
   <!-- 클라이언트 설정 (LLM 프록시 URL — 비밀 아님). app.js 이전 로드 -->
-  <script src="js/config.js?v=20260607j"></script>
+  <script src="js/config.js?v=20260607k"></script>
   <!-- App JS -->
-  <script src="js/app.js?v=20260607j" defer></script>
+  <script src="js/app.js?v=20260607k" defer></script>
 
 </body>
 </html>
