@@ -8366,3 +8366,29 @@ body.present-mode #present-launch { display: none; }
   .lo-card, .pg-func, .src-method-card, .src-card, .guide-card, .lo-stat, .nyj-icard, .ps-step { transition: none; }
   .overlay-screen:not(.is-hidden) .overlay-main > * { animation: none; }
 }
+
+/* ============================================================ */
+/* === 섹션 48: 0607 발표모드 "슬라이드 클린" — 군더더기 숨김 === */
+/* ============================================================ */
+/* 발표(present-mode) 중에는 헤더·탭·비교드로어·내비 등 비발표 크롬을 숨겨
+   각 단계를 깔끔한 슬라이드로. #app-header/#tab-nav는 일반 흐름이라
+   display:none 시 본문이 자연히 채워짐(빈 공간 없음). 종료(✕) 시 복원. */
+body.present-mode #app-header,
+body.present-mode #tab-nav,
+body.present-mode #comparison-section,
+body.present-mode .landing-nav,
+body.present-mode .overlay-header,
+body.present-mode #map-context-hud,
+body.present-mode #region-breadcrumb { display: none !important; }
+
+/* 오버레이 본문이 헤더 없이도 위 여백 확보 */
+body.present-mode .overlay-main { padding-top: var(--space-6); }
+
+/* 발표 중 닫기 버튼 대신 스파인으로 이동 — 오버레이가 풀스크린 슬라이드처럼 */
+body.present-mode .overlay-screen { padding-bottom: 72px; }   /* 하단 스파인과 겹침 방지 */
+body.present-mode #main-layout { padding-bottom: 64px; }
+body.present-mode .dong-detail, body.present-mode #city-detail { scroll-padding-bottom: 80px; }
+
+/* 스파인: 발표 리모컨임을 분명히 (키 힌트) */
+.ps-keyhint { font-size: 10px; opacity: .6; margin-left: 2px; white-space: nowrap; }
+@media (max-width: 720px) { .ps-keyhint { display: none; } }
