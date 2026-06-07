@@ -8560,3 +8560,44 @@ body:not(.present-mode) #present-deck { display: none !important; }
   .pslide.is-active { animation: none; }
   .ps-scrollcue { animation: none; }
 }
+
+/* ============================================================ */
+/* === 섹션 50: 0607 지표 탐색(#explore) 폴리시 (impeccable) === */
+/* ============================================================ */
+/* '예시값' — (mock) 대신 정돈된 중립 칩 */
+.raw-mock {
+  display: inline-block; font-size: var(--fs-xs); color: var(--text-subtle);
+  background: var(--surface-sunken); border-radius: var(--radius-pill);
+  padding: 1px 8px; font-style: normal;
+}
+/* 표 — 헤더 고정·정렬 숫자·상위 강조 정돈 */
+.explore-table thead th { position: sticky; top: 0; z-index: 2; background: var(--surface-sunken); }
+.explore-table .num-cell { font-variant-numeric: tabular-nums; font-weight: 700; }
+.explore-table tbody tr { transition: background .12s var(--ease); }
+.explore-table tbody tr:hover { background: var(--primary-soft); cursor: pointer; }
+.explore-table tbody tr.is-top td { background: var(--accent-soft); }
+.explore-table tbody tr.is-top:hover td { background: var(--accent-soft); }
+.explore-table .rank-cell { font-weight: 800; color: var(--text-muted); text-align: center; }
+.quantile-chip { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; color: #fff; font-weight: 800; font-size: var(--fs-xs); }
+
+/* 섹션 타이틀 리듬 */
+.explore-section-title { letter-spacing: -0.01em; }
+.explore-table-section, .explore-chart-section { margin-top: var(--space-6); }
+
+/* '지도에서 보기' 버튼 — 과한 풀그린 완화, 정제 */
+.explore-show-on-map-btn {
+  border-radius: var(--radius-pill) !important; font-weight: 700;
+  box-shadow: var(--shadow-sm); transition: transform .15s var(--ease), box-shadow .15s var(--ease);
+}
+.explore-show-on-map-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+
+/* 차트 카드화 */
+.explore-chart { background: var(--surface-card); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: var(--space-4); box-shadow: var(--shadow-xs); }
+
+/* 사이드바 항목 인터랙션 */
+.explore-cat-tree [role="treeitem"]:hover, .explore-ind-item:hover { background: var(--surface-hover); }
+
+/* 산식·출처 접이 블록 정돈 */
+.explore-formula-collapsible { border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--surface-base); margin-top: var(--space-4); }
+.explore-formula-collapsible > summary { padding: 10px 14px; font-weight: 700; color: var(--primary-dark); cursor: pointer; }
+.explore-formula-body { padding: 0 14px 12px; font-size: var(--fs-sm); line-height: 1.7; color: var(--text-body); }

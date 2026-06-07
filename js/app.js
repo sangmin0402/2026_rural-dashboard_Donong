@@ -7269,8 +7269,8 @@ function renderExploreDetail(key) {
     W6: '20~39세 귀농가구원수 ÷ 전체 귀농가구원수 × 100 <em>(KOSIS·귀농어귀촌인통계 표의 「30대이하」 열 = 본 확정안의 20~39세 구간)</em>',
     W8: '도소매(G) 종사자 + 숙박음식(I) 종사자',
   })[key] || (isJayul
-    ? '(현재 mock — 시군이 자율적으로 선정·실측 입력하는 지표)'
-    : '<em>(공통지표 — 현재 mock 데이터, 실측 교체 예정)</em>');
+    ? '<em>(현재 예시값 — 시군이 자율 선정·실측 입력하는 지표)</em>'
+    : '<em>(공통지표 — 현재 예시값, 실측 교체 예정)</em>');
   const sourceText = ({
     L1: 'KOSIS · 주민등록인구통계 (행정안전부, 월간 갱신) — 자동 계산',
     L2: 'SGIS · 인구주택총조사 주요지표',
@@ -7380,7 +7380,7 @@ function renderExploreDetail(key) {
                   <td class="rank-cell">${rankBadge}</td>
                   <td><strong>${r.cityName}</strong></td>
                   <td class="num-cell">${r.value == null ? '-' : (typeof r.value === 'number' ? r.value.toLocaleString(undefined, { maximumFractionDigits: 2 }) : r.value)}</td>
-                  <td class="raw-col">${shortRaw || '<span class="raw-mock">(mock)</span>'}</td>
+                  <td class="raw-col">${shortRaw || '<span class="raw-mock">예시값</span>'}</td>
                   <td>${r.qclass ? `<span class="quantile-chip" style="background:${QUANTILE_COLORS[r.qclass-1]}">${r.qclass}</span>` : '-'}</td>
                   ${isJayul ? `<td>${r.isSelected ? '<span class="jayul-selected-mark">✓</span>' : '<span class="jayul-not-selected">-</span>'}</td>` : ''}
                 </tr>`;
