@@ -6633,7 +6633,7 @@ function showGuidePage() {
 // ===================================================================
 // 5단계: ①개요·비전 ②지표 선정논리 ③데이터·방법론 ④읍면 진단 ⑤종합 요약
 // 새 라우터를 만들지 않고 기존 화면 전환 함수를 위임 호출한다.
-const PRESENT_TOTAL = 6;
+const PRESENT_TOTAL = 7;
 let presentStep = 0;
 
 function isPresentMode() { return document.body.classList.contains('present-mode'); }
@@ -6657,8 +6657,8 @@ function goPresentationStep(n) {
   n = Math.max(1, Math.min(PRESENT_TOTAL, n));
   presentStep = n;
   try {
-    // ⑤ 읍면 진단만 실제 도구 시연 — 나머지는 전용 슬라이드 덱
-    if (n === 5) { hideDeck(); presentStepDiagnosis(); }
+    // ⑥ 읍면 진단만 실제 도구 시연 — 나머지는 전용 슬라이드 덱
+    if (n === 6) { hideDeck(); presentStepDiagnosis(); }
     else showDeckSlide(n);
   } catch (e) { console.warn('[발표] 단계 전환 오류', e); }
   document.querySelectorAll('#present-spine .ps-step').forEach(b => {
@@ -6673,12 +6673,53 @@ function showDeckSlide(n) {
   hideAllOverlayScreens();
   document.getElementById('landing-screen')?.classList.add('is-hidden');
   if (n === 2) { try { renderPresentJayulChips(); } catch (_) {} }
-  if (n === 6) { try { renderPresentSummary(); } catch (_) {} }
+  if (n === 7) { try { renderPresentSummary(); } catch (_) {} }
+  if (n === 5) { try { startFeatureCarousel(); } catch (_) {} } else { stopFeatureCarousel(); }
   deck.style.display = 'block';
   deck.querySelectorAll('.pslide').forEach(s => s.classList.toggle('is-active', Number(s.dataset.slide) === n));
   deck.scrollTop = 0;
 }
-function hideDeck() { const d = document.getElementById('present-deck'); if (d) d.style.display = 'none'; }
+function hideDeck() { const d = document.getElementById('present-deck'); if (d) d.style.display = 'none'; stopFeatureCarousel(); }
+
+// ===================================================================
+// === 0607: ⑤ 기능 빠르게 둘러보기 — 자동 캐러셀(실제 화면 스크린샷) ===
+// ===================================================================
+const FEATURE_SLIDES = [
+  { img: 'img/present/f1_map.png',       title: '지표 지도',       desc: '시군별 농촌다움 종합점수와 삶·일·쉼 영역별 차이를 지도에서 확인' },
+  { img: 'img/present/f2_explore.png',   title: '지표 탐색',       desc: '세부 지표의 값·순위·출처와 지역별 강·약점 비교' },
+  { img: 'img/present/f3_compare.png',   title: '시군 비교',       desc: '여러 시군을 선택해 종합점수·개별 지표를 함께 비교' },
+  { img: 'img/present/f4_ranking.png',   title: '시군 랭킹',       desc: '종합점수와 삶·일·쉼 영역별 순위' },
+  { img: 'img/present/f5_scenario.png',  title: '시나리오 분석',   desc: '정책 변수를 조정해 농촌다움 점수 변화·예상 효과 검토' },
+  { img: 'img/present/f6_namyangju.png', title: '남양주 특화 분석', desc: '자율지표로 읍면별 특성과 우선 개선 과제 진단' },
+  { img: 'img/present/f7_sources.png',   title: '데이터 출처',     desc: '지표별 산식·원자료·출처와 전국 농촌 기준 공개' },
+  { img: 'img/present/f8_guide.png',     title: '지표 가이드',     desc: '지표 선정 논리와 삶·일·쉼 평가 체계' },
+];
+let _fcIdx = 0, _fcTimer = null, _fcWired = false, _fcPaused = false;
+
+function _fcRender() {
+  const f = FEATURE_SLIDES[_fcIdx]; if (!f) return;
+  const img = document.getElementById('psc-img');
+  const t = document.getElementById('psc-title');
+  const dsc = document.getElementById('psc-desc');
+  if (img) img.src = f.img;
+  if (t) t.textContent = f.title;
+  if (dsc) dsc.textContent = f.desc;
+  document.querySelectorAll('#psc-dots .psc-dot').forEach((d, i) => d.classList.toggle('is-on', i === _fcIdx));
+}
+function _fcGo(i) { _fcIdx = (i + FEATURE_SLIDES.length) % FEATURE_SLIDES.length; _fcRender(); }
+function _fcWire() {
+  if (_fcWired) return; _fcWired = true;
+  const dots = document.getElementById('psc-dots');
+  if (dots) dots.innerHTML = FEATURE_SLIDES.map((_, i) => `<button class="psc-dot" type="button" data-i="${i}" aria-label="${i + 1}번"></button>`).join('');
+  document.getElementById('psc-prev')?.addEventListener('click', () => { _fcGo(_fcIdx - 1); _fcKick(); });
+  document.getElementById('psc-next')?.addEventListener('click', () => { _fcGo(_fcIdx + 1); _fcKick(); });
+  dots?.addEventListener('click', (e) => { const b = e.target.closest('.psc-dot'); if (b) { _fcGo(Number(b.dataset.i)); _fcKick(); } });
+  // 이미지 클릭 → 일시정지/재생 토글
+  document.getElementById('psc-img')?.addEventListener('click', () => { _fcPaused = !_fcPaused; if (!_fcPaused) _fcKick(); else clearInterval(_fcTimer); });
+}
+function _fcKick() { clearInterval(_fcTimer); if (_fcPaused) return; _fcTimer = setInterval(() => _fcGo(_fcIdx + 1), 2800); }
+function startFeatureCarousel() { _fcWire(); _fcIdx = 0; _fcPaused = false; _fcRender(); _fcKick(); }
+function stopFeatureCarousel() { clearInterval(_fcTimer); _fcTimer = null; }
 
 /** ② 슬라이드: 남양주 자율 8지표 칩 */
 function renderPresentJayulChips() {

@@ -8488,6 +8488,20 @@ body:not(.present-mode) #present-deck { display: none !important; }
 #pslide6-body .diag-col h4 { font-size: clamp(17px,1.7vw,28px); margin-bottom: 10px; }
 #pslide6-body .diag-col li { font-size: clamp(14px,1.2vw,20px); line-height: 1.6; margin-bottom: 7px; }
 
+/* ⑤ 기능 둘러보기 — 자동 캐러셀 */
+.ps-carousel { width: 100%; max-width: 1100px; margin: clamp(8px, 2vh, 22px) auto 0; }
+.psc-stage { position: relative; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-lg); border: 1px solid var(--border); background: #0d1f15; }
+.psc-img { display: block; width: 100%; max-height: 56vh; object-fit: contain; background: #0d1f15; cursor: pointer; }
+.psc-nav { position: absolute; top: 50%; transform: translateY(-50%); width: clamp(38px,3vw,52px); height: clamp(38px,3vw,52px); border-radius: 50%; border: 0; background: rgba(0,0,0,.45); color: #fff; font-size: clamp(22px,2vw,30px); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s; }
+.psc-prev { left: 12px; } .psc-next { right: 12px; }
+.psc-nav:hover { background: rgba(0,0,0,.72); }
+.psc-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: clamp(10px,1.6vh,18px); flex-wrap: wrap; }
+.psc-cap b { font-size: clamp(18px,1.9vw,30px); color: var(--text-primary); margin-right: 10px; }
+.psc-cap span { font-size: clamp(14px,1.3vw,21px); color: var(--text-body); }
+.psc-dots { display: flex; gap: 8px; }
+.psc-dot { width: 11px; height: 11px; border-radius: 50%; border: 0; background: var(--border-strong); cursor: pointer; padding: 0; transition: transform .15s, background .15s; }
+.psc-dot.is-on { background: var(--accent); transform: scale(1.25); }
+
 @media (max-width: 900px) {
   .ps-3col, .ps-funcgrid, #pslide6-body .diag-grid { grid-template-columns: 1fr 1fr; }
 }

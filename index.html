@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
   <!-- App CSS -->
-  <link rel="stylesheet" href="css/style.css?v=20260607d">
+  <link rel="stylesheet" href="css/style.css?v=20260607e">
 </head>
 <body>
 
@@ -28,8 +28,9 @@
         <li><button class="ps-step" type="button" data-step="2"><b>②</b><span>지표 선정</span></button></li>
         <li><button class="ps-step" type="button" data-step="3"><b>③</b><span>데이터·방법론</span></button></li>
         <li><button class="ps-step" type="button" data-step="4"><b>④</b><span>사이트 소개</span></button></li>
-        <li><button class="ps-step" type="button" data-step="5"><b>⑤</b><span>읍면 진단</span></button></li>
-        <li><button class="ps-step" type="button" data-step="6"><b>⑥</b><span>종합 요약</span></button></li>
+        <li><button class="ps-step" type="button" data-step="5"><b>⑤</b><span>기능 둘러보기</span></button></li>
+        <li><button class="ps-step" type="button" data-step="6"><b>⑥</b><span>읍면 진단</span></button></li>
+        <li><button class="ps-step" type="button" data-step="7"><b>⑦</b><span>종합 요약</span></button></li>
       </ol>
       <div class="ps-ctrl">
         <button class="ps-arrow" id="ps-prev" type="button" aria-label="이전 단계">‹</button>
@@ -118,14 +119,34 @@
           <div class="ps-func"><b>🗂️ 데이터 출처</b><span>산식·원자료·출처 검토</span></div>
           <div class="ps-func"><b>📚 지표 가이드</b><span>선정 논리·평가 체계</span></div>
         </div>
-        <p class="ps-cue">다음 화면부터 <b>실제 도구로 시연</b>합니다 →</p>
+        <p class="ps-cue">먼저 기능을 빠르게 둘러본 뒤, <b>실제 도구로 시연</b>합니다 →</p>
       </div>
     </section>
 
-    <!-- ⑥ 종합 요약 (데이터 기반, JS가 채움) -->
-    <section class="pslide" data-slide="6">
+    <!-- ⑤ 기능 빠르게 둘러보기 (자동 캐러셀) -->
+    <section class="pslide" data-slide="5">
+      <div class="ps-hero ps-hero--carousel">
+        <div class="ps-eyebrow">05 · 기능 둘러보기</div>
+        <h2 class="ps-title">핵심 기능을 <em>빠르게</em> 둘러봅니다</h2>
+        <div class="ps-carousel" id="ps-carousel">
+          <div class="psc-stage">
+            <img id="psc-img" class="psc-img" alt="기능 미리보기" src="img/present/f1_map.png">
+            <button class="psc-nav psc-prev" id="psc-prev" type="button" aria-label="이전">‹</button>
+            <button class="psc-nav psc-next" id="psc-next" type="button" aria-label="다음">›</button>
+          </div>
+          <div class="psc-bar">
+            <div class="psc-cap"><b id="psc-title">지표 지도</b><span id="psc-desc">시군별 농촌다움 종합점수와 영역별 차이를 지도에서 확인</span></div>
+            <div class="psc-dots" id="psc-dots"></div>
+          </div>
+        </div>
+        <p class="ps-cue">이제 <b>읍면 진단</b>을 실제 도구로 시연합니다 →</p>
+      </div>
+    </section>
+
+    <!-- ⑦ 종합 요약 (데이터 기반, JS가 채움) -->
+    <section class="pslide" data-slide="7">
       <div class="ps-hero">
-        <div class="ps-eyebrow">06 · 종합</div>
+        <div class="ps-eyebrow">07 · 종합</div>
         <h2 class="ps-title">남양주, <em>무엇을 먼저</em> 해야 하나</h2>
         <div id="pslide6-body"><!-- renderPresentSummary() --></div>
       </div>
@@ -1223,9 +1244,9 @@
   <!-- Chart.js Matrix 플러그인 (히트맵) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
   <!-- 클라이언트 설정 (LLM 프록시 URL — 비밀 아님). app.js 이전 로드 -->
-  <script src="js/config.js?v=20260607d"></script>
+  <script src="js/config.js?v=20260607e"></script>
   <!-- App JS -->
-  <script src="js/app.js?v=20260607d" defer></script>
+  <script src="js/app.js?v=20260607e" defer></script>
 
 </body>
 </html>
